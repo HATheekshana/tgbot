@@ -8,7 +8,7 @@ from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
 TOKEN = "1936607928:AAHPUcZR6SGa9cvlqLJhnYk-LfpTO0_9Nb8"
 
 # --- Image folder ---
-IMAGE_FOLDER = "assets/images"
+IMAGE_FOLDER = "/app/assets/images"
 
 # --- Define 5★ and 4★ characters ---
 FIVE_STAR = [
