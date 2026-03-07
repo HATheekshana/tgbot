@@ -1,0 +1,75 @@
+import asyncio
+import logging
+import sys
+import random
+from aiogram import Bot, Dispatcher, types
+from aiogram.filters import Command
+
+TOKEN = "8181850530:AAEuaGV4xkme3c_gMa6A8JFtHWzPZQU2W_g"
+dp = Dispatcher()
+
+# Dictionaries (Keep yours exactly as they are)
+weapons3 = {"magicguide":"Magic Guide", "blacktassel":"Black Tassel", "bloodtainted":"Bloodtainted Greatsword", "coolsteel":"Coolsteel", "debate":"Debate Club", "emerald":"Emerald", "ferrousshadow":"Ferrous Shadow", "harbinger":"Harbinger Of Dawn", "ravenbow":"Raven Bow", "skyridergreat":"Skyrider Greatsword", "skyridersword":"Skyrider Sword", "slingshot":"Slingshot", "thrillingtales":"Thrilling Tales"}
+characters4 = {"shikanoin heizou":"Shikanoin Heizou" ,"xinyan":"Xinyan" ,"yaoyao":"YaoYao" ,"ororon":"Ororon" ,"sethos":"Sethos" ,"mika":"Mika" ,"lynette":"Lynette" ,"layla":"Layla" ,"lan-yan":"Lan Yan" ,"kuki-shinobu":"Kuki Shinobu" ,"gaming":"Gaming" ,"iansan":"Iansan" ,"ifa":"Ifa" ,"illuga":"Illuga" ,"jahoda":"Jahoda" ,"kachina":"Kachina" ,"kaveh":"Kaveh" ,"kirara":"Kirara" ,"kujou-sara":"Kujou Sara" ,"freminet":"freminet" ,"faruzan":"Faruzan" ,"dori":"Dori" , "chongyun" : "Chongyun" ,"collei" : "Collei" ,"dahlia" : "Dahlia" ,"chevreuse" : "Chevreuse" , "charlotte":"charlotte" ,"candace":"Candace" , "aino":"Aino" , "yun-jin":"Yun Jin", "yanfei":"Yanfei", "xingqiu":"Xingqiu", "xiangling":"Xiangling", "thoma":"Thoma", "sucrose":"Sucrose", "diona":"Diona", "noelle":"Noelle", "sayu":"Sayu", "rosaria":"Rosaria","barbara":"Barbara", "amber":"Amber", "beidou":"Beidou", "bennett":"Bennett", "chongyun":"Chongyun", "fischl":"Fischl", "gorou":"Gorou", "kaeya":"Kaeya", "lisa":"Lisa", "ningguang":"Ningguang", "razor":"Razor"}
+characters5 = {"kokomi":"Kokomi", "ganyu":"Ganyu", "tartaglia":"Tartaglia", "mona":"Mona", "raidenshogun":"Raiden Shogun", "qiqi":"Qiqi", "yaemiko":"Yae Miko", "yoimiya":"Yoimiya", "zhongli":"Zhongli", "venti":"Venti", "shenhe":"Shenhe", "albedo":"Albedo", "ayaka":"Ayaka", "diluc":"Diluc", "eula":"Eula", "hutao":"Hutao", "keqing-lanternrite":"Keqing", "keqing":"Keqing", "klee":"Klee", "jean":"Jean", "kazuha":"Kazuha", "xiao":"Xiao"}
+
+@dp.message(Command("wish10"))
+async def send_image_10(message: types.Message):
+    results = []
+    star4 = 0
+    star5 = 0
+    file_path = ""
+
+    for i in range(10):
+        if i == 9 and star4 == 0 and star5 == 0:
+            file_key = random.choice(list(characters4.keys()))
+            display_name = characters4[file_key]
+            results.append(f"꩜ {display_name} ★★★★")
+            if not file_path:
+                file_path = f"https://raw.githubusercontent.com/Mantan21/Genshin-Impact-Wish-Simulator/master/src/images/characters/splash-art/4star/{file_key}.webp"
+            continue
+        star5check = random.randint(1, 1000)
+        if star5check < 7:
+            file_key = random.choice(list(characters5.keys()))
+            display_name = characters5[file_key]
+            results.append(f"꩜ {display_name} ★★★★★")
+            file_path = f"https://raw.githubusercontent.com/Mantan21/Genshin-Impact-Wish-Simulator/master/src/images/characters/splash-art/5star/{file_key}.webp"
+            star5 = 1
+        
+        else:
+            star4check = random.randint(1, 10)
+            if star4check == 10:
+                file_key = random.choice(list(characters4.keys()))
+                display_name = characters4[file_key]
+                results.append(f"꩜ {display_name} ★★★★")
+                star4 = 1
+                if star5 == 0:
+                    file_path = f"https://raw.githubusercontent.com/Mantan21/Genshin-Impact-Wish-Simulator/master/src/images/characters/splash-art/4star/{file_key}.webp"
+            else:
+                file_key = random.choice(list(weapons3.keys()))
+                display_name = weapons3[file_key]
+                results.append(f"꩜ {display_name} ★★★")
+
+    if not file_path:
+        file_path = f"https://www.freeiconspng.com/images/error"
+
+    await message.answer_photo(
+        photo=file_path,
+        caption=f"**Your 10-Pull Results:**\n\n" + "\n".join(results), 
+        parse_mode="Markdown"
+    )
+
+@dp.message(Command("send"))
+async def send_single(message: types.Message):
+    file_key = random.choice(list(characters5.keys()))
+    display_name = characters5[file_key]
+    file_path = f"https://raw.githubusercontent.com/Mantan21/Genshin-Impact-Wish-Simulator/master/src/images/characters/splash-art/5star/{file_key}.webp"
+    await message.answer_photo(photo=file_path, caption=display_name)
+
+async def main():
+    bot = Bot(token=TOKEN)
+    await dp.start_polling(bot)
+
+if __name__ == "__main__":
+    logging.basicConfig(level=logging.INFO, stream=sys.stdout)
+    asyncio.run(main())
