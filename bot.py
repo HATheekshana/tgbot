@@ -94,16 +94,22 @@ async def send_image_10(message: types.Message):
     # 1. Fetch user or create if new
     user = await users_col.find_one({"user_id": user_id})
     if not user:
-        user = {"user_id": user_id, "pity": 0, "count4": 0, "total_wishes": 0}
+        user = {"user_id": user_id, "pity": 0, "count4": 0, "total_wishes": 0 , "wish_count":200}
         await users_col.insert_one(user)
 
     pity = user["pity"]
     count4 = user["count4"]
     total_wishes = user["total_wishes"]
-    
+    wish_count = user["wish_count"]
     gurentee = False
     countto5 = 0
     countto5 = 90 - pity
+    enough_wishes = True
+    if wish_count >= 10 :
+        enough_wishes = True
+    else:
+        enough_wishes = False
+
     if countto5 <=10 :
         gurentee = True
     else:
@@ -114,8 +120,8 @@ async def send_image_10(message: types.Message):
     star5 = 0
     file_path = ""
     count4 = 0
-
-    for i in range(10):
+    if enough_wishes == True :
+        for i in range(10):
         if gurentee == True:
             gurentee = False
             pity = 10 - countto5
@@ -159,9 +165,11 @@ async def send_image_10(message: types.Message):
                     display_name = weapons3[file_key]
                     results.append(f"꩜ {display_name} ★★★")
 
-    total_wishes += 10
+        total_wishes += 10
+        wish_count -= 10
+
     #returning data to DB
-    
+    await users_col.update_one({"user_id": user_id}, {"$set": {"wish_count": wish_count}})
     await users_col.update_one({"user_id": user_id}, {"$set": {"pity": pity}})
     await users_col.update_one({"user_id": user_id}, {"$set": {"count4": count4}})
     await users_col.update_one({"user_id": user_id}, {"$set": {"total_wishes": total_wishes}})
@@ -180,9 +188,14 @@ async def send_image_10(message: types.Message):
     photo_file = BufferedInputFile(output.read(), filename="wish.png")
 
     await message.answer_photo(
-        photo=photo_file,
-        caption=f"**Your 10-Pull Results:**\n\n" + "\n".join(results),
-        parse_mode="Markdown"
+        if enough_wishes == True:
+            photo=photo_file,
+            caption=f"**Your 10-Pull Results:**\n\n" + "\n".join(results),
+            parse_mode="Markdown"
+        else: 
+            photo = "https://www.freeiconspng.com/images/error",
+            caption = "You don't have enough wishes. You Only have ".join(wish_count),
+            parse_mode="Markdown"
     )
 
 @dp.message(Command("wish"))
@@ -192,7 +205,7 @@ async def send_single(message: types.Message):
     # 1. Fetch user or create if new
     user = await users_col.find_one({"user_id": user_id})
     if not user:
-        user = {"user_id": user_id, "pity": 0, "count4": 0, "total_wishes": 0}
+        user = {"user_id": user_id, "pity": 0, "count4": 0, "total_wishes": 0 , "wish_count":200}
         await users_col.insert_one(user)
 
     pity = user["pity"]
