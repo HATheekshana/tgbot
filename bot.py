@@ -113,30 +113,68 @@ async def add_to_collection(user_id, char_name):
         {"user_id": user_id},
         {"$inc": {f"collection.{char_name}": 1}}
     )
-def combine_images(cha_path, bg_path):
+from PIL import Image, ImageDraw, ImageFont
+
+def combine_images(cha_path, bg_path, display_name, rarity):
     try:
-        # Download images
+        # 1. Download and open images
         bg_data = requests.get(bg_path).content
         cha_data = requests.get(cha_path).content
-
-        # Open with Pillow
         background = Image.open(io.BytesIO(bg_data)).convert("RGBA")
         character = Image.open(io.BytesIO(cha_data)).convert("RGBA")
 
-        # Resize character to match background height
+        # 2. Resize and Paste character
         scale = background.height / character.height
         new_size = (int(character.width * scale), background.height)
         character = character.resize(new_size, Image.Resampling.LANCZOS)
-
-        # Center and Paste
         x_offset = (background.width - character.width) // 2
         background.paste(character, (x_offset, 0), character)
+
+        # 3. Setup Drawing
+        draw = ImageDraw.Draw(background)
+        try:
+            # You might need to provide a path to a font file on your server
+            font_name = ImageFont.truetype("arial.ttf", 45)
+            font_stars = ImageFont.truetype("arial.ttf", 35)
+        except:
+            font_name = ImageFont.load_default()
+            font_stars = ImageFont.load_default()
+
+        # Create the rarity string (e.g., ★★★★★)
+        stars_text = "⭐" * rarity
+        margin = 40
+        line_spacing = 10
+
+        # Calculate Name Dimensions
+        bbox_n = draw.textbbox((0, 0), display_name, font=font_name)
+        nw, nh = bbox_n[2] - bbox_n[0], bbox_n[3] - bbox_n[1]
+
+        # Calculate Stars Dimensions
+        bbox_s = draw.textbbox((0, 0), stars_text, font=font_stars)
+        sw, sh = bbox_s[2] - bbox_s[0], bbox_s[3] - bbox_s[1]
+
+        # Positions (Right Aligned)
+        # Name is on top
+        nx = background.width - nw - margin
+        ny = background.height - nh - sh - margin - line_spacing
+
+        # Stars are below the name
+        sx = background.width - sw - margin
+        sy = background.height - sh - margin
+
+        # 4. Draw Shadow and Text
+        # Name
+        draw.text((nx+2, ny+2), display_name, font=font_name, fill=(0, 0, 0, 150))
+        draw.text((nx, ny), display_name, font=font_name, fill=(255, 255, 255))
         
+        # Stars (Yellow/Gold color for stars: 255, 204, 0)
+        draw.text((sx+2, sy+2), stars_text, font=font_stars, fill=(0, 0, 0, 150))
+        draw.text((sx, sy), stars_text, font=font_stars, fill=(255, 204, 0))
+
         return background
 
     except Exception as e:
         logging.error(f"Image Error: {e}")
-        # Fallback: Create a simple purple background if the links fail
         return Image.new("RGBA", (1280, 720), (45, 20, 84, 255))
 
 @dp.callback_query(lambda c: c.data.startswith("col_"))
@@ -216,6 +254,8 @@ async def send_image_10(message: types.Message):
         if is_5star:
             file_key = random.choice(list(characters5.keys()))
             display_name = characters5[file_key]
+            splash_name = display_name
+            splash_rarity = 5
             file_path = f"https://raw.githubusercontent.com/Mantan21/Genshin-Impact-Wish-Simulator/master/src/images/characters/splash-art/5star/{file_key}.webp"
             
             total_so_far = current_collection.get(display_name, 0) + pulled_chars.count(display_name)
@@ -230,6 +270,8 @@ async def send_image_10(message: types.Message):
             file_key = random.choice(list(characters4.keys()))
             display_name = characters4[file_key]
             if not file_path: # Set image to first 4/5 star found
+                splash_name = display_name
+                splash_rarity = 4
                 file_path = f"https://raw.githubusercontent.com/Mantan21/Genshin-Impact-Wish-Simulator/master/src/images/characters/splash-art/4star/{file_key}.webp"
             
             total_so_far = current_collection.get(display_name, 0) + pulled_chars.count(display_name)
@@ -270,7 +312,7 @@ async def send_image_10(message: types.Message):
         file_path = "https://raw.githubusercontent.com/FrenzyYum/GenshinWishingBot/master/assets/images/debate.webp" 
 
     bg_path = "https://raw.githubusercontent.com/Mantan21/Genshin-Impact-Wish-Simulator/master/src/images/background/splash-background.webp"
-    combined_img = combine_images(file_path, bg_path)
+    combined_img = combine_images(file_path, bg_path, splash_name, splash_rarity)
     output = io.BytesIO()
     combined_img.save(output, format="PNG")
     output.seek(0)
@@ -278,7 +320,7 @@ async def send_image_10(message: types.Message):
 
     await message.answer_photo(
         photo=photo_file,
-        caption=f"**Your 10-Pull Results:**\n\n" + "\n".join(results),
+        caption=f"**★ Your 10-Pull Results ★**\n\n" + "\n".join(results),
         parse_mode="Markdown"
     )
 @dp.message(Command("wish"))
@@ -321,6 +363,8 @@ async def send_single(message: types.Message):
         count4 += 1
         file_key = random.choice(list(characters5.keys()))
         display_name = characters5[file_key]
+        splash_name = display_name
+        splash_rarity = 5
         file_path = f"https://raw.githubusercontent.com/Mantan21/Genshin-Impact-Wish-Simulator/master/src/images/characters/splash-art/5star/{file_key}.webp"
         
         if current_collection.get(display_name, 0) >= 7:
@@ -335,6 +379,8 @@ async def send_single(message: types.Message):
         pity += 1
         file_key = random.choice(list(characters4.keys()))
         display_name = characters4[file_key]
+        splash_name = display_name
+        splash_rarity = 4
         file_path = f"https://raw.githubusercontent.com/Mantan21/Genshin-Impact-Wish-Simulator/master/src/images/characters/splash-art/4star/{file_key}.webp"
         
         if current_collection.get(display_name, 0) >= 7:
@@ -348,6 +394,8 @@ async def send_single(message: types.Message):
         count4 += 1
         file_key = random.choice(list(weapons3.keys()))
         display_name = weapons3[file_key]
+        splash_name = display_name
+        splash_rarity = 3
         name = f"꩜ {display_name} ★★★"
         file_path = f"https://raw.githubusercontent.com/FrenzyYum/GenshinWishingBot/master/assets/images/{file_key}.webp"
 
@@ -366,7 +414,7 @@ async def send_single(message: types.Message):
     bg_path = "https://raw.githubusercontent.com/Mantan21/Genshin-Impact-Wish-Simulator/master/src/images/background/splash-background.webp"
     combined_img = combine_images(file_path, bg_path)
     output = io.BytesIO()
-    combined_img.save(output, format="PNG")
+    combined_img = combine_images(file_path, bg_path, splash_name, splash_rarity)
     output.seek(0)
     photo_file = BufferedInputFile(output.read(), filename="wish.png")
     await message.answer_photo(photo=photo_file, caption=name)
