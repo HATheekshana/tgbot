@@ -12,7 +12,7 @@ async def migrate():
     # "$set" = The action to perform
     result = await users_col.update_many(
         {}, 
-        {"$set": {"total_wishes": 0}}
+        {"$set": {"total_wishes": 0 ,"wish_count":200 ,"pity":0 ,"count4": 0 }}
     )
 
     print(f"✅ Reset Complete!")
