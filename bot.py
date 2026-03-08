@@ -187,16 +187,14 @@ async def send_image_10(message: types.Message):
     # Create the file object correctly
     photo_file = BufferedInputFile(output.read(), filename="wish.png")
 
-    await message.answer_photo(
-        if enough_wishes == True:
-            photo=photo_file,
-            caption=f"**Your 10-Pull Results:**\n\n" + "\n".join(results),
-            parse_mode="Markdown"
-        else: 
-            photo = "https://www.freeiconspng.com/images/error",
-            caption = "You don't have enough wishes. You Only have ".join(wish_count),
-            parse_mode="Markdown"
-    )
+    if enough_wishes:
+            await message.answer_photo(
+                photo=photo_file,
+                caption=f"**Your 10-Pull Results:**\n\n" + "\n".join(results),
+                parse_mode="Markdown"
+            )
+        else:
+            await message.answer(f"❌ You don't have enough wishes. You only have {wish_count}.")
 
 @dp.message(Command("wish"))
 async def send_single(message: types.Message):
