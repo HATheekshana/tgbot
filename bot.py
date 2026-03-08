@@ -13,6 +13,7 @@ from datetime import datetime, timedelta
 from aiogram.types import BufferedInputFile, InlineKeyboardMarkup, InlineKeyboardButton
 from aiogram import Bot, Dispatcher, types
 from aiogram.filters import Command
+from pytz import timezone
 
 ITEMS_PER_PAGE = 10
 
@@ -533,8 +534,9 @@ async def main():
     # 2. Create the Bot object FIRST
     bot = Bot(token=TOKEN)
 
-    # 3. Setup the scheduler and pass the bot object
-    scheduler = AsyncIOScheduler()
+    lk_timezone = timezone("Asia/Colombo")
+    
+    scheduler = AsyncIOScheduler(timezone=lk_timezone)
     scheduler.add_job(
         add_daily_wish, 
         "cron", 
