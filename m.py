@@ -9,9 +9,8 @@ async def migrate():
     users_col = db["user_stats"]
 
     # Update users who DO NOT have the wish_count field
-    result = await users_col.update_many(
-        {"wish_count": {"$exists": False}}, 
-        {"$set": {"wish_count": 200}}
+    result = await users_col.update_many( 
+        {"$set": {"total_wishes":0}}
     )
 
     print(f"✅ Migration complete! Updated {result.modified_count} old users.")
