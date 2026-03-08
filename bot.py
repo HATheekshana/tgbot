@@ -137,7 +137,7 @@ async def send_image_10(message: types.Message):
                     display_name = characters4[file_key]
                     results.append(f"꩜ {display_name} ★★★★")
                     if not file_path:
-                    file_path = f"https://raw.githubusercontent.com/Mantan21/Genshin-Impact-Wish-Simulator/master/src/images/characters/splash-art/4star/{file_key}.webp"
+                     file_path = f"https://raw.githubusercontent.com/Mantan21/Genshin-Impact-Wish-Simulator/master/src/images/characters/splash-art/4star/{file_key}.webp"
                     continue
             #check 5star
                 star5check = random.randint(1, 1000)
