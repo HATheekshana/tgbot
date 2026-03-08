@@ -229,8 +229,17 @@ async def send_single(message: types.Message):
     await users_col.update_one({"user_id": user_id}, {"$set": {"pity": pity}})
     await users_col.update_one({"user_id": user_id}, {"$set": {"count4": count4}})
     await users_col.update_one({"user_id": user_id}, {"$set": {"total_wishes": total_wishes}})
+
+    bg_path = "https://raw.githubusercontent.com/Mantan21/Genshin-Impact-Wish-Simulator/master/src/images/background/splash-background.webp"
+    combined_img = combine_images(file_path, bg_path)
+    output = io.BytesIO()
+    combined_img.save(output, format="PNG")
+    output.seek(0)
+
+    # Create the file object correctly
+    photo_file = BufferedInputFile(output.read(), filename="wish.png")
     
-    await message.answer_photo(photo=file_path, caption=name)
+    await message.answer_photo(photo=photo_file, caption=name)
 
 @dp.message(Command("stats"))
 async def show_stats(message: types.Message):
@@ -266,5 +275,6 @@ async def main():
 
 if __name__ == "__main__":
     asyncio.run(main())
+
 
 
