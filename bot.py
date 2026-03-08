@@ -30,7 +30,7 @@ weapons3 = {
 }
 
 characters4 = {
-    "shikanoin heizou":"Shikanoin Heizou", "xinyan":"Xinyan", "yaoyao":"YaoYao", "ororon":"Ororon",
+    "shikanoin-heizou":"Shikanoin Heizou", "xinyan":"Xinyan", "yaoyao":"YaoYao", "ororon":"Ororon",
     "sethos":"Sethos", "mika":"Mika", "lynette":"Lynette", "layla":"Layla", "lan-yan":"Lan Yan",
     "kuki-shinobu":"Kuki Shinobu", "gaming":"Gaming", "iansan":"Iansan", "ifa":"Ifa", "illuga":"Illuga",
     "jahoda":"Jahoda", "kachina":"Kachina", "kaveh":"Kaveh", "kirara":"Kirara", "kujou-sara":"Kujou Sara",
@@ -43,12 +43,20 @@ characters4 = {
 }
 
 characters5 = {
-    "sangonomiya-kokomi":"Kokomi", "ganyu":"Ganyu", "tartaglia":"Tartaglia", "mona":"Mona", "raiden-shogun":"Raiden Shogun",
-    "qiqi":"Qiqi", "yae-miko":"Yae Miko", "yoimiya":"Yoimiya", "zhongli":"Zhongli", "venti":"Venti",
-    "shenhe":"Shenhe", "albedo":"Albedo", "kamisato-ayaka":"Ayaka", "diluc":"Diluc", "eula":"Eula", "hu-tao":"Hu Tao",
-    "keqing-lanternrite":"Keqing", "keqing":"Keqing", "klee":"Klee", "jean":"Jean", "kaedehara-kazuha":"Kazuha", "xiao":"Xiao"
+    "albedo":"Albedo", "alhaitham":"Alhaitham", "arataki-itto":"AratakiItto", "arlecchino":"Arlecchino", 
+    "baizhu":"Baizhu", "chasca":"Chasca", "chiori":"Chiori", "citlali":"Citlali", "clorinde":"Clorinde", 
+    "columbina":"Columbina", "cyno":"Cyno", "dehya":"Dehya", "diluc":"Diluc", "durin":"Durin", 
+    "emilie":"Emilie", "escoffier":"Escoffier", "eula":"Eula", "flins":"Flins", "furina":"Furina", 
+    "ganyu":"Ganyu", "hu-tao":"HuTao", "ineffa":"Ineffa", "jean":"Jean", "kaedehara-kazuha":"Kaedehara Kazuha", 
+    "kamisato-ayaka":"Kamisato Ayaka", "kamisato-ayato":"Kamisato Ayato", "keqing":"Keqing", "kinich":"Kinich", 
+    "klee":"Klee", "lauma":"Lauma", "lyney":"Lyney", "mavuika":"Mavuika", "mona":"Mona", "mualani":"Mualani", 
+    "nahida":"Nahida", "navia":"Navia", "nefer":"Nefer", "neuvillette":"Neuvillette", "nilou":"Nilou", 
+    "qiqi":"Qiqi", "raiden-shogun":"Raiden Shogun", "sangonomiya-kokomi":"Sangonomiya Kokomi", "shenhe":"Shenhe", 
+    "sigewinne":"Sigewinne", "skirk":"Skirk", "tartaglia":"Tartaglia", "tighnari":"Tighnari", "varesa":"Varesa", 
+    "varka":"Varka", "venti":"Venti", "wanderer":"Wanderer", "wriothesley":"Wriothesley", "xianyun":"Xianyun", 
+    "xiao":"Xiao", "xilonen":"Xilonen", "yae-miko":"YaeMiko", "yelan":"Yelan", "yoimiya":"Yoimiya", 
+    "yumemizuki-mizuki":"Yumemizuki Mizuki", "zhongli":"Zhongli", "zibai":"Zibai"
 }
-
 def combine_images(cha_path, bg_path):
     try:
         # Download images
@@ -259,7 +267,45 @@ async def show_stats(message: types.Message):
         f"Current 5★ Pity: {pity}\n"
         f"Current 4★ Pity: {count4}" # Changed label to be more accurate
     )
+@dp.message(Command("broadcast"))
+async def broadcast_input(message: types.Message, bot: Bot):
+    # --- ADMIN CHECK ---
+    ADMIN_ID = 1675903713
+    
+    if message.from_user.id != ADMIN_ID:
+        # 1. Alert the Non-Admin User
+        await message.answer("🚫 **Access Denied**\nThis command is restricted to the Bot Owner only.")
+        
+        # 2. (Optional) Alert yourself that someone tried to use it
+        await bot.send_message(
+            chat_id=ADMIN_ID, 
+            text=f"⚠️ **Security Alert**\nUser @{message.from_user.username} (ID: `{message.from_user.id}`) tried to use /broadcast."
+        )
+        return
 
+    # --- INPUT CHECK ---
+    broadcast_text = message.text.replace("/broadcast", "").strip()
+
+    if not broadcast_text:
+        await message.answer("❓ **Usage:** `/broadcast Your message here`")
+        return
+
+    # --- BROADCAST LOGIC ---
+    status_msg = await message.answer("⏳ **Processing Broadcast...**")
+    
+    cursor = users_col.find({})
+    success, fail = 0, 0
+
+    async for user in cursor:
+        try:
+            await bot.send_message(chat_id=user["user_id"], text=broadcast_text, parse_mode="Markdown")
+            success += 1
+            await asyncio.sleep(0.05) 
+        except Exception:
+            fail += 1
+
+    await status_msg.edit_text(f"✅ **Broadcast Sent**\n🟢 Success: {success}\n🔴 Failed: {fail}")
+    
 # ---------------- Main ----------------
 async def main():
    # Test connection on startup
@@ -275,6 +321,7 @@ async def main():
 
 if __name__ == "__main__":
     asyncio.run(main())
+
 
 
 
