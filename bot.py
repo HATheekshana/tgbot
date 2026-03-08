@@ -478,7 +478,60 @@ async def send_single(message: types.Message):
         pass # In case user deleted it manually
         
     await message.answer_photo(photo=photo_file, caption=name)
+@dp.message(Command("give"))
+async def give_wishes(message: types.Message):
+    # 1. Admin Security Check
+    ADMIN_ID = 1675903713 
+    if message.from_user.id != ADMIN_ID:
+        await message.answer("🚫 **Access Denied.**")
+        return
 
+    args = message.text.split()
+    target_id = None
+    amount = 0
+
+    # 2. Logic for Reply vs. Manual ID
+    if message.reply_to_message:
+        # If replying to a message, get that user's ID
+        target_id = str(message.reply_to_message.from_user.id)
+        if len(args) < 2:
+            await message.answer("❓ **Usage:** Reply to someone with `/give <amount>`")
+            return
+        try:
+            amount = int(args[1])
+        except ValueError:
+            await message.answer("❌ Amount must be a number!")
+            return
+    else:
+        # Manual mode: /give <user_id> <amount>
+        if len(args) < 3:
+            await message.answer("❓ **Usage:** `/give <user_id> <amount>` or reply to a message with `/give <amount>`")
+            return
+        target_id = args[1]
+        try:
+            amount = int(args[2])
+        except ValueError:
+            await message.answer("❌ Amount must be a number!")
+            return
+
+    # 3. Database Update
+    result = await users_col.update_one(
+        {"user_id": target_id},
+        {"$inc": {"wish_count": amount}}
+    )
+
+    if result.matched_count > 0:
+        await message.answer(f"✅ Granted **{amount} wishes** to user `{target_id}`.")
+        # Notify the lucky user
+        try:
+            await message.bot.send_message(
+                chat_id=target_id,
+                text=f"🎁 **Admin Bonus!**\nYou received **{amount}** wishes! Check `/stats`."
+            )
+        except:
+            pass
+    else:
+        await message.answer("❌ User not found in database.")
 @dp.message(Command("daily"))
 async def daily_wish(message: types.Message):
 
