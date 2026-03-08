@@ -10,7 +10,7 @@ import os
 import requests
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from datetime import datetime, timedelta
-from aiogram.types import BufferedInputFile, InlineKeyboardMarkup, InlineKeyboardButton
+from aiogram.types import FSInputFile,BufferedInputFile, InlineKeyboardMarkup, InlineKeyboardButton
 from aiogram import Bot, Dispatcher, types
 from aiogram.filters import Command
 from pytz import timezone
@@ -204,11 +204,53 @@ async def change_collection_page(callback: types.CallbackQuery):
 
     await callback.message.edit_text(text, reply_markup=keyboard, parse_mode="Markdown")
 
+@dp.message(Command("start"))
+async def start_cmd(message: types.Message):
+    user_id = str(message.from_user.id)
+    first_name = message.from_user.first_name
+    
+    # Check if user exists, if not, create them with 200 starting wishes
+    user = await users_col.find_one({"user_id": user_id})
+    if not user:
+        new_user = {
+            "user_id": user_id, 
+            "pity": 0, 
+            "count4": 0, 
+            "total_wishes": 0, 
+            "wish_count": 200, 
+            "collection": {},
+            "last_daily_wish": datetime.utcnow() - timedelta(days=1)
+        }
+        await users_col.insert_one(new_user)
+        welcome_text = f"🌟 **Welcome to Teyvat, {first_name}!** 🌟\n\nI've given you **200 Wishes** to start your journey!"
+    else:
+        welcome_text = f"👋 **Welcome back, {first_name}!**"
+
+    commands_list = (
+        f"{welcome_text}\n\n"
+        "**Available Commands:**\n"
+        "⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯\n"
+        "✨ `/wish` — Perform a single wish (1 pull)\n"
+        "🌠 `/wish10` — Perform a 10-pull (Guaranteed 4★)\n"
+        "📅 `/daily` — Claim your daily free wish\n"
+        "📜 `/collection` — View your characters & constellations\n"
+        "📊 `/stats` — Check your pity and wish balance\n"
+        "⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯\n"
+        "*Good luck with your pulls!*"
+    )
+
+    await message.answer(commands_list, parse_mode="Markdown")
+
 #wish10------------------------------------------------------------------------------
 
 
 @dp.message(Command("wish10"))
 async def send_image_10(message: types.Message):
+    loading_photo = FSInputFile("Loading_Screen_Startup.webp")
+    loading_msg = await message.answer_photo(
+        photo=loading_photo, 
+        caption="✨ **Invoking the Tides of Fate...**"
+    )
     user_id = str(message.from_user.id)
     
     # 1. Fetch user or create if new
@@ -320,7 +362,11 @@ async def send_image_10(message: types.Message):
     combined_img.save(output, format="PNG")
     output.seek(0)
     photo_file = BufferedInputFile(output.read(), filename="wish.png")
-
+    try:
+        await loading_msg.delete()
+    except:
+        pass # In case user deleted it manually
+        
     await message.answer_photo(
         photo=photo_file,
         caption=f"**★ Your 10-Pull Results ★**\n\n" + "\n".join(results),
@@ -328,6 +374,11 @@ async def send_image_10(message: types.Message):
     )
 @dp.message(Command("wish"))
 async def send_single(message: types.Message):
+    loading_photo = FSInputFile("Loading_Screen_Startup.webp")
+    loading_msg = await message.answer_photo(
+        photo=loading_photo, 
+        caption="✨ **Invoking the Tides of Fate...**"
+    )
     user_id = str(message.from_user.id)
     user = await users_col.find_one({"user_id": user_id})
     if not user:
@@ -420,7 +471,14 @@ async def send_single(message: types.Message):
     combined_img.save(output, format="PNG")
     output.seek(0)
     photo_file = BufferedInputFile(output.read(), filename="wish.png")
+    
+    try:
+        await loading_msg.delete()
+    except:
+        pass # In case user deleted it manually
+        
     await message.answer_photo(photo=photo_file, caption=name)
+
 @dp.message(Command("daily"))
 async def daily_wish(message: types.Message):
 
