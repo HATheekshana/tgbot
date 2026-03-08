@@ -14,7 +14,7 @@ from aiogram.filters import Command
 
 TOKEN = "8181850530:AAEuaGV4xkme3c_gMa6A8JFtHWzPZQU2W_g"
 dp = Dispatcher()
-MONGO_URL = "mongodb+srv://zerorenx_db_user:Theekshana@tgbot.yucwgp8.mongodb.net/?retryWrites=true&w=majority&appName=Tgbot"
+MONGO_URL = "mongodb+srv://zerorenx_db_user:theekshana@tgbot.yuowvp8.mongodb.net/?appName=Tgbot"
 
 cluster = AsyncIOMotorClient(MONGO_URL)
 db = cluster["genshin_bot"]
@@ -266,4 +266,5 @@ async def main():
 
 if __name__ == "__main__":
     asyncio.run(main())
+
 
