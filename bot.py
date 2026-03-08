@@ -134,7 +134,7 @@ def combine_images(cha_path, bg_path, display_name, rarity):
         try:
             # Replaced 450/350 with 90/70 for better balance
             font_name = ImageFont.truetype("ARIALBD 1.TTF", 80)  # Character Name
-            font_stars = ImageFont.truetype("ARIALBD 1.TTF", 60) # Rarity Stars
+            font_stars = ImageFont.truetype("Arial-Unicode-MS.ttf", 60) # Rarity Stars
         except:
             font_name = ImageFont.load_default()
             font_stars = ImageFont.load_default()
