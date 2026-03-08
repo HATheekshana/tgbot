@@ -122,48 +122,48 @@ async def send_image_10(message: types.Message):
     count4 = 0
     if enough_wishes == True :
         for i in range(10):
-        if gurentee == True:
-            gurentee = False
-            pity = 10 - countto5
-            star5=1
-            file_key = random.choice(list(characters5.keys()))
-            display_name = characters5[file_key]
-            results.append(f"꩜ {display_name} ★★★★★")
-            file_path = f"https://raw.githubusercontent.com/Mantan21/Genshin-Impact-Wish-Simulator/master/src/images/characters/splash-art/5star/{file_key}.webp"
-        else:
-            if i == 9 and star4 == 0 and star5 == 0:
-                count4 = 0
-                file_key = random.choice(list(characters4.keys()))
-                display_name = characters4[file_key]
-                results.append(f"꩜ {display_name} ★★★★")
-                if not file_path:
-                 file_path = f"https://raw.githubusercontent.com/Mantan21/Genshin-Impact-Wish-Simulator/master/src/images/characters/splash-art/4star/{file_key}.webp"
-                continue
-        #check 5star
-            star5check = random.randint(1, 1000)
-            if star5check < 7:
-                pity = 0
+            if gurentee == True:
+                gurentee = False
+                pity = 10 - countto5
+                star5=1
                 file_key = random.choice(list(characters5.keys()))
                 display_name = characters5[file_key]
                 results.append(f"꩜ {display_name} ★★★★★")
                 file_path = f"https://raw.githubusercontent.com/Mantan21/Genshin-Impact-Wish-Simulator/master/src/images/characters/splash-art/5star/{file_key}.webp"
-                star5 = 1
-        #check 4star
             else:
-                star4check = random.randint(1, 10)
-                if star4check == 10:
+                if i == 9 and star4 == 0 and star5 == 0:
                     count4 = 0
                     file_key = random.choice(list(characters4.keys()))
                     display_name = characters4[file_key]
                     results.append(f"꩜ {display_name} ★★★★")
-                    star4 = 1
-                    if star5 == 0:
-                        file_path = f"https://raw.githubusercontent.com/Mantan21/Genshin-Impact-Wish-Simulator/master/src/images/characters/splash-art/4star/{file_key}.webp"
+                    if not file_path:
+                    file_path = f"https://raw.githubusercontent.com/Mantan21/Genshin-Impact-Wish-Simulator/master/src/images/characters/splash-art/4star/{file_key}.webp"
+                    continue
+            #check 5star
+                star5check = random.randint(1, 1000)
+                if star5check < 7:
+                    pity = 0
+                    file_key = random.choice(list(characters5.keys()))
+                    display_name = characters5[file_key]
+                    results.append(f"꩜ {display_name} ★★★★★")
+                    file_path = f"https://raw.githubusercontent.com/Mantan21/Genshin-Impact-Wish-Simulator/master/src/images/characters/splash-art/5star/{file_key}.webp"
+                    star5 = 1
+            #check 4star
                 else:
-                    count4+=1
-                    file_key = random.choice(list(weapons3.keys()))
-                    display_name = weapons3[file_key]
-                    results.append(f"꩜ {display_name} ★★★")
+                    star4check = random.randint(1, 10)
+                    if star4check == 10:
+                        count4 = 0
+                        file_key = random.choice(list(characters4.keys()))
+                        display_name = characters4[file_key]
+                        results.append(f"꩜ {display_name} ★★★★")
+                        star4 = 1
+                        if star5 == 0:
+                            file_path = f"https://raw.githubusercontent.com/Mantan21/Genshin-Impact-Wish-Simulator/master/src/images/characters/splash-art/4star/{file_key}.webp"
+                    else:
+                        count4+=1
+                        file_key = random.choice(list(weapons3.keys()))
+                        display_name = weapons3[file_key]
+                        results.append(f"꩜ {display_name} ★★★")
 
         total_wishes += 10
         wish_count -= 10
