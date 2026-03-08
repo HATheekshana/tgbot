@@ -269,14 +269,16 @@ async def show_stats(message: types.Message):
     # 1. Fetch user or create if new
     user = await users_col.find_one({"user_id": user_id})
     if not user:
-        user = {"user_id": user_id, "pity": 0, "count4": 0, "total_wishes": 0}
+        user = {"user_id": user_id, "pity": 0, "count4": 0, "total_wishes": 0 , "wish_count":200}
         await users_col.insert_one(user)
+    wish_count = user["wish_count"]
     twishes = user["total_wishes"]
     pity = user["pity"]
     count4 = user["count4"]
     await message.reply(
         f"Stats for {message.from_user.first_name}:\n"
         f"Total wishes: {twishes}\n"
+        f"Wishes: {wish_count}\n"
         f"Current 5★ Pity: {pity}\n"
         f"Current 4★ Pity: {count4}" # Changed label to be more accurate
     )
