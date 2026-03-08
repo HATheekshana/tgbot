@@ -483,7 +483,7 @@ async def give_wishes(message: types.Message):
     # 1. Admin Security Check
     ADMIN_ID = 1675903713 
     if message.from_user.id != ADMIN_ID:
-        await message.answer("🚫 **Access Denied.**")
+        await message.answer("🚫 **Access Denied.**",parse_mode="Markdown")
         return
 
     args = message.text.split()
@@ -495,7 +495,7 @@ async def give_wishes(message: types.Message):
         # If replying to a message, get that user's ID
         target_id = str(message.reply_to_message.from_user.id)
         if len(args) < 2:
-            await message.answer("❓ **Usage:** Reply to someone with `/give <amount>`")
+            await message.answer("❓ **Usage:** Reply to someone with `/give <amount>`",parse_mode="Markdown")
             return
         try:
             amount = int(args[1])
@@ -505,7 +505,7 @@ async def give_wishes(message: types.Message):
     else:
         # Manual mode: /give <user_id> <amount>
         if len(args) < 3:
-            await message.answer("❓ **Usage:** `/give <user_id> <amount>` or reply to a message with `/give <amount>`")
+            await message.answer("❓ **Usage:** `/give <user_id> <amount>` or reply to a message with `/give <amount>`",parse_mode="Markdown")
             return
         target_id = args[1]
         try:
@@ -521,12 +521,12 @@ async def give_wishes(message: types.Message):
     )
 
     if result.matched_count > 0:
-        await message.answer(f"✅ Granted **{amount} wishes** to user `{target_id}`.")
+        await message.answer(f"✅ Granted **{amount} wishes** to user `{target_id}`.",parse_mode="Markdown")
         # Notify the lucky user
         try:
             await message.bot.send_message(
                 chat_id=target_id,
-                text=f"🎁 **Admin Bonus!**\nYou received **{amount}** wishes! Check `/stats`."
+                text=f"🎁 **Admin Bonus!**\nYou received **{amount}** wishes! Check  `/stats`",parse_mode="Markdown"
             )
         except:
             pass
@@ -655,12 +655,12 @@ async def broadcast_input(message: types.Message, bot: Bot):
     
     if message.from_user.id != ADMIN_ID:
         # 1. Alert the Non-Admin User
-        await message.answer("🚫 **Access Denied**\nThis command is restricted to the Bot Owner only.")
+        await message.answer("🚫 **Access Denied**\nThis command is restricted to the Bot Owner only.",parse_mode="Markdown")
         
         # 2. (Optional) Alert yourself that someone tried to use it
         await bot.send_message(
             chat_id=ADMIN_ID, 
-            text=f"⚠️ **Security Alert**\nUser @{message.from_user.username} (ID: `{message.from_user.id}`) tried to use /broadcast."
+            text=f"⚠️ **Security Alert**\nUser @{message.from_user.username} (ID: `{message.from_user.id}`) tried to use /broadcast.",parse_mode="Markdown"
         )
         return
 
@@ -668,11 +668,11 @@ async def broadcast_input(message: types.Message, bot: Bot):
     broadcast_text = message.text.replace("/broadcast", "").strip().replace("\\n", "\n")
 
     if not broadcast_text:
-        await message.answer("❓ **Usage:** `/broadcast Your message here`")
+        await message.answer("❓ **Usage:** `/broadcast Your message here`",parse_mode="Markdown")
         return
 
     # --- BROADCAST LOGIC ---
-    status_msg = await message.answer("⏳ **Processing Broadcast...**")
+    status_msg = await message.answer("⏳ **Processing Broadcast...**",parse_mode="Markdown")
     
     cursor = users_col.find({})
     success, fail = 0, 0
@@ -685,7 +685,7 @@ async def broadcast_input(message: types.Message, bot: Bot):
         except Exception:
             fail += 1
 
-    await status_msg.edit_text(f"✅ **Broadcast Sent**\n🟢 Success: {success}\n🔴 Failed: {fail}")
+    await status_msg.edit_text(f"✅ **Broadcast Sent**\n🟢 Success: {success}\n🔴 Failed: {fail}" ,parse_mode="Markdown")
     
 # ---------------- Main ----------------
 async def main():
