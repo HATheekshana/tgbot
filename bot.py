@@ -219,7 +219,7 @@ async def send_single(message: types.Message):
                     file_key = random.choice(list(weapons3.keys()))
                     display_name = weapons3[file_key]
                     name = f"꩜ {display_name} ★★★"
-                    file_path = f"https://tenor.com/search/cute-puppy-gifs"                 
+                    file_path = f"https://raw.githubusercontent.com/FrenzyYum/GenshinWishingBot/master/assets/images/{file_key}.webp"                 
         
     pity+=1
     total_wishes+=1
@@ -275,6 +275,7 @@ async def main():
 
 if __name__ == "__main__":
     asyncio.run(main())
+
 
 
 
