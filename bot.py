@@ -1,4 +1,5 @@
 import asyncio
+from motor.motor_asyncio import AsyncIOMotorClient
 import logging
 import sys
 import random
@@ -12,24 +13,13 @@ from aiogram import Bot, Dispatcher, types
 from aiogram.filters import Command
 
 TOKEN = "8181850530:AAEuaGV4xkme3c_gMa6A8JFtHWzPZQU2W_g"
-DATA_FILE = "user_stats.json"
 dp = Dispatcher()
+MONGO_URL = "mongodb+srv://zerorenx_db_user:Theekshana@tgbot.yucwgp8.mongodb.net/?retryWrites=true&w=majority&appName=Tgbot"
 
-# ---------------- Data Handling ----------------
-def load_data():
-    if os.path.exists(DATA_FILE):
-        with open(DATA_FILE, "r") as f:
-            try:
-                return json.load(f)
-            except json.JSONDecodeError:
-                return {}  # empty or corrupted file fallback
-    return {}
+cluster = AsyncIOMotorClient(MONGO_URL)
+db = cluster["genshin_bot"]
+users_col = db["user_stats"]
 
-def save_data(data):
-    with open(DATA_FILE, "w") as f:
-        json.dump(data, f, indent=4)
-
-user_stats = load_data()
 
 # ---------------- Dictionaries ----------------
 weapons3 = {
@@ -85,27 +75,33 @@ def combine_images(cha_path, bg_path):
         # Fallback: Create a simple purple background if the links fail
         return Image.new("RGBA", (1280, 720), (45, 20, 84, 255))
 
+
+#wish10------------------------------------------------------------------------------
+
+
 @dp.message(Command("wish10"))
 async def send_image_10(message: types.Message):
     user_id = str(message.from_user.id)
+    
+    # 1. Fetch user or create if new
+    user = await users_col.find_one({"user_id": user_id})
+    if not user:
+        user = {"user_id": user_id, "pity": 0, "count4": 0, "total_wishes": 0}
+        await users_col.insert_one(user)
 
-    if user_id not in user_stats:
-        user_stats[user_id] = {
-            "total_wishes": 0, 
-            "pity": 0, 
-            "count4": 0
-        }
+    pity = user["pity"]
+    count4 = user["count4"]
+    twishes = user["total_wishes"]
+    
     gurentee = False
     countto5 = 0
-    countto5 = 90 - user_stats[user_id]["pity"]
+    countto5 = 90 - pity
     if countto5 <=10 :
         gurentee = True
     else:
-        user_stats[user_id]["pity"]+=10
-        save_data(user_stats)
+        pity+=10
 
-    user_stats[user_id]["total_wishes"] += 10
-    save_data(user_stats)
+    twishes += 10
 
     results = []
     star4 = 0
@@ -116,8 +112,7 @@ async def send_image_10(message: types.Message):
     for i in range(10):
         if gurentee == True:
             gurentee = False
-            user_stats[user_id]["pity"] = 10 - countto5
-            save_data(user_stats)
+            pity = 10 - countto5
             star5=1
             file_key = random.choice(list(characters5.keys()))
             display_name = characters5[file_key]
@@ -135,8 +130,7 @@ async def send_image_10(message: types.Message):
 
             star5check = random.randint(1, 1000)
             if star5check < 7:
-                user_stats[user_id]["pity"] = 0
-                save_data(user_stats)
+                pity = 0
                 file_key = random.choice(list(characters5.keys()))
                 display_name = characters5[file_key]
                 results.append(f"꩜ {display_name} ★★★★★")
@@ -180,24 +174,25 @@ async def send_image_10(message: types.Message):
 @dp.message(Command("wish"))
 async def send_single(message: types.Message):
     user_id = str(message.from_user.id)
-    name = ""
-    if user_id not in user_stats:
-        user_stats[user_id] = {
-            "total_wishes": 0, 
-            "pity": 0, 
-            "count4": 0
-        }
-    if user_stats[user_id]["pity"] == 89 :
-            user_stats[user_id]["pity"]=-1
-            save_data(user_stats)
+    
+    # 1. Fetch user or create if new
+    user = await users_col.find_one({"user_id": user_id})
+    if not user:
+        user = {"user_id": user_id, "pity": 0, "count4": 0, "total_wishes": 0}
+        await users_col.insert_one(user)
+
+    pity = user["pity"]
+    count4 = user["count4"]
+    
+    if pity == 89 :
+            await users_col.update_one({"user_id": user_id}, {"$set": {"pity": 0}})
             file_key = random.choice(list(characters5.keys()))
             display_name = characters5[file_key]
             name = f"꩜ {display_name} ★★★★★"
             file_path = f"https://raw.githubusercontent.com/Mantan21/Genshin-Impact-Wish-Simulator/master/src/images/characters/splash-art/5star/{file_key}.webp"
     else:
-        if user_stats[user_id]["count4"] == 9:
-            user_stats[user_id]["count4"]=0
-            save_data(user_stats)
+        if count4 == 9:
+            await users_col.update_one({"user_id": user_id}, {"$set": {"count4": 0}})
             file_key = random.choice(list(characters4.keys()))
             display_name = characters4[file_key]
             name = f"꩜ {display_name} ★★★★"
@@ -206,44 +201,55 @@ async def send_single(message: types.Message):
         else:
                 star4check = random.randint(1, 10)
                 if star4check == 10:
-                    user_stats[user_id]["count4"]=0
-                    save_data(user_stats)
+                    await users_col.update_one({"user_id": user_id}, {"$set": {"count4": 0}})
                     file_key = random.choice(list(characters4.keys()))
                     display_name = characters4[file_key]
                     name = f"꩜ {display_name} ★★★★"
                     file_path = f"https://raw.githubusercontent.com/Mantan21/Genshin-Impact-Wish-Simulator/master/src/images/characters/splash-art/4star/{file_key}.webp"
                     
                 else:
-                    user_stats[user_id]["count4"]+=1
-                    save_data(user_stats)
+                    await users_col.update_one({"user_id": user_id}, {"$inc": {"count4": 1}})
                     file_key = random.choice(list(weapons3.keys()))
                     display_name = weapons3[file_key]
                     name = f"꩜ {display_name} ★★★"
                     file_path = f"https://tenor.com/search/cute-puppy-gifs"                 
         
-    user_stats[user_id]["pity"]+=1
-    user_stats[user_id]["total_wishes"] += 1
+    await users_col.update_one({"user_id": user_id}, {"$inc": {"count4": 1}})
+    await users_col.update_one({"user_id": user_id}, {"$inc": {"total_wishes": 1}})
     save_data(user_stats)
     await message.answer_photo(photo=file_path, caption=name)
 
 @dp.message(Command("stats"))
 async def show_stats(message: types.Message):
-    user_id = str(message.from_user.id)
+user_id = str(message.from_user.id)
     
-    stats = user_stats.get(user_id, {"total_wishes": 0, "pity": 0, "count4": 0})
-    
+    # 1. Fetch user or create if new
+    user = await users_col.find_one({"user_id": user_id})
+    if not user:
+        user = {"user_id": user_id, "pity": 0, "count4": 0, "total_wishes": 0}
+        await users_col.insert_one(user)
+    twishes = user["total_wishes"]
+    pity = user["pity"]
+    count4 = user["count4"]
     await message.reply(
         f"Stats for {message.from_user.first_name}:\n"
-        f"Total wishes: {stats['total_wishes']}\n"
-        f"Current 5★ Pity: {stats['pity']}\n"
-        f"Current 4★ Pity: {stats['count4']}" # Changed label to be more accurate
+        f"Total wishes: {twishes}\n"
+        f"Current 5★ Pity: {pity}\n"
+        f"Current 4★ Pity: {count4}" # Changed label to be more accurate
     )
 
 # ---------------- Main ----------------
 async def main():
+   # Test connection on startup
+    try:
+        await cluster.admin.command('ping')
+        print("✅ Successfully connected to MongoDB!")
+    except Exception as e:
+        print(f"❌ MongoDB Connection Error: {e}")
+        return # Stop if we can't connect
+
     bot = Bot(token=TOKEN)
     await dp.start_polling(bot)
 
 if __name__ == "__main__":
-    logging.basicConfig(level=logging.INFO, stream=sys.stdout)
     asyncio.run(main())
