@@ -532,40 +532,127 @@ async def give_wishes(message: types.Message):
             pass
     else:
         await message.answer("❌ User not found in database.")
+
+@dp.message(Command("gamble"))
+async def gamble_wishes(message: types.Message):
+    user_id = str(message.from_user.id)
+    args = message.text.split()
+
+    # 1. Validation: Did they provide a number?
+    if len(args) < 2:
+        await message.answer("🎲 **Double or Nothing**\nUsage: `/gamble <amount>`\nExample: `/gamble 50`")
+        return
+
+    try:
+        bet = int(args[1])
+    except ValueError:
+        await message.answer("❌ Please enter a whole number for your bet.")
+        return
+
+    if bet <= 0:
+        await message.answer("❌ You can't bet 0 or negative wishes!")
+        return
+
+    # 2. Database Check: Do they have the money?
+    user = await users_col.find_one({"user_id": user_id})
+    if not user:
+        await message.answer("❌ Please run `/start` first!")
+        return
+        
+    current_balance = user.get("wish_count", 0)
+    if current_balance < bet:
+        await message.answer(f"❌ You only have **{current_balance}** wishes. You can't bet **{bet}**!")
+        return
+
+    # 3. The 50/50 Roll
+    # random.random() returns a float between 0.0 and 1.0
+    win = random.random() >= 0.5 
+
+    if win:
+        # Win: They keep their bet and get an equal amount added
+        new_balance = current_balance + bet
+        result_msg = f"🏆 **WINNER!**\nYou doubled your bet! Received **+{bet}** wishes."
+        emoji = "💰"
+    else:
+        # Lose: The bet amount is subtracted
+        new_balance = current_balance - bet
+        result_msg = f"💀 **BUSTED!**\nYou lost your **{bet}** wishes. Better luck next time!"
+        emoji = "📉"
+
+    # 4. Update Database
+    await users_col.update_one(
+        {"user_id": user_id},
+        {"$set": {"wish_count": new_balance}}
+    )
+
+    # 5. Final Response
+    await message.answer(
+        f"🎲 **Gamble Result**\n⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯\n"
+        f"{emoji} {result_msg}\n\n"
+        f"👛 New Balance: **{new_balance}** Wishes",
+        parse_mode="Markdown"
+    )
 @dp.message(Command("daily"))
 async def daily_wish(message: types.Message):
-
     user_id = str(message.from_user.id)
     user = await users_col.find_one({"user_id": user_id})
-
+    
     now = datetime.utcnow()
-
+    
+    # 1. Check for 24-hour cooldown
     if user and "last_daily_wish" in user:
         last = user["last_daily_wish"]
-
         if now - last < timedelta(days=1):
             remaining = timedelta(days=1) - (now - last)
             hours = remaining.seconds // 3600
             minutes = (remaining.seconds % 3600) // 60
-
-            await message.answer(
-                f"⏳ You already claimed your daily wish.\n"
-                f"Come back in **{hours}h {minutes}m**."
-            )
+            await message.answer(f"⏳ Already claimed! Come back in **{hours}h {minutes}m**.")
             return
 
-    # Give 1 wish
+        # 2. Update Streak Logic
+        # If last claim was more than 48 hours ago, reset to 1. Otherwise, +1.
+        if now - last > timedelta(days=2):
+            streak = 1
+        else:
+            streak = user.get("daily_streak", 0) + 1
+    else:
+        streak = 1
+
+    # 3. Calculate Rewards & Milestone Messages
+    wishes_to_add = 1
+    bonus_msg = ""
+
+    if streak == 7:
+        wishes_to_add += 10
+        bonus_msg = "\n🔥 **WEEKLY BONUS:** +10 Wishes!"
+    elif streak == 14:
+        wishes_to_add += 20
+        bonus_msg = "\n🔥 **FORTNIGHT BONUS:** +20 Wishes!"
+    elif streak == 21:
+        wishes_to_add += 30
+        bonus_msg = "\n🔥 **ULTIMATE BONUS:** +30 Wishes!\n*(Streak reset to 0)*"
+        # Reset streak after hitting the max milestone
+        streak = 0 
+
+    # 4. Update Database
     await users_col.update_one(
         {"user_id": user_id},
         {
-            "$set": {"last_daily_wish": now},
-            "$inc": {"wish_count": 1}
+            "$set": {"last_daily_wish": now, "daily_streak": streak},
+            "$inc": {"wish_count": wishes_to_add}
         },
         upsert=True
     )
 
-    await message.answer("🎁 You received **1 free wish!** Come back tomorrow.")
-
+    # 5. Send Response with Current Streak
+    await message.answer(
+        f"🎁 **Daily Reward Claimed!**\n"
+        f"⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯\n"
+        f"🎫 Added: **+{wishes_to_add} Wish(es)**\n"
+        f"🔥 Current Streak: **{streak} Days**"
+        f"{bonus_msg}",
+        parse_mode="Markdown"
+    )
 async def add_daily_wish(bot: Bot):
     try:
         # 1. Update all users in one go
