@@ -57,6 +57,12 @@ characters5 = {
     "xiao":"Xiao", "xilonen":"Xilonen", "yae-miko":"YaeMiko", "yelan":"Yelan", "yoimiya":"Yoimiya", 
     "yumemizuki-mizuki":"Yumemizuki Mizuki", "zhongli":"Zhongli", "zibai":"Zibai"
 }
+async def add_to_collection(user_id, char_name):
+    # $inc increases the count by 1. If character doesn't exist, it creates it.
+    await users_col.update_one(
+        {"user_id": user_id},
+        {"$inc": {f"collection.{char_name}": 1}}
+    )
 def combine_images(cha_path, bg_path):
     try:
         # Download images
@@ -94,187 +100,234 @@ async def send_image_10(message: types.Message):
     # 1. Fetch user or create if new
     user = await users_col.find_one({"user_id": user_id})
     if not user:
-        user = {"user_id": user_id, "pity": 0, "count4": 0, "total_wishes": 0 , "wish_count":200}
+        user = {"user_id": user_id, "pity": 0, "count4": 0, "total_wishes": 0 , "wish_count": 200, "collection": {}}
         await users_col.insert_one(user)
 
-    pity = user["pity"]
-    count4 = user["count4"]
-    total_wishes = user["total_wishes"]
-    wish_count = user["wish_count"]
-    gurentee = False
-    countto5 = 0
-    countto5 = 90 - pity
-    enough_wishes = True
-    if wish_count >= 10 :
-        enough_wishes = True
-    else:
-        enough_wishes = False
+    pity = user.get("pity", 0)
+    count4 = user.get("count4", 0)
+    total_wishes = user.get("total_wishes", 0)
+    wish_count = user.get("wish_count", 0)
+    current_collection = user.get("collection", {})
 
-    if countto5 <=10 :
-        gurentee = True
-    else:
-        pity+=10
+    if wish_count < 10:
+        await message.answer(f"❌ You don't have enough wishes. You only have {wish_count}.")
+        return
 
     results = []
-    star4 = 0
-    star5 = 0
+    pulled_chars = []
     file_path = ""
-    count4 = 0
-    if enough_wishes == True :
-        for i in range(10):
-            if gurentee == True:
-                gurentee = False
-                pity = 10 - countto5
-                star5=1
-                file_key = random.choice(list(characters5.keys()))
-                display_name = characters5[file_key]
-                results.append(f"꩜ {display_name} ★★★★★")
-                file_path = f"https://raw.githubusercontent.com/Mantan21/Genshin-Impact-Wish-Simulator/master/src/images/characters/splash-art/5star/{file_key}.webp"
+
+    for i in range(10):
+        pity += 1
+        is_5star = False
+        is_4star = False
+
+        # --- 1. Determine Rarity ---
+        if pity >= 89:
+            pity = 0
+            is_5star = True
+        else:
+            if random.randint(1, 1000) <= 6: # 0.6% base rate
+                pity = 0
+                is_5star = True
+            elif count4 >= 9 or (i == 9 and not any([is_5star, is_4star])):
+                count4 = 0
+                is_4star = True
+            elif random.randint(1, 10) == 1: # ~10% 4-star rate
+                count4 = 0
+                is_4star = True
             else:
-                if i == 9 and star4 == 0 and star5 == 0:
-                    count4 = 0
-                    file_key = random.choice(list(characters4.keys()))
-                    display_name = characters4[file_key]
-                    results.append(f"꩜ {display_name} ★★★★")
-                    if not file_path:
-                     file_path = f"https://raw.githubusercontent.com/Mantan21/Genshin-Impact-Wish-Simulator/master/src/images/characters/splash-art/4star/{file_key}.webp"
-                    continue
-            #check 5star
-                star5check = random.randint(1, 1000)
-                if star5check < 7:
-                    pity = 0
-                    file_key = random.choice(list(characters5.keys()))
-                    display_name = characters5[file_key]
-                    results.append(f"꩜ {display_name} ★★★★★")
-                    file_path = f"https://raw.githubusercontent.com/Mantan21/Genshin-Impact-Wish-Simulator/master/src/images/characters/splash-art/5star/{file_key}.webp"
-                    star5 = 1
-            #check 4star
-                else:
-                    star4check = random.randint(1, 10)
-                    if star4check == 10:
-                        count4 = 0
-                        file_key = random.choice(list(characters4.keys()))
-                        display_name = characters4[file_key]
-                        results.append(f"꩜ {display_name} ★★★★")
-                        star4 = 1
-                        if star5 == 0:
-                            file_path = f"https://raw.githubusercontent.com/Mantan21/Genshin-Impact-Wish-Simulator/master/src/images/characters/splash-art/4star/{file_key}.webp"
-                    else:
-                        count4+=1
-                        file_key = random.choice(list(weapons3.keys()))
-                        display_name = weapons3[file_key]
-                        results.append(f"꩜ {display_name} ★★★")
+                count4 += 1
 
-        total_wishes += 10
-        wish_count -= 10
+        # --- 2. Process the Pull ---
+        if is_5star:
+            file_key = random.choice(list(characters5.keys()))
+            display_name = characters5[file_key]
+            file_path = f"https://raw.githubusercontent.com/Mantan21/Genshin-Impact-Wish-Simulator/master/src/images/characters/splash-art/5star/{file_key}.webp"
+            
+            total_so_far = current_collection.get(display_name, 0) + pulled_chars.count(display_name)
+            if total_so_far >= 7:
+                wish_count += 2
+                results.append(f"꩜ {display_name} (C6+ -> +2 Wish) ★★★★★")
+            else:
+                pulled_chars.append(display_name)
+                results.append(f"꩜ {display_name} ★★★★★")
 
-    #returning data to DB
-    await users_col.update_one({"user_id": user_id}, {"$set": {"wish_count": wish_count}})
-    await users_col.update_one({"user_id": user_id}, {"$set": {"pity": pity}})
-    await users_col.update_one({"user_id": user_id}, {"$set": {"count4": count4}})
-    await users_col.update_one({"user_id": user_id}, {"$set": {"total_wishes": total_wishes}})
+        elif is_4star:
+            file_key = random.choice(list(characters4.keys()))
+            display_name = characters4[file_key]
+            if not file_path: # Set image to first 4/5 star found
+                file_path = f"https://raw.githubusercontent.com/Mantan21/Genshin-Impact-Wish-Simulator/master/src/images/characters/splash-art/4star/{file_key}.webp"
+            
+            total_so_far = current_collection.get(display_name, 0) + pulled_chars.count(display_name)
+            if total_so_far >= 7:
+                wish_count += 1
+                results.append(f"꩜ {display_name} (C6+ -> +1 Wish) ★★★★")
+            else:
+                pulled_chars.append(display_name)
+                results.append(f"꩜ {display_name} ★★★★")
+        else:
+            file_key = random.choice(list(weapons3.keys()))
+            display_name = weapons3[file_key]
+            results.append(f"꩜ {display_name} ★★★")
 
+    # --- 3. Update Database (One Hit) ---
+    total_wishes += 10
+    wish_count -= 10
     
+    update_query = {
+        "$set": {
+            "wish_count": wish_count,
+            "pity": pity,
+            "count4": count4,
+            "total_wishes": total_wishes
+        }
+    }
+    
+    if pulled_chars:
+        inc_data = {}
+        for char in pulled_chars:
+            inc_data[f"collection.{char}"] = inc_data.get(f"collection.{char}", 0) + 1
+        update_query["$inc"] = inc_data
+
+    await users_col.update_one({"user_id": user_id}, update_query)
+
+    # --- 4. Image Handling ---
     if not file_path:
-        file_path = "https://www.freeiconspng.com/images/error" 
+        file_path = "https://raw.githubusercontent.com/FrenzyYum/GenshinWishingBot/master/assets/images/debate.webp" 
 
     bg_path = "https://raw.githubusercontent.com/Mantan21/Genshin-Impact-Wish-Simulator/master/src/images/background/splash-background.webp"
     combined_img = combine_images(file_path, bg_path)
     output = io.BytesIO()
     combined_img.save(output, format="PNG")
     output.seek(0)
-
-    # Create the file object correctly
     photo_file = BufferedInputFile(output.read(), filename="wish.png")
 
-    if enough_wishes:
-            await message.answer_photo(
-                photo=photo_file,
-                caption=f"**Your 10-Pull Results:**\n\n" + "\n".join(results),
-                parse_mode="Markdown"
-            )
-    else:
-            await message.answer(f"❌ You don't have enough wishes. You only have {wish_count}.")
-
+    await message.answer_photo(
+        photo=photo_file,
+        caption=f"**Your 10-Pull Results:**\n\n" + "\n".join(results),
+        parse_mode="Markdown"
+    )
 @dp.message(Command("wish"))
 async def send_single(message: types.Message):
     user_id = str(message.from_user.id)
-    
-    # 1. Fetch user or create if new
     user = await users_col.find_one({"user_id": user_id})
     if not user:
-        user = {"user_id": user_id, "pity": 0, "count4": 0, "total_wishes": 0 , "wish_count":200}
+        user = {"user_id": user_id, "pity": 0, "count4": 0, "total_wishes": 0, "wish_count": 200, "collection": {}}
         await users_col.insert_one(user)
 
-    pity = user["pity"]
-    count4 = user["count4"]
-    total_wishes = user["total_wishes"]
-    wish_count = user["wish_count"]
+    pity = user.get("pity", 0)
+    count4 = user.get("count4", 0)
+    total_wishes = user.get("total_wishes", 0)
+    wish_count = user.get("wish_count", 0)
+    current_collection = user.get("collection", {})
+    
+    if wish_count < 1:
+        await message.answer(f"❌ You don't have enough wishes. You only have {wish_count}.")
+        return
 
-    if wish_count >= 1 :
-        enough_wishes = True
+    pulled_chars = []
+    is_5star = False
+    is_4star = False
+
+    # Logic for Rarity
+    if pity >= 89:
+        is_5star = True
     else:
-        enough_wishes = False
-    
-    if enough_wishes :
-
-        if pity == 89 :
-                pity = -1
-                file_key = random.choice(list(characters5.keys()))
-                display_name = characters5[file_key]
-                name = f"꩜ {display_name} ★★★★★"
-                file_path = f"https://raw.githubusercontent.com/Mantan21/Genshin-Impact-Wish-Simulator/master/src/images/characters/splash-art/5star/{file_key}.webp"
+        star4check = random.randint(1, 10)
+        if count4 >= 9 or star4check == 10:
+            is_4star = True
         else:
-            if count4 == 9:
-                count4 = 0
-                file_key = random.choice(list(characters4.keys()))
-                display_name = characters4[file_key]
-                name = f"꩜ {display_name} ★★★★"
-                file_path = f"https://raw.githubusercontent.com/Mantan21/Genshin-Impact-Wish-Simulator/master/src/images/characters/splash-art/4star/{file_key}.webp"
-            
-            else:
-                    star4check = random.randint(1, 10)
-                    if star4check == 10:
-                        count4 = 0
-                        file_key = random.choice(list(characters4.keys()))
-                        display_name = characters4[file_key]
-                        name = f"꩜ {display_name} ★★★★"
-                        file_path = f"https://raw.githubusercontent.com/Mantan21/Genshin-Impact-Wish-Simulator/master/src/images/characters/splash-art/4star/{file_key}.webp"
-                        
-                    else:
-                        count4 += 1
-                        file_key = random.choice(list(weapons3.keys()))
-                        display_name = weapons3[file_key]
-                        name = f"꩜ {display_name} ★★★"
-                        file_path = f"https://raw.githubusercontent.com/FrenzyYum/GenshinWishingBot/master/assets/images/{file_key}.webp"                 
-            
-        pity+=1
-        total_wishes+=1
-        wish_count-=1
+            # Check for random 5-star luck (0.6% chance)
+            if random.randint(1, 1000) < 7:
+                is_5star = True
 
-    #returning data to DB
+    # Process result
+    if is_5star:
+        pity = 0
+        count4 += 1
+        file_key = random.choice(list(characters5.keys()))
+        display_name = characters5[file_key]
+        file_path = f"https://raw.githubusercontent.com/Mantan21/Genshin-Impact-Wish-Simulator/master/src/images/characters/splash-art/5star/{file_key}.webp"
+        
+        if current_collection.get(display_name, 0) >= 7:
+            wish_count += 2
+            name = f"꩜ {display_name} (Duplicate C6 -> +2 Wish) ★★★★★"
+        else:
+            pulled_chars.append(display_name)
+            name = f"꩜ {display_name} ★★★★★"
+
+    elif is_4star:
+        count4 = 0
+        pity += 1
+        file_key = random.choice(list(characters4.keys()))
+        display_name = characters4[file_key]
+        file_path = f"https://raw.githubusercontent.com/Mantan21/Genshin-Impact-Wish-Simulator/master/src/images/characters/splash-art/4star/{file_key}.webp"
+        
+        if current_collection.get(display_name, 0) >= 7:
+            wish_count += 1
+            name = f"꩜ {display_name} (Duplicate C6 -> +1 Wish) ★★★★"
+        else:
+            pulled_chars.append(display_name)
+            name = f"꩜ {display_name} ★★★★"
+    else:
+        pity += 1
+        count4 += 1
+        file_key = random.choice(list(weapons3.keys()))
+        display_name = weapons3[file_key]
+        name = f"꩜ {display_name} ★★★"
+        file_path = f"https://raw.githubusercontent.com/FrenzyYum/GenshinWishingBot/master/assets/images/{file_key}.webp"
+
+    wish_count -= 1
+    total_wishes += 1
+
+    # Database Update
+    if pulled_chars:
+        await users_col.update_one({"user_id": user_id}, {"$inc": {f"collection.{pulled_chars[0]}": 1}})
     
-    await users_col.update_one({"user_id": user_id}, {"$set": {"wish_count": wish_count}})
-    await users_col.update_one({"user_id": user_id}, {"$set": {"pity": pity}})
-    await users_col.update_one({"user_id": user_id}, {"$set": {"count4": count4}})
-    await users_col.update_one({"user_id": user_id}, {"$set": {"total_wishes": total_wishes}})
+    await users_col.update_one({"user_id": user_id}, {"$set": {
+        "wish_count": wish_count, "pity": pity, "count4": count4, "total_wishes": total_wishes
+    }})
 
+    # Image sending logic (Keep your existing PIL code here...)
     bg_path = "https://raw.githubusercontent.com/Mantan21/Genshin-Impact-Wish-Simulator/master/src/images/background/splash-background.webp"
     combined_img = combine_images(file_path, bg_path)
     output = io.BytesIO()
     combined_img.save(output, format="PNG")
     output.seek(0)
-
-    # Create the file object correctly
     photo_file = BufferedInputFile(output.read(), filename="wish.png")
-    
-    if enough_wishes:
-            await message.answer_photo(
-                photo=photo_file, caption=name
-            )
-    else:
-            await message.answer(f"❌ You don't have enough wishes. You only have {wish_count}.")
+    await message.answer_photo(photo=photo_file, caption=name)
 
+@dp.message(Command("collection"))
+async def show_collection(message: types.Message):
+    user_id = str(message.from_user.id)
+    user = await users_col.find_one({"user_id": user_id})
+
+    if not user or "collection" not in user or not user["collection"]:
+        await message.answer("📭 **Your collection is empty!**\nUse /wish or /wish10 to find characters.")
+        return
+
+    # Create the display text
+    chars = user["collection"]
+    
+    # Sort: Most copies owned at the top
+    sorted_chars = sorted(chars.items(), key=lambda x: x[1], reverse=True)
+
+    response = f"📜 **{message.from_user.first_name}'s Characters**\n"
+    response += "⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯\n"
+
+    for name, count in sorted_chars:
+        # Calculate constellation: 1 copy = C0, 7 copies = C6
+        num = count - 1
+        
+        if num > 6:
+            constellation = "C6+" 
+        else:
+            constellation = f"C{num}"
+            
+        response += f"• **{name}** — {constellation}\n"
+
+    await message.answer(response, parse_mode="Markdown")
 
 @dp.message(Command("stats"))
 async def show_stats(message: types.Message):
