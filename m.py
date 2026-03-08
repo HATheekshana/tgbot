@@ -8,12 +8,16 @@ async def migrate():
     db = cluster["genshin_bot"]
     users_col = db["user_stats"]
 
-    # Update users who DO NOT have the wish_count field
-    result = await users_col.update_many( 
-        {"$set": {"total_wishes":0}}
+    # {} = Filter (matches all users)
+    # "$set" = The action to perform
+    result = await users_col.update_many(
+        {}, 
+        {"$set": {"total_wishes": 0}}
     )
 
-    print(f"✅ Migration complete! Updated {result.modified_count} old users.")
+    print(f"✅ Reset Complete!")
+    print(f"📊 Total Users Matched: {result.matched_count}")
+    print(f"🔄 Total Wishes Reset to 0: {result.modified_count}")
 
 if __name__ == "__main__":
     asyncio.run(migrate())
