@@ -8,9 +8,11 @@ import io
 from PIL import Image
 import os
 import requests
-from aiogram.types import BufferedInputFile
+from aiogram.types import BufferedInputFile, InlineKeyboardMarkup, InlineKeyboardButton
 from aiogram import Bot, Dispatcher, types
 from aiogram.filters import Command
+
+ITEMS_PER_PAGE = 10
 
 TOKEN = "8181850530:AAEuaGV4xkme3c_gMa6A8JFtHWzPZQU2W_g"
 dp = Dispatcher()
@@ -57,6 +59,40 @@ characters5 = {
     "xiao":"Xiao", "xilonen":"Xilonen", "yae-miko":"YaeMiko", "yelan":"Yelan", "yoimiya":"Yoimiya", 
     "yumemizuki-mizuki":"Yumemizuki Mizuki", "zhongli":"Zhongli", "zibai":"Zibai"
 }
+
+def build_collection_page(sorted_chars, page, first_name):
+
+    start = page * ITEMS_PER_PAGE
+    end = start + ITEMS_PER_PAGE
+    items = sorted_chars[start:end]
+
+    response = f"📜 **{first_name}'s Characters**\n"
+    response += "⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯\n\n"
+
+    for name, count in items:
+
+        num = count - 1
+        constellation = "C6+" if num > 6 else f"C{num}"
+
+        response += f"• **{name}** — {constellation}\n"
+
+    total_pages = (len(sorted_chars) - 1) // ITEMS_PER_PAGE
+
+    buttons = []
+
+    if page > 0:
+        buttons.append(
+            InlineKeyboardButton(text="⬅ Back", callback_data=f"col_{page-1}")
+        )
+
+    if page < total_pages:
+        buttons.append(
+            InlineKeyboardButton(text="Next ➡", callback_data=f"col_{page+1}")
+        )
+
+    keyboard = InlineKeyboardMarkup(inline_keyboard=[buttons]) if buttons else None
+
+    return response, keyboard
 async def add_to_collection(user_id, char_name):
     # $inc increases the count by 1. If character doesn't exist, it creates it.
     await users_col.update_one(
@@ -88,7 +124,26 @@ def combine_images(cha_path, bg_path):
         logging.error(f"Image Error: {e}")
         # Fallback: Create a simple purple background if the links fail
         return Image.new("RGBA", (1280, 720), (45, 20, 84, 255))
+        
+@dp.callback_query(lambda c: c.data.startswith("col_"))
+async def change_collection_page(callback: types.CallbackQuery):
 
+    page = int(callback.data.split("_")[1])
+
+    user_id = str(callback.from_user.id)
+    user = await users_col.find_one({"user_id": user_id})
+
+    chars = user["collection"]
+
+    sorted_chars = sorted(chars.items(), key=lambda x: x[1], reverse=True)
+
+    text, keyboard = build_collection_page(
+        sorted_chars,
+        page,
+        callback.from_user.first_name
+    )
+
+    await callback.message.edit_text(text, reply_markup=keyboard, parse_mode="Markdown")
 
 #wish10------------------------------------------------------------------------------
 
@@ -300,6 +355,7 @@ async def send_single(message: types.Message):
 
 @dp.message(Command("collection"))
 async def show_collection(message: types.Message):
+
     user_id = str(message.from_user.id)
     user = await users_col.find_one({"user_id": user_id})
 
@@ -307,27 +363,17 @@ async def show_collection(message: types.Message):
         await message.answer("📭 **Your collection is empty!**\nUse /wish or /wish10 to find characters.")
         return
 
-    # Create the display text
     chars = user["collection"]
-    
-    # Sort: Most copies owned at the top
+
     sorted_chars = sorted(chars.items(), key=lambda x: x[1], reverse=True)
 
-    response = f"📜 **{message.from_user.first_name}'s Characters**\n"
-    response += "⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯\n"
+    text, keyboard = build_collection_page(
+        sorted_chars,
+        0,
+        message.from_user.first_name
+    )
 
-    for name, count in sorted_chars:
-        # Calculate constellation: 1 copy = C0, 7 copies = C6
-        num = count - 1
-        
-        if num > 6:
-            constellation = "C6+" 
-        else:
-            constellation = f"C{num}"
-            
-        response += f"• **{name}** — {constellation}\n"
-
-    await message.answer(response, parse_mode="Markdown")
+    await message.answer(text, reply_markup=keyboard, parse_mode="Markdown")
 
 @dp.message(Command("stats"))
 async def show_stats(message: types.Message):
