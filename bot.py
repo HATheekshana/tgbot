@@ -59,6 +59,14 @@ characters5 = {
     "xiao":"Xiao", "xilonen":"Xilonen", "yae-miko":"YaeMiko", "yelan":"Yelan", "yoimiya":"Yoimiya", 
     "yumemizuki-mizuki":"Yumemizuki Mizuki", "zhongli":"Zhongli", "zibai":"Zibai"
 }
+def get_rarity(name):
+
+    if name in characters5.values():
+        return 5
+    elif name in characters4.values():
+        return 4
+    else:
+        return 3
 
 def build_collection_page(sorted_chars, page, first_name):
 
@@ -74,7 +82,10 @@ def build_collection_page(sorted_chars, page, first_name):
         num = count - 1
         constellation = "C6+" if num > 6 else f"C{num}"
 
-        response += f"• **{name}** — {constellation}\n"
+        rarity = get_rarity(name)
+        stars = "★" * rarity
+
+        response += f"{stars} **{name}** — {constellation}\n"
 
     total_pages = (len(sorted_chars) - 1) // ITEMS_PER_PAGE
 
@@ -124,7 +135,7 @@ def combine_images(cha_path, bg_path):
         logging.error(f"Image Error: {e}")
         # Fallback: Create a simple purple background if the links fail
         return Image.new("RGBA", (1280, 720), (45, 20, 84, 255))
-        
+
 @dp.callback_query(lambda c: c.data.startswith("col_"))
 async def change_collection_page(callback: types.CallbackQuery):
 
@@ -135,7 +146,11 @@ async def change_collection_page(callback: types.CallbackQuery):
 
     chars = user["collection"]
 
-    sorted_chars = sorted(chars.items(), key=lambda x: x[1], reverse=True)
+    sorted_chars = sorted(
+    chars.items(),
+    key=lambda x: (get_rarity(x[0]), x[1]),
+    reverse=True
+     )
 
     text, keyboard = build_collection_page(
         sorted_chars,
