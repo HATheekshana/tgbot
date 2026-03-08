@@ -193,7 +193,7 @@ async def send_image_10(message: types.Message):
                 caption=f"**Your 10-Pull Results:**\n\n" + "\n".join(results),
                 parse_mode="Markdown"
             )
-        else:
+    else:
             await message.answer(f"❌ You don't have enough wishes. You only have {wish_count}.")
 
 @dp.message(Command("wish"))
