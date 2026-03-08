@@ -5,7 +5,7 @@ import sys
 import random
 import json
 import io
-from PIL import Image
+from PIL import Image, ImageDraw, ImageFont
 import os
 import requests
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
@@ -113,7 +113,6 @@ async def add_to_collection(user_id, char_name):
         {"user_id": user_id},
         {"$inc": {f"collection.{char_name}": 1}}
     )
-from PIL import Image, ImageDraw, ImageFont
 
 def combine_images(cha_path, bg_path, display_name, rarity):
     try:
@@ -133,17 +132,18 @@ def combine_images(cha_path, bg_path, display_name, rarity):
         # 3. Setup Drawing
         draw = ImageDraw.Draw(background)
         try:
-            # You might need to provide a path to a font file on your server
-            font_name = ImageFont.truetype("ARIALBD 1.TTF", 90)
-            font_stars = ImageFont.truetype("ARIALBD 1.TTF", 70)
+            # Replaced 450/350 with 90/70 for better balance
+            font_name = ImageFont.truetype("arial.ttf", 80)  # Character Name
+            font_stars = ImageFont.truetype("arial.ttf", 60) # Rarity Stars
         except:
             font_name = ImageFont.load_default()
             font_stars = ImageFont.load_default()
 
-        # Create the rarity string (e.g., ★★★★★)
-        stars_text = "⭐" * rarity
-        margin = 40
-        line_spacing = 10
+        # Use the solid star character for better color control
+        stars_text = "★" * rarity 
+        margin_right = 50
+        margin_bottom = 40
+        line_spacing = 5
 
         # Calculate Name Dimensions
         bbox_n = draw.textbbox((0, 0), display_name, font=font_name)
@@ -154,22 +154,24 @@ def combine_images(cha_path, bg_path, display_name, rarity):
         sw, sh = bbox_s[2] - bbox_s[0], bbox_s[3] - bbox_s[1]
 
         # Positions (Right Aligned)
-        # Name is on top
-        nx = background.width - nw - margin
-        ny = background.height - nh - sh - margin - line_spacing
+        # Name on top, Stars directly below it
+        nx = background.width - nw - margin_right
+        ny = background.height - nh - sh - margin_bottom - line_spacing
 
-        # Stars are below the name
-        sx = background.width - sw - margin
-        sy = background.height - sh - margin
+        sx = background.width - sw - margin_right
+        sy = background.height - sh - margin_bottom
 
-        # 4. Draw Shadow and Text
-        # Name
+        # --- NEW: ADD SUBTLE SHADOWS ---
+        # Draw soft shadow first (offset by 2 for a "little" shadow)
+        # (0, 0, 0) is black, 150 is the alpha (transparency)
         draw.text((nx+2, ny+2), display_name, font=font_name, fill=(0, 0, 0, 150))
-        draw.text((nx, ny), display_name, font=font_name, fill=(255, 255, 255))
-        
-        # Stars (Yellow/Gold color for stars: 255, 204, 0)
         draw.text((sx+2, sy+2), stars_text, font=font_stars, fill=(0, 0, 0, 150))
-        draw.text((sx, sy), stars_text, font=font_stars, fill=(255, 204, 0))
+
+        # --- Draw Main Text ---
+        # Draw the main White text
+        draw.text((nx, ny), display_name, font=font_name, fill=(255, 255, 255))
+        # Stars (Yellow/Gold color for stars: 255, 204, 0)
+        draw.text((sx, sy), stars_text, font=font_stars, fill=(255, 204, 0)) 
 
         return background
 
