@@ -284,7 +284,7 @@ async def broadcast_input(message: types.Message, bot: Bot):
         return
 
     # --- INPUT CHECK ---
-    broadcast_text = message.text.replace("/broadcast", "").strip()
+    broadcast_text = message.text.replace("/broadcast", "").strip().replace("\\n", "\n")
 
     if not broadcast_text:
         await message.answer("❓ **Usage:** `/broadcast Your message here`")
@@ -321,6 +321,7 @@ async def main():
 
 if __name__ == "__main__":
     asyncio.run(main())
+
 
 
 
