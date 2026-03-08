@@ -44,7 +44,7 @@ characters4 = {
 
 characters5 = {
     "sangonomiya-kokomi":"Kokomi", "ganyu":"Ganyu", "tartaglia":"Tartaglia", "mona":"Mona", "raiden-shogun":"Raiden Shogun",
-    "qiqi":"Qiqi", "yaemiko":"Yae Miko", "yoimiya":"Yoimiya", "zhongli":"Zhongli", "venti":"Venti",
+    "qiqi":"Qiqi", "yae-miko":"Yae Miko", "yoimiya":"Yoimiya", "zhongli":"Zhongli", "venti":"Venti",
     "shenhe":"Shenhe", "albedo":"Albedo", "kamisato-ayaka":"Ayaka", "diluc":"Diluc", "eula":"Eula", "hu-tao":"Hu Tao",
     "keqing-lanternrite":"Keqing", "keqing":"Keqing", "klee":"Klee", "jean":"Jean", "kaedehara-kazuha":"Kazuha", "xiao":"Xiao"
 }
@@ -275,6 +275,7 @@ async def main():
 
 if __name__ == "__main__":
     asyncio.run(main())
+
 
 
 
