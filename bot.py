@@ -8,6 +8,7 @@ import io
 from PIL import Image
 import os
 import requests
+from datetime import datetime, timedelta
 from aiogram.types import BufferedInputFile, InlineKeyboardMarkup, InlineKeyboardButton
 from aiogram import Bot, Dispatcher, types
 from aiogram.filters import Command
@@ -367,6 +368,39 @@ async def send_single(message: types.Message):
     output.seek(0)
     photo_file = BufferedInputFile(output.read(), filename="wish.png")
     await message.answer_photo(photo=photo_file, caption=name)
+@dp.message(Command("daily"))
+async def daily_wish(message: types.Message):
+
+    user_id = str(message.from_user.id)
+    user = await users_col.find_one({"user_id": user_id})
+
+    now = datetime.utcnow()
+
+    if user and "last_daily_wish" in user:
+        last = user["last_daily_wish"]
+
+        if now - last < timedelta(days=1):
+            remaining = timedelta(days=1) - (now - last)
+            hours = remaining.seconds // 3600
+            minutes = (remaining.seconds % 3600) // 60
+
+            await message.answer(
+                f"⏳ You already claimed your daily wish.\n"
+                f"Come back in **{hours}h {minutes}m**."
+            )
+            return
+
+    # Give 1 wish
+    await users_col.update_one(
+        {"user_id": user_id},
+        {
+            "$set": {"last_daily_wish": now},
+            "$inc": {"wish_count": 1}
+        },
+        upsert=True
+    )
+
+    await message.answer("🎁 You received **1 free wish!** Come back tomorrow.")
 
 @dp.message(Command("collection"))
 async def show_collection(message: types.Message):
