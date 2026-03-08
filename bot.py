@@ -134,8 +134,8 @@ def combine_images(cha_path, bg_path, display_name, rarity):
         draw = ImageDraw.Draw(background)
         try:
             # You might need to provide a path to a font file on your server
-            font_name = ImageFont.truetype("arial.ttf", 45)
-            font_stars = ImageFont.truetype("arial.ttf", 35)
+            font_name = ImageFont.truetype("arial.ttf", 450)
+            font_stars = ImageFont.truetype("arial.ttf", 350)
         except:
             font_name = ImageFont.load_default()
             font_stars = ImageFont.load_default()
@@ -412,7 +412,6 @@ async def send_single(message: types.Message):
 
     # Image sending logic (Keep your existing PIL code here...)
     bg_path = "https://raw.githubusercontent.com/Mantan21/Genshin-Impact-Wish-Simulator/master/src/images/background/splash-background.webp"
-    combined_img = combine_images(file_path, bg_path)
     output = io.BytesIO()
     combined_img = combine_images(file_path, bg_path, splash_name, splash_rarity)
     output.seek(0)
