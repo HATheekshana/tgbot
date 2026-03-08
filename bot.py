@@ -8,6 +8,7 @@ import io
 from PIL import Image
 import os
 import requests
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from datetime import datetime, timedelta
 from aiogram.types import BufferedInputFile, InlineKeyboardMarkup, InlineKeyboardButton
 from aiogram import Bot, Dispatcher, types
@@ -402,6 +403,42 @@ async def daily_wish(message: types.Message):
 
     await message.answer("🎁 You received **1 free wish!** Come back tomorrow.")
 
+async def add_daily_wish(bot: Bot):
+    try:
+        # 1. Update all users in one go
+        result = await users_col.update_many(
+            {}, 
+            {"$inc": {"wish_count": 1}}
+        )
+        logging.info(f"Successfully added daily wish to {result.modified_count} users.")
+
+        # 2. Broadcast the news to everyone
+        broadcast_msg = (
+            "✨ **Daily Reset!** ✨\n\n"
+            "🎁 You have received **+1 Free Wish**!\n"
+            "Check your balance with `/stats` and try your luck with `/wish`!"
+        )
+
+        cursor = users_col.find({})
+        success, fail = 0, 0
+
+        async for user in cursor:
+            try:
+                await bot.send_message(
+                    chat_id=user["user_id"], 
+                    text=broadcast_msg, 
+                    parse_mode="Markdown"
+                )
+                success += 1
+                await asyncio.sleep(0.05) # Prevent Telegram flood limits
+            except Exception:
+                fail += 1
+        
+        logging.info(f"Daily Broadcast: {success} sent, {fail} failed.")
+
+    except Exception as e:
+        logging.error(f"Error in daily wish task: {e}")
+
 @dp.message(Command("collection"))
 async def show_collection(message: types.Message):
 
@@ -485,15 +522,32 @@ async def broadcast_input(message: types.Message, bot: Bot):
     
 # ---------------- Main ----------------
 async def main():
-   # Test connection on startup
+    # 1. Test MongoDB connection first
     try:
         await cluster.admin.command('ping')
         print("✅ Successfully connected to MongoDB!")
     except Exception as e:
         print(f"❌ MongoDB Connection Error: {e}")
-        return # Stop if we can't connect
+        return 
 
+    # 2. Create the Bot object FIRST
     bot = Bot(token=TOKEN)
+
+    # 3. Setup the scheduler and pass the bot object
+    scheduler = AsyncIOScheduler()
+    scheduler.add_job(
+        add_daily_wish, 
+        "cron", 
+        hour=0, 
+        minute=0, 
+        args=[bot]  # Now 'bot' exists and can be passed!
+    )
+    
+    # 4. Start everything
+    scheduler.start()
+    print("⏰ Daily wish & broadcast scheduler started!")
+
+    # 5. Start polling
     await dp.start_polling(bot)
 
 if __name__ == "__main__":
