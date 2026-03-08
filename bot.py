@@ -63,10 +63,11 @@ characters5 = {
     "yumemizuki-mizuki":"Yumemizuki Mizuki", "zhongli":"Zhongli", "zibai":"Zibai"
 }
 def get_rarity(name):
-
-    if name in characters5.values():
+    # Ensure name is stripped of extra spaces for matching
+    clean_name = name.strip()
+    if clean_name in characters5.values():
         return 5
-    elif name in characters4.values():
+    elif clean_name in characters4.values():
         return 4
     else:
         return 3
@@ -501,8 +502,12 @@ async def show_collection(message: types.Message):
         return
 
     chars = user["collection"]
-
-    sorted_chars = sorted(chars.items(), key=lambda x: x[1], reverse=True)
+    # Sort by rarity first, then by the number of duplicates
+    sorted_chars = sorted(
+        chars.items(),
+        key=lambda x: (get_rarity(x[0]), x[1]),
+        reverse=True
+)
 
     text, keyboard = build_collection_page(
         sorted_chars,
