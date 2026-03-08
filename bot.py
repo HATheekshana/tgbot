@@ -91,7 +91,7 @@ async def send_image_10(message: types.Message):
 
     pity = user["pity"]
     count4 = user["count4"]
-    twishes = user["total_wishes"]
+    total_wishes = user["total_wishes"]
     
     gurentee = False
     countto5 = 0
@@ -100,8 +100,6 @@ async def send_image_10(message: types.Message):
         gurentee = True
     else:
         pity+=10
-
-    twishes += 10
 
     results = []
     star4 = 0
@@ -127,7 +125,7 @@ async def send_image_10(message: types.Message):
                 if not file_path:
                  file_path = f"https://raw.githubusercontent.com/Mantan21/Genshin-Impact-Wish-Simulator/master/src/images/characters/splash-art/4star/{file_key}.webp"
                 continue
-
+        #check 5star
             star5check = random.randint(1, 1000)
             if star5check < 7:
                 pity = 0
@@ -136,6 +134,7 @@ async def send_image_10(message: types.Message):
                 results.append(f"꩜ {display_name} ★★★★★")
                 file_path = f"https://raw.githubusercontent.com/Mantan21/Genshin-Impact-Wish-Simulator/master/src/images/characters/splash-art/5star/{file_key}.webp"
                 star5 = 1
+        #check 4star
             else:
                 star4check = random.randint(1, 10)
                 if star4check == 10:
@@ -151,8 +150,15 @@ async def send_image_10(message: types.Message):
                     file_key = random.choice(list(weapons3.keys()))
                     display_name = weapons3[file_key]
                     results.append(f"꩜ {display_name} ★★★")
-    user_stats[user_id]["count4"]=count4
-    save_data(user_stats)
+
+    total_wishes += 10
+    #returning data to DB
+    
+    await users_col.update_one({"user_id": user_id}, {"$set": {"pity": pity}})
+    await users_col.update_one({"user_id": user_id}, {"$set": {"count4": count4}})
+    await users_col.update_one({"user_id": user_id}, {"$set": {"total_wishes": total_wishes}})
+
+    
     if not file_path:
         file_path = "https://www.freeiconspng.com/images/error" 
 
@@ -183,16 +189,17 @@ async def send_single(message: types.Message):
 
     pity = user["pity"]
     count4 = user["count4"]
+    total_wishes = user["total_wishes"]
     
     if pity == 89 :
-            await users_col.update_one({"user_id": user_id}, {"$set": {"pity": 0}})
+            pity = -1
             file_key = random.choice(list(characters5.keys()))
             display_name = characters5[file_key]
             name = f"꩜ {display_name} ★★★★★"
             file_path = f"https://raw.githubusercontent.com/Mantan21/Genshin-Impact-Wish-Simulator/master/src/images/characters/splash-art/5star/{file_key}.webp"
     else:
         if count4 == 9:
-            await users_col.update_one({"user_id": user_id}, {"$set": {"count4": 0}})
+            count4 = 0
             file_key = random.choice(list(characters4.keys()))
             display_name = characters4[file_key]
             name = f"꩜ {display_name} ★★★★"
@@ -201,27 +208,33 @@ async def send_single(message: types.Message):
         else:
                 star4check = random.randint(1, 10)
                 if star4check == 10:
-                    await users_col.update_one({"user_id": user_id}, {"$set": {"count4": 0}})
+                    count4 = 0
                     file_key = random.choice(list(characters4.keys()))
                     display_name = characters4[file_key]
                     name = f"꩜ {display_name} ★★★★"
                     file_path = f"https://raw.githubusercontent.com/Mantan21/Genshin-Impact-Wish-Simulator/master/src/images/characters/splash-art/4star/{file_key}.webp"
                     
                 else:
-                    await users_col.update_one({"user_id": user_id}, {"$inc": {"count4": 1}})
+                    count4 += 1
                     file_key = random.choice(list(weapons3.keys()))
                     display_name = weapons3[file_key]
                     name = f"꩜ {display_name} ★★★"
                     file_path = f"https://tenor.com/search/cute-puppy-gifs"                 
         
-    await users_col.update_one({"user_id": user_id}, {"$inc": {"count4": 1}})
-    await users_col.update_one({"user_id": user_id}, {"$inc": {"total_wishes": 1}})
-    save_data(user_stats)
+    pity+=1
+    total_wishes+=1
+
+    #returning data to DB
+    
+    await users_col.update_one({"user_id": user_id}, {"$set": {"pity": pity}})
+    await users_col.update_one({"user_id": user_id}, {"$set": {"count4": count4}})
+    await users_col.update_one({"user_id": user_id}, {"$set": {"total_wishes": total_wishes}})
+    
     await message.answer_photo(photo=file_path, caption=name)
 
 @dp.message(Command("stats"))
 async def show_stats(message: types.Message):
-user_id = str(message.from_user.id)
+    user_id = str(message.from_user.id)
     
     # 1. Fetch user or create if new
     user = await users_col.find_one({"user_id": user_id})
@@ -253,3 +266,4 @@ async def main():
 
 if __name__ == "__main__":
     asyncio.run(main())
+
