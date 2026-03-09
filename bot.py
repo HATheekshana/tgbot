@@ -320,12 +320,12 @@ async def send_image_10(message: types.Message):
                 file_key = CURRENT_RATE_UP_KEY
                 display_name = CURRENT_RATE_UP_NAME
                 new_guaranteed_status = False
-                result_msg = f"🌟 RATE-UP WIN! 🌟\n"
+                result_msg = f"(RATE-UP WIN!)"
             else: 
                 file_key = random.choice(list(characters5.keys()))
                 display_name = characters5[file_key]
                 new_guaranteed_status = True
-                result_msg = f"☁️ 50/50 Lost... (Next one is Guaranteed!)\n"
+                result_msg = f"(50/50 Lost...)"
 
             splash_name = display_name
             splash_rarity = 5    
@@ -398,7 +398,7 @@ async def send_image_10(message: types.Message):
         
     await message.answer_photo(
         photo=photo_file,
-        caption= result_msg + f"★ Your 10-Pull Results ★\n\n" + "\n".join(results),
+        caption=f"★ Your 10-Pull Results ★"+result_msg+"\n\n"+"\n".join(results),
         parse_mode="Markdown"
     )
 @dp.message(Command("wish"))
@@ -453,12 +453,12 @@ async def send_single(message: types.Message):
                 file_key = CURRENT_RATE_UP_KEY
                 display_name = CURRENT_RATE_UP_NAME
                 new_guaranteed_status = False
-                result_msg = f"🌟 RATE-UP WIN! 🌟\n"
+                result_msg = f"(RATE-UP WIN!)"
         else: 
                 file_key = random.choice(list(characters5.keys()))
                 display_name = characters5[file_key]
                 new_guaranteed_status = True
-                result_msg = f"☁️ 50/50 Lost... (Next one is Guaranteed!)\n"
+                result_msg = f"(50/50 Lost...)"
 
         splash_name = display_name
         splash_rarity = 5
