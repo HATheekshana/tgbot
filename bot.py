@@ -88,7 +88,7 @@ def build_collection_page(sorted_chars, page, first_name):
     end = start + ITEMS_PER_PAGE
     items = sorted_chars[start:end]
 
-    response = f"📜 **{first_name}'s Characters**\n"
+    response = f"📜 {first_name}'s Characters\n"
     response += "⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯\n\n"
 
     for name, count in items:
@@ -99,7 +99,7 @@ def build_collection_page(sorted_chars, page, first_name):
         rarity = get_rarity(name)
         stars = "★" * rarity
 
-        response += f"{stars} **{name}** — {constellation}\n"
+        response += f"{stars} {name} — {constellation}\n"
 
     total_pages = (len(sorted_chars) - 1) // ITEMS_PER_PAGE
 
@@ -232,13 +232,13 @@ async def start_cmd(message: types.Message):
             "last_daily_wish": datetime.utcnow() - timedelta(days=1)
         }
         await users_col.insert_one(new_user)
-        welcome_text = f"🌟 **Welcome to Teyvat, {first_name}!** 🌟\n\nI've given you **200 Wishes** to start your journey!"
+        welcome_text = f"🌟 Welcome to Teyvat, {first_name}! 🌟\n\nI've given you 200 Wishes to start your journey!"
     else:
-        welcome_text = f"👋 **Welcome back, {first_name}!**"
+        welcome_text = f"👋 Welcome back, {first_name}!"
 
     commands_list = (
         f"{welcome_text}\n\n"
-        "**Available Commands:**\n"
+        "Available Commands:\n"
         "⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯\n"
         "✨ `/wish` — Perform a single wish (1 pull)\n"
         "🌠 `/wish10` — Perform a 10-pull (Guaranteed 4★)\n"
@@ -259,7 +259,7 @@ async def send_image_10(message: types.Message):
     loading_photo = FSInputFile("Loading_Screen_Startup.webp")
     loading_msg = await message.answer_photo(
         photo=loading_photo, 
-        caption="✨ **Invoking the Tides of Fate...**"
+        caption="✨ Invoking the Tides of Fate..."
     )
     user_id = str(message.from_user.id)
     
@@ -322,7 +322,7 @@ async def send_image_10(message: types.Message):
                 file_key = random.choice(list(characters5.keys()))
                 display_name = characters5[file_key]
                 new_guaranteed_status = True
-                result_msg = f"☁️ **50/50 Lost...** (Next one is Guaranteed!)\n"
+                result_msg = f"☁️ 50/50 Lost... (Next one is Guaranteed!)\n"
 
             splash_name = display_name
             splash_rarity = 5    
@@ -395,7 +395,7 @@ async def send_image_10(message: types.Message):
         
     await message.answer_photo(
         photo=photo_file,
-        caption= result_msg + f"**★ Your 10-Pull Results ★**\n\n" + "\n".join(results),
+        caption= result_msg + f"★ Your 10-Pull Results ★\n\n" + "\n".join(results),
         parse_mode="Markdown"
     )
 @dp.message(Command("wish"))
@@ -403,7 +403,7 @@ async def send_single(message: types.Message):
     loading_photo = FSInputFile("Loading_Screen_Startup.webp")
     loading_msg = await message.answer_photo(
         photo=loading_photo, 
-        caption="✨ **Invoking the Tides of Fate...**"
+        caption="✨ Invoking the Tides of Fate..."
     )
     user_id = str(message.from_user.id)
     user = await users_col.find_one({"user_id": user_id})
@@ -455,7 +455,7 @@ async def send_single(message: types.Message):
                 file_key = random.choice(list(characters5.keys()))
                 display_name = characters5[file_key]
                 new_guaranteed_status = True
-                result_msg = f"☁️ **50/50 Lost...** (Next one is Guaranteed!)\n"
+                result_msg = f"☁️ 50/50 Lost... (Next one is Guaranteed!)\n"
 
         splash_name = display_name
         splash_rarity = 5
@@ -522,7 +522,7 @@ async def send_single(message: types.Message):
 async def give_wishes(message: types.Message):
     # 1. Admin Security Check
     if message.from_user.id != ADMIN_ID:
-        await message.answer("🚫 **Access Denied.**",parse_mode="Markdown")
+        await message.answer("🚫 Access Denied.",parse_mode="Markdown")
         return
 
     args = message.text.split()
@@ -534,7 +534,7 @@ async def give_wishes(message: types.Message):
         # If replying to a message, get that user's ID
         target_id = str(message.reply_to_message.from_user.id)
         if len(args) < 2:
-            await message.answer("❓ **Usage:** Reply to someone with `/give <amount>`",parse_mode="Markdown")
+            await message.answer("❓ Usage: Reply to someone with `/give <amount>`",parse_mode="Markdown")
             return
         try:
             amount = int(args[1])
@@ -544,7 +544,7 @@ async def give_wishes(message: types.Message):
     else:
         # Manual mode: /give <user_id> <amount>
         if len(args) < 3:
-            await message.answer("❓ **Usage:** `/give <user_id> <amount>` or reply to a message with `/give <amount>`",parse_mode="Markdown")
+            await message.answer("❓ Usage: `/give <user_id> <amount>` or reply to a message with `/give <amount>`",parse_mode="Markdown")
             return
         target_id = args[1]
         try:
@@ -560,12 +560,12 @@ async def give_wishes(message: types.Message):
     )
 
     if result.matched_count > 0:
-        await message.answer(f"✅ Granted **{amount} wishes** to user `{target_id}`.",parse_mode="Markdown")
+        await message.answer(f"✅ Granted {amount} wishes to user `{target_id}`.",parse_mode="Markdown")
         # Notify the lucky user
         try:
             await message.bot.send_message(
                 chat_id=target_id,
-                text=f"🎁 **Admin Bonus!**\nYou received **{amount}** wishes! Check  `/stats`",parse_mode="Markdown"
+                text=f"🎁 Admin Bonus!\nYou received {amount} wishes! Check  `/stats`",parse_mode="Markdown"
             )
         except:
             pass
@@ -579,7 +579,7 @@ async def gamble_wishes(message: types.Message):
 
     # 1. Validation: Did they provide a number?
     if len(args) < 2:
-        await message.answer("🎲 **Double or Nothing**\nUsage: `/gamble <amount>`\nExample: `/gamble 50`")
+        await message.answer("🎲 Double or Nothing\nUsage: `/gamble <amount>`\nExample: `/gamble 50`")
         return
 
     try:
@@ -600,7 +600,7 @@ async def gamble_wishes(message: types.Message):
         
     current_balance = user.get("wish_count", 0)
     if current_balance < bet:
-        await message.answer(f"❌ You only have **{current_balance}** wishes. You can't bet **{bet}**!")
+        await message.answer(f"❌ You only have {current_balance} wishes. You can't bet {bet}!")
         return
 
     # 3. The 50/50 Roll
@@ -610,12 +610,12 @@ async def gamble_wishes(message: types.Message):
     if win:
         # Win: They keep their bet and get an equal amount added
         new_balance = current_balance + bet
-        result_msg = f"🏆 **WINNER!**\nYou doubled your bet! Received **+{bet}** wishes."
+        result_msg = f"🏆 WINNER!\nYou doubled your bet! Received +{bet} wishes."
         emoji = "💰"
     else:
         # Lose: The bet amount is subtracted
         new_balance = current_balance - bet
-        result_msg = f"💀 **BUSTED!**\nYou lost your **{bet}** wishes. Better luck next time!"
+        result_msg = f"💀 BUSTED!\nYou lost your {bet} wishes. Better luck next time!"
         emoji = "📉"
 
     # 4. Update Database
@@ -626,9 +626,9 @@ async def gamble_wishes(message: types.Message):
 
     # 5. Final Response
     await message.answer(
-        f"🎲 **Gamble Result**\n⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯\n"
+        f"🎲 Gamble Result\n⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯\n"
         f"{emoji} {result_msg}\n\n"
-        f"👛 New Balance: **{new_balance}** Wishes",
+        f"👛 New Balance: {new_balance} Wishes",
         parse_mode="Markdown"
     )
 @dp.message(Command("daily"))
@@ -645,7 +645,7 @@ async def daily_wish(message: types.Message):
             remaining = timedelta(days=1) - (now - last)
             hours = remaining.seconds // 3600
             minutes = (remaining.seconds % 3600) // 60
-            await message.answer(f"⏳ Already claimed! Come back in **{hours}h {minutes}m**.")
+            await message.answer(f"⏳ Already claimed! Come back in {hours}h {minutes}m.")
             return
 
         # 2. Update Streak Logic
@@ -663,13 +663,13 @@ async def daily_wish(message: types.Message):
 
     if streak == 7:
         wishes_to_add += 10
-        bonus_msg = "\n🔥 **WEEKLY BONUS:** +10 Wishes!"
+        bonus_msg = "\n🔥 WEEKLY BONUS: +10 Wishes!"
     elif streak == 14:
         wishes_to_add += 20
-        bonus_msg = "\n🔥 **FORTNIGHT BONUS:** +20 Wishes!"
+        bonus_msg = "\n🔥 FORTNIGHT BONUS: +20 Wishes!"
     elif streak == 21:
         wishes_to_add += 30
-        bonus_msg = "\n🔥 **ULTIMATE BONUS:** +30 Wishes!\n*(Streak reset to 0)*"
+        bonus_msg = "\n🔥 ULTIMATE BONUS: +30 Wishes!\n*(Streak reset to 0)*"
         # Reset streak after hitting the max milestone
         streak = 0 
 
@@ -685,10 +685,10 @@ async def daily_wish(message: types.Message):
 
     # 5. Send Response with Current Streak
     await message.answer(
-        f"🎁 **Daily Reward Claimed!**\n"
+        f"🎁 Daily Reward Claimed!\n"
         f"⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯\n"
-        f"🎫 Added: **+{wishes_to_add} Wish(es)**\n"
-        f"🔥 Current Streak: **{streak} Days**"
+        f"🎫 Added: +{wishes_to_add} Wish(es)\n"
+        f"🔥 Current Streak: {streak} Days"
         f"{bonus_msg}",
         parse_mode="Markdown"
     )
@@ -703,8 +703,8 @@ async def add_daily_wish(bot: Bot):
 
         # 2. Broadcast the news to everyone
         broadcast_msg = (
-            "✨ **Daily Reset!** ✨\n\n"
-            "🎁 You have received **+1 Free Wish**!\n"
+            "✨ Daily Reset! ✨\n\n"
+            "🎁 You have received +1 Free Wish!\n"
             "Check your balance with `/stats` and try your luck with `/wish`!"
         )
 
@@ -735,7 +735,7 @@ async def show_collection(message: types.Message):
     user = await users_col.find_one({"user_id": user_id})
 
     if not user or "collection" not in user or not user["collection"]:
-        await message.answer("📭 **Your collection is empty!**\nUse /wish or /wish10 to find characters.")
+        await message.answer("📭Your collection is empty!\nUse /wish or /wish10 to find characters.")
         return
 
     chars = user["collection"]
@@ -773,7 +773,7 @@ async def show_stats(message: types.Message):
         f"Stats for {message.from_user.first_name}:\n"
         f"Total wishes: {twishes}\n"
         f"Wishes: {wish_count}\n"
-        f"🔥 Guaranteed: **{guaranteed}**\n"
+        f"🔥 Guaranteed: {guaranteed}\n"
         f"Current 5★ Pity: {pity}\n"
         f"Current 4★ Pity: {count4}" # Changed label to be more accurate
     )
@@ -783,12 +783,12 @@ async def broadcast_input(message: types.Message, bot: Bot):
     
     if message.from_user.id != ADMIN_ID:
         # 1. Alert the Non-Admin User
-        await message.answer("🚫 **Access Denied**\nThis command is restricted to the Bot Owner only.",parse_mode="Markdown")
+        await message.answer("🚫 Access Denied\nThis command is restricted to the Bot Owner only.",parse_mode="Markdown")
         
         # 2. (Optional) Alert yourself that someone tried to use it
         await bot.send_message(
             chat_id=ADMIN_ID, 
-            text=f"⚠️ **Security Alert**\nUser @{message.from_user.username} (ID: `{message.from_user.id}`) tried to use /broadcast.",parse_mode="Markdown"
+            text=f"⚠️ Security Alert\nUser @{message.from_user.username} (ID: `{message.from_user.id}`) tried to use /broadcast.",parse_mode="Markdown"
         )
         return
 
@@ -796,11 +796,11 @@ async def broadcast_input(message: types.Message, bot: Bot):
     broadcast_text = message.text.replace("/broadcast", "").strip().replace("\\n", "\n")
 
     if not broadcast_text:
-        await message.answer("❓ **Usage:** `/broadcast Your message here`",parse_mode="Markdown")
+        await message.answer("❓ Usage: `/broadcast Your message here`",parse_mode="Markdown")
         return
 
     # --- BROADCAST LOGIC ---
-    status_msg = await message.answer("⏳ **Processing Broadcast...**",parse_mode="Markdown")
+    status_msg = await message.answer("⏳ Processing Broadcast...",parse_mode="Markdown")
     
     cursor = users_col.find({})
     success, fail = 0, 0
@@ -813,7 +813,7 @@ async def broadcast_input(message: types.Message, bot: Bot):
         except Exception:
             fail += 1
 
-    await status_msg.edit_text(f"✅ **Broadcast Sent**\n🟢 Success: {success}\n🔴 Failed: {fail}" ,parse_mode="Markdown")
+    await status_msg.edit_text(f"✅ Broadcast Sent\n🟢 Success: {success}\n🔴 Failed: {fail}" ,parse_mode="Markdown")
     
 # ---------------- Main ----------------
 async def main():
