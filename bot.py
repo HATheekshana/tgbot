@@ -22,7 +22,14 @@ load_dotenv()
 
 TOKEN = os.getenv("BOT_TOKEN")
 MONGO_URL = os.getenv("MONGO_URL")
-ADMIN_ID = int(os.getenv("ADMIN_ID"))
+ADMIN_VAL = os.getenv("ADMIN_ID")
+
+if not TOKEN or not MONGO_URL or not ADMIN_VAL:
+    print("❌ ERROR: Missing environment variables in .env file!")
+    sys.exit(1)
+
+ADMIN_ID = int(ADMIN_VAL)
+CURRENT_RATE_UP = "chasca"
 
 cluster = AsyncIOMotorClient(MONGO_URL)
 db = cluster["genshin_bot"]
@@ -267,6 +274,7 @@ async def send_image_10(message: types.Message):
     total_wishes = user.get("total_wishes", 0)
     wish_count = user.get("wish_count", 0)
     current_collection = user.get("collection", {})
+    is_guaranteed = user.get("is_guaranteed", False)
 
     if wish_count < 10:
         await message.answer(f"❌ You don't have enough wishes. You only have {wish_count}.")
@@ -275,6 +283,7 @@ async def send_image_10(message: types.Message):
     results = []
     pulled_chars = []
     file_path = ""
+    result_msg = ""
 
     for i in range(10):
         pity += 1
@@ -300,10 +309,22 @@ async def send_image_10(message: types.Message):
 
         # --- 2. Process the Pull ---
         if is_5star:
-            file_key = random.choice(list(characters5.keys()))
-            display_name = characters5[file_key]
+
+            win_roll = random.randint(1, 100)
+
+            if is_guaranteed or win_roll <= 60:
+                file_key = CURRENT_RATE_UP
+                display_name = [k for k, v in characters5.keys() if v == CURRENT_RATE_UP][0]
+                new_guaranteed_status = False
+                result_msg = f"🌟 RATE-UP WIN! 🌟\n"
+            else 
+                file_key = random.choice(list(characters5.keys()))
+                display_name = characters5[file_key]
+                new_guaranteed_status = True
+                result_msg = f"☁️ **50/50 Lost...** (Next one is Guaranteed!)\n"
+
             splash_name = display_name
-            splash_rarity = 5
+            splash_rarity = 5    
             file_path = f"https://raw.githubusercontent.com/Mantan21/Genshin-Impact-Wish-Simulator/master/src/images/characters/splash-art/5star/{file_key}.webp"
             
             total_so_far = current_collection.get(display_name, 0) + pulled_chars.count(display_name)
@@ -343,7 +364,8 @@ async def send_image_10(message: types.Message):
             "wish_count": wish_count,
             "pity": pity,
             "count4": count4,
-            "total_wishes": total_wishes
+            "total_wishes": total_wishes,
+            "is_guaranteed": new_guaranteed_status
         }
     }
     
@@ -372,7 +394,7 @@ async def send_image_10(message: types.Message):
         
     await message.answer_photo(
         photo=photo_file,
-        caption=f"**★ Your 10-Pull Results ★**\n\n" + "\n".join(results),
+        caption= result_msg + f"**★ Your 10-Pull Results ★**\n\n" + "\n".join(results),
         parse_mode="Markdown"
     )
 @dp.message(Command("wish"))
@@ -401,6 +423,7 @@ async def send_single(message: types.Message):
     pulled_chars = []
     is_5star = False
     is_4star = False
+    result_msg=""
 
     # Logic for Rarity
     if pity >= 89:
@@ -418,8 +441,19 @@ async def send_single(message: types.Message):
     if is_5star:
         pity = 0
         count4 += 1
-        file_key = random.choice(list(characters5.keys()))
-        display_name = characters5[file_key]
+        win_roll = random.randint(1, 100)
+
+            if is_guaranteed or win_roll <= 60:
+                file_key = CURRENT_RATE_UP
+                display_name = [k for k, v in characters5.keys() if v == CURRENT_RATE_UP][0]
+                new_guaranteed_status = False
+                result_msg = f"🌟 RATE-UP WIN! 🌟\n"
+            else 
+                file_key = random.choice(list(characters5.keys()))
+                display_name = characters5[file_key]
+                new_guaranteed_status = True
+                result_msg = f"☁️ **50/50 Lost...** (Next one is Guaranteed!)\n"
+
         splash_name = display_name
         splash_rarity = 5
         file_path = f"https://raw.githubusercontent.com/Mantan21/Genshin-Impact-Wish-Simulator/master/src/images/characters/splash-art/5star/{file_key}.webp"
@@ -464,8 +498,8 @@ async def send_single(message: types.Message):
         await users_col.update_one({"user_id": user_id}, {"$inc": {f"collection.{pulled_chars[0]}": 1}})
     
     await users_col.update_one({"user_id": user_id}, {"$set": {
-        "wish_count": wish_count, "pity": pity, "count4": count4, "total_wishes": total_wishes
-    }})
+        "wish_count": wish_count, "pity": pity, "count4": count4, "total_wishes": total_wishes ,"is_guaranteed": new_guaranteed_status}
+    })
 
     # Image sending logic (Keep your existing PIL code here...)
     bg_path = "https://raw.githubusercontent.com/Mantan21/Genshin-Impact-Wish-Simulator/master/src/images/background/splash-background.webp"
@@ -480,7 +514,7 @@ async def send_single(message: types.Message):
     except:
         pass # In case user deleted it manually
         
-    await message.answer_photo(photo=photo_file, caption=name)
+    await message.answer_photo(photo=photo_file, caption=result_msg + name)
 @dp.message(Command("give"))
 async def give_wishes(message: types.Message):
     # 1. Admin Security Check
