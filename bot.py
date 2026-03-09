@@ -29,7 +29,6 @@ if not TOKEN or not MONGO_URL or not ADMIN_VAL:
     sys.exit(1)
 
 ADMIN_ID = int(ADMIN_VAL)
-CURRENT_RATE_UP = "chasca"
 
 cluster = AsyncIOMotorClient(MONGO_URL)
 db = cluster["genshin_bot"]
@@ -72,6 +71,10 @@ characters5 = {
     "xiao":"Xiao", "xilonen":"Xilonen", "yae-miko":"YaeMiko", "yelan":"Yelan", "yoimiya":"Yoimiya", 
     "yumemizuki-mizuki":"Yumemizuki Mizuki", "zhongli":"Zhongli", "zibai":"Zibai"
 }
+
+CURRENT_RATE_UP_KEY = "chasca" 
+CURRENT_RATE_UP_NAME = characters5.get(CURRENT_RATE_UP_KEY, "Chasca")
+
 def get_rarity(name):
     # Ensure name is stripped of extra spaces for matching
     clean_name = name.strip()
@@ -314,8 +317,8 @@ async def send_image_10(message: types.Message):
             win_roll = random.randint(1, 100)
 
             if is_guaranteed or win_roll <= 60:
-                file_key = CURRENT_RATE_UP
-                display_name = [k for k, v in characters5.keys() if v == CURRENT_RATE_UP][0]
+                file_key = CURRENT_RATE_UP_KEY
+                display_name = CURRENT_RATE_UP_NAME
                 new_guaranteed_status = False
                 result_msg = f"🌟 RATE-UP WIN! 🌟\n"
             else: 
@@ -447,8 +450,8 @@ async def send_single(message: types.Message):
         win_roll = random.randint(1, 100)
 
         if is_guaranteed or win_roll <= 60:
-                file_key = CURRENT_RATE_UP
-                display_name = [k for k, v in characters5.keys() if v == CURRENT_RATE_UP][0]
+                file_key = CURRENT_RATE_UP_KEY
+                display_name = CURRENT_RATE_UP_NAME
                 new_guaranteed_status = False
                 result_msg = f"🌟 RATE-UP WIN! 🌟\n"
         else: 
