@@ -316,7 +316,7 @@ async def send_image_10(message: types.Message):
 
             win_roll = random.randint(1, 100)
 
-            if is_guaranteed or win_roll <= 60:
+            if is_guaranteed or win_roll <= 50:
                 file_key = CURRENT_RATE_UP_KEY
                 display_name = CURRENT_RATE_UP_NAME
                 new_guaranteed_status = False
