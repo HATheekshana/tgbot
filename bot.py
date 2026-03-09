@@ -767,10 +767,13 @@ async def show_stats(message: types.Message):
     twishes = user["total_wishes"]
     pity = user["pity"]
     count4 = user["count4"]
+    guaranteed = "✅ Yes" if user.get("is_guaranteed", False) else "❌ No"
+
     await message.reply(
         f"Stats for {message.from_user.first_name}:\n"
         f"Total wishes: {twishes}\n"
         f"Wishes: {wish_count}\n"
+        f"🔥 Guaranteed: **{guaranteed}**\n"
         f"Current 5★ Pity: {pity}\n"
         f"Current 4★ Pity: {count4}" # Changed label to be more accurate
     )
