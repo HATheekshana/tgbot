@@ -443,12 +443,12 @@ async def send_single(message: types.Message):
         count4 += 1
         win_roll = random.randint(1, 100)
 
-            if is_guaranteed or win_roll <= 60:
+        if is_guaranteed or win_roll <= 60:
                 file_key = CURRENT_RATE_UP
                 display_name = [k for k, v in characters5.keys() if v == CURRENT_RATE_UP][0]
                 new_guaranteed_status = False
                 result_msg = f"🌟 RATE-UP WIN! 🌟\n"
-            else: 
+        else: 
                 file_key = random.choice(list(characters5.keys()))
                 display_name = characters5[file_key]
                 new_guaranteed_status = True
