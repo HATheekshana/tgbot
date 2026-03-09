@@ -3,3 +3,7 @@ aiogram
 Pillow
 requests
 motor
+apscheduler
+pytz
+python-dotenv
+
