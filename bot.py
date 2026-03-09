@@ -815,7 +815,38 @@ async def broadcast_smart(message: types.Message, bot: Bot):
             fail += 1
 
     await status_msg.edit_text(f"✅ **Broadcast Complete**\n🟢 Success: {success}\n🔴 Failed: {fail}")
-    
+@dp.message(Command("setrateup"))
+async def set_rate_up(message: types.Message):
+    # 1. Admin Security Check
+    if message.from_user.id != ADMIN_ID:
+        await message.answer("🚫 **Access Denied.**")
+        return
+
+    args = message.text.split()
+    if len(args) < 2:
+        await message.answer("❓ **Usage:** `/setrateup <character_key>`\nExample: `/setrateup raiden-shogun`")
+        return
+
+    new_key = args[1].lower().strip()
+
+    # 2. Validation: Check if the key exists in your 5-star dictionary
+    if new_key not in characters5:
+        await message.answer(f"❌ **Error:** `{new_key}` is not in the 5-star character list.")
+        return
+
+    # 3. Update Global Variables
+    global CURRENT_RATE_UP_KEY, CURRENT_RATE_UP_NAME
+    CURRENT_RATE_UP_KEY = new_key
+    CURRENT_RATE_UP_NAME = characters5[new_key]
+
+    # 4. Success Message
+    await message.answer(
+        f"✅ **Banner Updated!**\n"
+        f"⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯\n"
+        f"🌟 New Rate-Up: **{CURRENT_RATE_UP_NAME}**\n"
+        f"🔑 Key: `{CURRENT_RATE_UP_KEY}`\n"
+        f"🎯 Chance: 60% (or Guaranteed)"
+    )   
 # ---------------- Main ----------------
 async def main():
     # 1. Test MongoDB connection first
