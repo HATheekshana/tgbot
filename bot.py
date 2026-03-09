@@ -3,8 +3,8 @@ from motor.motor_asyncio import AsyncIOMotorClient
 import logging
 import sys
 import random
-import json
 import io
+from dotenv import load_dotenv
 from PIL import Image, ImageDraw, ImageFont
 import os
 import requests
@@ -16,10 +16,13 @@ from aiogram.filters import Command
 from pytz import timezone
 
 ITEMS_PER_PAGE = 10
-
-TOKEN = "8181850530:AAEuaGV4xkme3c_gMa6A8JFtHWzPZQU2W_g"
 dp = Dispatcher()
-MONGO_URL = "mongodb+srv://zerorenx_db_user:theekshana@tgbot.yuowvp8.mongodb.net/?appName=Tgbot"
+
+load_dotenv()
+
+TOKEN = os.getenv("BOT_TOKEN")
+MONGO_URL = os.getenv("MONGO_URL")
+ADMIN_ID = int(os.getenv("ADMIN_ID"))
 
 cluster = AsyncIOMotorClient(MONGO_URL)
 db = cluster["genshin_bot"]
@@ -481,7 +484,6 @@ async def send_single(message: types.Message):
 @dp.message(Command("give"))
 async def give_wishes(message: types.Message):
     # 1. Admin Security Check
-    ADMIN_ID = 1675903713 
     if message.from_user.id != ADMIN_ID:
         await message.answer("🚫 **Access Denied.**",parse_mode="Markdown")
         return
@@ -738,7 +740,6 @@ async def show_stats(message: types.Message):
 @dp.message(Command("broadcast"))
 async def broadcast_input(message: types.Message, bot: Bot):
     # --- ADMIN CHECK ---
-    ADMIN_ID = 1675903713
     
     if message.from_user.id != ADMIN_ID:
         # 1. Alert the Non-Admin User
