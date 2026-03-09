@@ -781,42 +781,40 @@ async def show_stats(message: types.Message):
         f"Current 4★ Pity: {count4}" # Changed label to be more accurate
     )
 @dp.message(Command("broadcast"))
-async def broadcast_input(message: types.Message, bot: Bot):
-    # --- ADMIN CHECK ---
-    
+async def broadcast_smart(message: types.Message, bot: Bot):
     if message.from_user.id != ADMIN_ID:
-        # 1. Alert the Non-Admin User
-        await message.answer("🚫 Access Denied\nThis command is restricted to the Bot Owner only.",parse_mode="Markdown")
-        
-        # 2. (Optional) Alert yourself that someone tried to use it
-        await bot.send_message(
-            chat_id=ADMIN_ID, 
-            text=f"⚠️ Security Alert\nUser @{message.from_user.username} (ID: `{message.from_user.id}`) tried to use /broadcast.",parse_mode="Markdown"
-        )
+        await message.answer("🚫 **Access Denied**")
         return
 
-    # --- INPUT CHECK ---
-    broadcast_text = message.text.replace("/broadcast", "").strip().replace("\\n", "\n")
+    # 1. Determine if there is a photo or just text
+    # If it's a photo, the text is in 'caption'. If not, it's in 'text'.
+    broadcast_text = (message.caption or message.text).replace("/broadcast", "").strip()
+    photo_id = message.photo[-1].file_id if message.photo else None
 
-    if not broadcast_text:
-        await message.answer("❓ Usage: `/broadcast Your message here`",parse_mode="Markdown")
+    if not broadcast_text and not photo_id:
+        await message.answer("❓ **Usage:** Send an image with caption `/broadcast ...` or just text.")
         return
 
-    # --- BROADCAST LOGIC ---
-    status_msg = await message.answer("⏳ Processing Broadcast...",parse_mode="Markdown")
+    status_msg = await message.answer("⏳ **Broadcasting to all travelers...**")
     
     cursor = users_col.find({})
     success, fail = 0, 0
 
     async for user in cursor:
         try:
-            await bot.send_message(chat_id=user["user_id"], text=broadcast_text, parse_mode="Markdown")
+            if photo_id:
+                # Send the photo with the caption
+                await bot.send_photo(chat_id=user["user_id"], photo=photo_id, caption=broadcast_text, parse_mode="Markdown")
+            else:
+                # Send just the text
+                await bot.send_message(chat_id=user["user_id"], text=broadcast_text, parse_mode="Markdown")
+            
             success += 1
-            await asyncio.sleep(0.05) 
+            await asyncio.sleep(0.05) # Prevent flood limits
         except Exception:
             fail += 1
 
-    await status_msg.edit_text(f"✅ Broadcast Sent\n🟢 Success: {success}\n🔴 Failed: {fail}" ,parse_mode="Markdown")
+    await status_msg.edit_text(f"✅ **Broadcast Complete**\n🟢 Success: {success}\n🔴 Failed: {fail}")
     
 # ---------------- Main ----------------
 async def main():
