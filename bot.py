@@ -275,6 +275,7 @@ async def send_image_10(message: types.Message):
     wish_count = user.get("wish_count", 0)
     current_collection = user.get("collection", {})
     is_guaranteed = user.get("is_guaranteed", False)
+    new_guaranteed_status = is_guaranteed
 
     if wish_count < 10:
         await message.answer(f"❌ You don't have enough wishes. You only have {wish_count}.")
@@ -415,6 +416,8 @@ async def send_single(message: types.Message):
     total_wishes = user.get("total_wishes", 0)
     wish_count = user.get("wish_count", 0)
     current_collection = user.get("collection", {})
+    is_guaranteed = user.get("is_guaranteed", False)
+    new_guaranteed_status = is_guaranteed
     
     if wish_count < 1:
         await message.answer(f"❌ You don't have enough wishes. You only have {wish_count}.")
