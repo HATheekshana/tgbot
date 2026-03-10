@@ -355,7 +355,7 @@ async def send_image_10(message: types.Message):
             if not file_path: # Set image to first 4/5 star found
                 splash_name = display_name
                 splash_rarity = "Rare"
-                file_path = FSInputFile("\images\rare\{file_key}.webp")
+                file_path = FSInputFile(f"images/rare/{file_key}.webp")
                 total_so_far = current_collection.get(display_name, 0) + pulled_chars.count(display_name)
             if total_so_far >= 7:
                 wish_count += 1
