@@ -280,7 +280,6 @@ async def start_cmd(message: types.Message):
 async def send_image_10(message: types.Message):
     user_id = str(message.from_user.id)
     
-    # 1. Fetch user or create if new
     user = await users_col.find_one({"user_id": user_id})
     if not user:
         user = {"user_id": user_id, "pity": 0, "count4": 0, "total_wishes": 0 , "wish_count": 200, "collection": {}}
@@ -288,8 +287,8 @@ async def send_image_10(message: types.Message):
 
     pity = user.get("pity", 0)
     count4 = user.get("count4", 0)
-    total_wishes = user.get("total_wishes", 0)
     wish_count = user.get("wish_count", 0)
+    total_wishes = user.get("total_wishes", 0)
     current_collection = user.get("collection", {})
     is_guaranteed = user.get("is_guaranteed", False)
     new_guaranteed_status = is_guaranteed
@@ -299,22 +298,28 @@ async def send_image_10(message: types.Message):
         return
     
     loading_photo = FSInputFile("Loading_Screen_Startup.webp")
-    loading_msg = await message.answer_photo(
-        photo=loading_photo, 
-        caption="✨ Invoking the Tides of Fate..."
-    )
+    loading_msg = await message.answer_photo(photo=loading_photo, caption="✨ Invoking the Tides of Fate...")
 
     results = []
     pulled_chars = []
-    file_path = ""
+    
+    # --- FIX 1: Initialize Splash Defaults ---
+    # This prevents UnboundLocalError if the logic fails
+    splash_name = "Debate Club" 
+    splash_rarity = 3
+    file_path = "https://raw.githubusercontent.com/FrenzyYum/GenshinWishingBot/master/assets/images/debate.webp"
+    best_rarity_score = 0 
     result_msg = ""
-    best_rarity_score = 0
 
     for i in range(10):
         pity += 1
         is_5star = False
         is_4star = False
         is_rare = False
+        
+        # --- FIX 2: Initialize loop-local variables ---
+        current_display_name = ""
+        current_file_key = ""
 
         # --- 1. Determine Rarity ---
         if pity >= 89:
@@ -323,13 +328,13 @@ async def send_image_10(message: types.Message):
         else:
             if random.randint(1, 1000) <= 6:
                 is_rare = True
-            elif random.randint(1, 1000) <= 6: # 0.6% base rate
+            elif random.randint(1, 1000) <= 6:
                 pity = 0
                 is_5star = True
             elif count4 >= 9 or (i == 9 and not any([is_5star, is_4star])):
                 count4 = 0
                 is_4star = True
-            elif random.randint(1, 10) == 1: # ~10% 4-star rate
+            elif random.randint(1, 10) == 1:
                 count4 = 0
                 is_4star = True
             else:
@@ -339,88 +344,86 @@ async def send_image_10(message: types.Message):
         if is_5star:
             win_roll = random.randint(1, 100)
             if is_guaranteed or win_roll <= 50:
-                file_key = CURRENT_RATE_UP_KEY
-                display_name = CURRENT_RATE_UP_NAME
+                current_file_key = CURRENT_RATE_UP_KEY
+                current_display_name = CURRENT_RATE_UP_NAME
                 new_guaranteed_status = False
                 result_msg = " (RATE-UP WIN!)"
                 current_score = 4 
             else: 
-                file_key = random.choice(list(characters5.keys()))
-                display_name = characters5[file_key]
+                current_file_key = random.choice(list(characters5.keys()))
+                current_display_name = characters5[current_file_key]
                 new_guaranteed_status = True
                 result_msg = " (50/50 Lost...)"
                 current_score = 2
 
             if current_score > best_rarity_score:
-                splash_name = display_name
+                splash_name = current_display_name
                 splash_rarity = 5
-                file_path = f"https://raw.githubusercontent.com/Mantan21/Genshin-Impact-Wish-Simulator/master/src/images/characters/splash-art/5star/{file_key}.webp"
+                file_path = f"https://raw.githubusercontent.com/Mantan21/Genshin-Impact-Wish-Simulator/master/src/images/characters/splash-art/5star/{current_file_key}.webp"
                 best_rarity_score = current_score
+            
+            # Add to results/collection
+            pulled_chars.append(current_display_name)
+            results.append(f"꩜ {current_display_name} ★★★★★")
 
         elif is_rare:
-            file_key = random.choice(list(rare.keys()))
-            display_name = rare[file_key] # Corrected from characters4
+            current_file_key = random.choice(list(rare.keys()))
+            current_display_name = rare[current_file_key]
             
             if 3 > best_rarity_score:
-                splash_name = display_name
+                splash_name = current_display_name
                 splash_rarity = "Rare"
-                file_path = FSInputFile(f"images/rare/{file_key}.webp")
+                file_path = FSInputFile(f"images/rare/{current_file_key}.webp")
                 best_rarity_score = 3
+            results.append(f"꩜ {current_display_name} ✨")
 
         elif is_4star:
+            current_file_key = random.choice(list(characters4.keys()))
+            current_display_name = characters4[current_file_key]
+            
             if 1 > best_rarity_score:
-                splash_name = display_name
+                splash_name = current_display_name
                 splash_rarity = 4
-                file_path = f"https://raw.githubusercontent.com/Mantan21/Genshin-Impact-Wish-Simulator/master/src/images/characters/splash-art/4star/{file_key}.webp"
-                best_rarity_score = 1         
-            total_so_far = current_collection.get(display_name, 0) + pulled_chars.count(display_name)
+                file_path = f"https://raw.githubusercontent.com/Mantan21/Genshin-Impact-Wish-Simulator/master/src/images/characters/splash-art/4star/{current_file_key}.webp"
+                best_rarity_score = 1 
+            
+            total_so_far = current_collection.get(current_display_name, 0) + pulled_chars.count(current_display_name)
             if total_so_far >= 7:
                 wish_count += 1
-                results.append(f"꩜ {display_name} (C6+ -> +1 Wish) ★★★★")
+                results.append(f"꩜ {current_display_name} (C6+ -> +1 Wish) ★★★★")
             else:
-                pulled_chars.append(display_name)
-                results.append(f"꩜ {display_name} ★★★★")   
+                pulled_chars.append(current_display_name)
+                results.append(f"꩜ {current_display_name} ★★★★") 
+        
         else:
-            file_key = random.choice(list(weapons3.keys()))
-            display_name = weapons3[file_key]
-            results.append(f"꩜ {display_name} ★★★")
+            current_file_key = random.choice(list(weapons3.keys()))
+            current_display_name = weapons3[current_file_key]
+            results.append(f"꩜ {current_display_name} ★★★")
 
-    # --- 3. Update Database (One Hit) ---
+    # --- 3. Update Database ---
+    # (Same as your original database logic)
     total_wishes += 10
     wish_count -= 10
-    
-    update_query = {
-        "$set": {
-            "wish_count": wish_count,
-            "pity": pity,
-            "count4": count4,
-            "total_wishes": total_wishes,
-            "is_guaranteed": new_guaranteed_status
-        }
-    }
-    
+    update_query = {"$set": {"wish_count": wish_count, "pity": pity, "count4": count4, "total_wishes": total_wishes, "is_guaranteed": new_guaranteed_status}}
     if pulled_chars:
         inc_data = {}
         for char in pulled_chars:
             inc_data[f"collection.{char}"] = inc_data.get(f"collection.{char}", 0) + 1
         update_query["$inc"] = inc_data
-
     await users_col.update_one({"user_id": user_id}, update_query)
 
     # --- 4. Image Handling ---
-    if not file_path:
-        file_path = "https://raw.githubusercontent.com/FrenzyYum/GenshinWishingBot/master/assets/images/debate.webp" 
-
     bg_path = "https://raw.githubusercontent.com/Mantan21/Genshin-Impact-Wish-Simulator/master/src/images/background/splash-background.webp"
     combined_img = combine_images(file_path, bg_path, splash_name, splash_rarity)
+    
     output = io.BytesIO()
     combined_img.save(output, format="PNG")
     output.seek(0)
     photo_file = BufferedInputFile(output.read(), filename="wish.png")
+    
     try:
         await loading_msg.delete()
-    except:
-        pass # In case user deleted it manually
+    except: pass
         
     await message.answer_photo(
         photo=photo_file,
