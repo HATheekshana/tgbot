@@ -326,7 +326,7 @@ async def send_image_10(message: types.Message):
             pity = 0
             is_5star = True
         else:
-            if random.randint(1, 1000) <= 6:
+            if random.randint(1, 1000) <= 20:
                 is_rare = True
             elif random.randint(1, 1000) <= 6:
                 pity = 0
@@ -363,8 +363,13 @@ async def send_image_10(message: types.Message):
                 best_rarity_score = current_score
             
             # Add to results/collection
-            pulled_chars.append(current_display_name)
-            results.append(f"꩜ {current_display_name} ★★★★★")
+            total_so_far = current_collection.get(current_display_name, 0) + pulled_chars.count(current_display_name)
+            if total_so_far >= 7:
+                wish_count += 2
+                results.append(f"꩜ {current_display_name} (C6+ -> +2 Wish) ★★★★★")
+            else:
+                pulled_chars.append(current_display_name)
+                results.append(f"꩜ {current_display_name} ★★★★★")
 
         elif is_rare:
             current_file_key = random.choice(list(rare.keys()))
