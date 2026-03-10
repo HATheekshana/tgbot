@@ -71,6 +71,9 @@ characters5 = {
     "xiao":"Xiao", "xilonen":"Xilonen", "yae-miko":"YaeMiko", "yelan":"Yelan", "yoimiya":"Yoimiya", 
     "yumemizuki-mizuki":"Yumemizuki Mizuki", "zhongli":"Zhongli", "zibai":"Zibai"
 }
+rare = {
+    "r-barbara":"Summertime Barbara","r-ayaka":"Springbloom Ayaka","r-lisa":"Under Shade Lisa","r-jean":"Dandelion Jean",
+}
 
 CURRENT_RATE_UP_KEY = "chasca" 
 CURRENT_RATE_UP_NAME = characters5.get(CURRENT_RATE_UP_KEY, "Chasca")
@@ -154,7 +157,11 @@ def combine_images(cha_path, bg_path, display_name, rarity):
             font_stars = ImageFont.load_default()
 
         # Use the solid star character for better color control
-        stars_text = "★" * rarity 
+        if isinstance(stars_text, int):
+            stars_text = "★" * rarity 
+        else:
+            stars_text =rarity
+        
         margin_right = 50
         margin_bottom = 40
         line_spacing = 5
@@ -259,11 +266,6 @@ async def start_cmd(message: types.Message):
 
 @dp.message(Command("wish10"))
 async def send_image_10(message: types.Message):
-    loading_photo = FSInputFile("Loading_Screen_Startup.webp")
-    loading_msg = await message.answer_photo(
-        photo=loading_photo, 
-        caption="✨ Invoking the Tides of Fate..."
-    )
     user_id = str(message.from_user.id)
     
     # 1. Fetch user or create if new
@@ -283,6 +285,12 @@ async def send_image_10(message: types.Message):
     if wish_count < 10:
         await message.answer(f"❌ You don't have enough wishes. You only have {wish_count}.")
         return
+    
+    loading_photo = FSInputFile("Loading_Screen_Startup.webp")
+    loading_msg = await message.answer_photo(
+        photo=loading_photo, 
+        caption="✨ Invoking the Tides of Fate..."
+    )
 
     results = []
     pulled_chars = []
@@ -293,13 +301,16 @@ async def send_image_10(message: types.Message):
         pity += 1
         is_5star = False
         is_4star = False
+        is_rare = False
 
         # --- 1. Determine Rarity ---
         if pity >= 89:
             pity = 0
             is_5star = True
         else:
-            if random.randint(1, 1000) <= 6: # 0.6% base rate
+            if random.randint(1, 1000) <= 6:
+                is_rare = True
+            elif random.randint(1, 1000) <= 6: # 0.6% base rate
                 pity = 0
                 is_5star = True
             elif count4 >= 9 or (i == 9 and not any([is_5star, is_4star])):
@@ -338,7 +349,20 @@ async def send_image_10(message: types.Message):
             else:
                 pulled_chars.append(display_name)
                 results.append(f"꩜ {display_name} ★★★★★")
-
+        elif is_rare:
+            file_key = random.choice(list(rare.keys()))
+            display_name = characters4[file_key]
+            if not file_path: # Set image to first 4/5 star found
+                splash_name = display_name
+                splash_rarity = "Rare"
+                file_path = FSInputFile("\images\rare\{file_key}.webp")
+                total_so_far = current_collection.get(display_name, 0) + pulled_chars.count(display_name)
+            if total_so_far >= 7:
+                wish_count += 1
+                results.append(f"꩜ {display_name} (C6+ -> +1 Wish) (Rare)")
+            else:
+                pulled_chars.append(display_name)
+                results.append(f"꩜ {display_name} (Rare)")        
         elif is_4star:
             file_key = random.choice(list(characters4.keys()))
             display_name = characters4[file_key]
@@ -353,7 +377,7 @@ async def send_image_10(message: types.Message):
                 results.append(f"꩜ {display_name} (C6+ -> +1 Wish) ★★★★")
             else:
                 pulled_chars.append(display_name)
-                results.append(f"꩜ {display_name} ★★★★")
+                results.append(f"꩜ {display_name} ★★★★")   
         else:
             file_key = random.choice(list(weapons3.keys()))
             display_name = weapons3[file_key]
@@ -747,7 +771,7 @@ async def show_collection(message: types.Message):
         chars.items(),
         key=lambda x: (get_rarity(x[0]), x[1]),
         reverse=True
-)
+ )
 
     text, keyboard = build_collection_page(
         sorted_chars,
