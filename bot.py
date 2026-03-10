@@ -139,6 +139,13 @@ def combine_images(cha_path, bg_path, display_name, rarity):
         background = Image.open(io.BytesIO(bg_data)).convert("RGBA")
         character = Image.open(io.BytesIO(cha_data)).convert("RGBA")
 
+        if str(cha_path).startswith("http"):
+            cha_data = requests.get(cha_path).content
+            character = Image.open(io.BytesIO(cha_data)).convert("RGBA")
+        else:
+            actual_path = cha_path.path if hasattr(cha_path, 'path') else cha_path
+            character = Image.open(actual_path).convert("RGBA")
+
         # 2. Resize and Paste character
         scale = background.height / character.height
         new_size = (int(character.width * scale), background.height)
