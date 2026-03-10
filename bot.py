@@ -132,22 +132,25 @@ async def add_to_collection(user_id, char_name):
     )
 def combine_images(cha_path, bg_path, display_name, rarity):
     try:
-        # 1. Handle Background (Check if URL or Local)
+        # 1. Background Loader
         if isinstance(bg_path, str) and bg_path.startswith("http"):
-            bg_data = requests.get(bg_path).content
-            background = Image.open(io.BytesIO(bg_data)).convert("RGBA")
+            bg_response = requests.get(bg_path, timeout=10)
+            if bg_response.status_code != 200:
+                raise ValueError(f"BG Download Failed: {bg_response.status_code}")
+            background = Image.open(io.BytesIO(bg_response.content)).convert("RGBA")
         else:
             background = Image.open(bg_path).convert("RGBA")
 
-        # 2. Handle Character/Weapon Image
-        # Check if it's an aiogram FSInputFile object
-        if hasattr(cha_path, 'path'): 
+        # 2. Character Loader
+        if hasattr(cha_path, 'path'): # Handling FSInputFile for Rares
             character = Image.open(cha_path.path).convert("RGBA")
         elif isinstance(cha_path, str) and cha_path.startswith("http"):
-            cha_data = requests.get(cha_path).content
-            character = Image.open(io.BytesIO(cha_data)).convert("RGBA")
+            cha_response = requests.get(cha_path, timeout=10)
+            if cha_response.status_code != 200:
+                # This is likely the problem! A 404 error from GitHub.
+                raise ValueError(f"Char Download Failed: {cha_response.status_code} for {cha_path}")
+            character = Image.open(io.BytesIO(cha_response.content)).convert("RGBA")
         else:
-            # Local string path
             character = Image.open(cha_path).convert("RGBA")
         # 2. Resize and Paste character
         scale = background.height / character.height
