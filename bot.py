@@ -350,7 +350,7 @@ async def send_image_10(message: types.Message):
                 results.append(f"꩜ {display_name} ★★★★★")
         elif is_rare:
             file_key = random.choice(list(rare.keys()))
-            display_name = characters4[file_key]
+            display_name = rare[file_key]
             if not file_path: # Set image to first 4/5 star found
                 splash_name = display_name
                 splash_rarity = "Rare"
