@@ -338,11 +338,13 @@ async def send_image_10(message: types.Message):
                 display_name = CURRENT_RATE_UP_NAME
                 new_guaranteed_status = False
                 result_msg = f"(RATE-UP WIN!)"
+                best_rarity_found = 4
             else: 
                 file_key = random.choice(list(characters5.keys()))
                 display_name = characters5[file_key]
                 new_guaranteed_status = True
                 result_msg = f"(50/50 Lost...)"
+                best_rarity_found = 2
 
             splash_name = display_name
             splash_rarity = 5    
@@ -356,13 +358,15 @@ async def send_image_10(message: types.Message):
                 pulled_chars.append(display_name)
                 results.append(f"꩜ {display_name} ★★★★★")
         elif is_rare:
+            best_rarity_found = 3
             file_key = random.choice(list(rare.keys()))
             display_name = rare[file_key]
-            if not file_path: # Set image to first 4/5 star found
+            if best_rarity_found < 4:
                 splash_name = display_name
                 splash_rarity = "Rare"
                 file_path = FSInputFile(f"images/rare/{file_key}.webp")
-                total_so_far = current_collection.get(display_name, 0) + pulled_chars.count(display_name)
+                best_rarity_found = 3  
+            total_so_far = current_collection.get(display_name, 0) + pulled_chars.count(display_name)
             if total_so_far >= 7:
                 wish_count += 1
                 results.append(f"꩜ {display_name} (C6+ -> +1 Wish) (Rare)")
@@ -372,11 +376,11 @@ async def send_image_10(message: types.Message):
         elif is_4star:
             file_key = random.choice(list(characters4.keys()))
             display_name = characters4[file_key]
-            if not file_path: # Set image to first 4/5 star found
+            if best_rarity_found < 1:
                 splash_name = display_name
                 splash_rarity = 4
                 file_path = f"https://raw.githubusercontent.com/Mantan21/Genshin-Impact-Wish-Simulator/master/src/images/characters/splash-art/4star/{file_key}.webp"
-            
+                best_rarity_found = 1         
             total_so_far = current_collection.get(display_name, 0) + pulled_chars.count(display_name)
             if total_so_far >= 7:
                 wish_count += 1
