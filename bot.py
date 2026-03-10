@@ -156,11 +156,10 @@ def combine_images(cha_path, bg_path, display_name, rarity):
             font_name = ImageFont.load_default()
             font_stars = ImageFont.load_default()
 
-        # Use the solid star character for better color control
-        if isinstance(stars_text, int):
-            stars_text = "★" * rarity 
+        if isinstance(rarity, int):
+             stars_text = "★" * rarity 
         else:
-            stars_text =rarity
+            stars_text = str(rarity)
         
         margin_right = 50
         margin_bottom = 40
