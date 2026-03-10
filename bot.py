@@ -130,22 +130,25 @@ async def add_to_collection(user_id, char_name):
         {"user_id": user_id},
         {"$inc": {f"collection.{char_name}": 1}}
     )
-
 def combine_images(cha_path, bg_path, display_name, rarity):
     try:
-        # 1. Download and open images
-        bg_data = requests.get(bg_path).content
-        cha_data = requests.get(cha_path).content
-        background = Image.open(io.BytesIO(bg_data)).convert("RGBA")
-        character = Image.open(io.BytesIO(cha_data)).convert("RGBA")
+        # 1. Handle Background (Check if URL or Local)
+        if isinstance(bg_path, str) and bg_path.startswith("http"):
+            bg_data = requests.get(bg_path).content
+            background = Image.open(io.BytesIO(bg_data)).convert("RGBA")
+        else:
+            background = Image.open(bg_path).convert("RGBA")
 
-        if str(cha_path).startswith("http"):
+        # 2. Handle Character/Weapon Image
+        # Check if it's an aiogram FSInputFile object
+        if hasattr(cha_path, 'path'): 
+            character = Image.open(cha_path.path).convert("RGBA")
+        elif isinstance(cha_path, str) and cha_path.startswith("http"):
             cha_data = requests.get(cha_path).content
             character = Image.open(io.BytesIO(cha_data)).convert("RGBA")
         else:
-            actual_path = cha_path.path if hasattr(cha_path, 'path') else cha_path
-            character = Image.open(actual_path).convert("RGBA")
-
+            # Local string path
+            character = Image.open(cha_path).convert("RGBA")
         # 2. Resize and Paste character
         scale = background.height / character.height
         new_size = (int(character.width * scale), background.height)
@@ -302,6 +305,7 @@ async def send_image_10(message: types.Message):
     pulled_chars = []
     file_path = ""
     result_msg = ""
+    best_rarity_score = 0
 
     for i in range(10):
         pity += 1
@@ -330,57 +334,42 @@ async def send_image_10(message: types.Message):
 
         # --- 2. Process the Pull ---
         if is_5star:
-
             win_roll = random.randint(1, 100)
-
             if is_guaranteed or win_roll <= 50:
                 file_key = CURRENT_RATE_UP_KEY
                 display_name = CURRENT_RATE_UP_NAME
                 new_guaranteed_status = False
-                result_msg = f"(RATE-UP WIN!)"
-                best_rarity_found = 4
+                result_msg = " (RATE-UP WIN!)"
+                current_score = 4 
             else: 
                 file_key = random.choice(list(characters5.keys()))
                 display_name = characters5[file_key]
                 new_guaranteed_status = True
-                result_msg = f"(50/50 Lost...)"
-                best_rarity_found = 2
+                result_msg = " (50/50 Lost...)"
+                current_score = 2
 
-            splash_name = display_name
-            splash_rarity = 5    
-            file_path = f"https://raw.githubusercontent.com/Mantan21/Genshin-Impact-Wish-Simulator/master/src/images/characters/splash-art/5star/{file_key}.webp"
-            
-            total_so_far = current_collection.get(display_name, 0) + pulled_chars.count(display_name)
-            if total_so_far >= 7:
-                wish_count += 2
-                results.append(f"꩜ {display_name} (C6+ -> +2 Wish) ★★★★★")
-            else:
-                pulled_chars.append(display_name)
-                results.append(f"꩜ {display_name} ★★★★★")
+            if current_score > best_rarity_score:
+                splash_name = display_name
+                splash_rarity = 5
+                file_path = f"https://raw.githubusercontent.com/Mantan21/Genshin-Impact-Wish-Simulator/master/src/images/characters/splash-art/5star/{file_key}.webp"
+                best_rarity_score = current_score
+
         elif is_rare:
-            best_rarity_found = 3
             file_key = random.choice(list(rare.keys()))
-            display_name = rare[file_key]
-            if best_rarity_found < 4:
+            display_name = rare[file_key] # Corrected from characters4
+            
+            if 3 > best_rarity_score:
                 splash_name = display_name
                 splash_rarity = "Rare"
                 file_path = FSInputFile(f"images/rare/{file_key}.webp")
-                best_rarity_found = 3  
-            total_so_far = current_collection.get(display_name, 0) + pulled_chars.count(display_name)
-            if total_so_far >= 7:
-                wish_count += 1
-                results.append(f"꩜ {display_name} (C6+ -> +1 Wish) (Rare)")
-            else:
-                pulled_chars.append(display_name)
-                results.append(f"꩜ {display_name} (Rare)")        
+                best_rarity_score = 3
+
         elif is_4star:
-            file_key = random.choice(list(characters4.keys()))
-            display_name = characters4[file_key]
-            if best_rarity_found < 1:
+            if 1 > best_rarity_score:
                 splash_name = display_name
                 splash_rarity = 4
                 file_path = f"https://raw.githubusercontent.com/Mantan21/Genshin-Impact-Wish-Simulator/master/src/images/characters/splash-art/4star/{file_key}.webp"
-                best_rarity_found = 1         
+                best_rarity_score = 1         
             total_so_far = current_collection.get(display_name, 0) + pulled_chars.count(display_name)
             if total_so_far >= 7:
                 wish_count += 1
@@ -851,7 +840,8 @@ async def broadcast_smart(message: types.Message, bot: Bot):
     await status_msg.edit_text(f"✅ **Broadcast Complete**\n🟢 Success: {success}\n🔴 Failed: {fail}")
 @dp.message(Command("setrateup"))
 async def set_rate_up(message: types.Message):
-    # 1. Admin Security Check
+    global CURRENT_RATE_UP_KEY, CURRENT_RATE_UP_NAME
+    
     if message.from_user.id != ADMIN_ID:
         await message.answer("🚫 **Access Denied.**")
         return
@@ -861,26 +851,13 @@ async def set_rate_up(message: types.Message):
         await message.answer("❓ **Usage:** `/setrateup <character_key>`\nExample: `/setrateup raiden-shogun`")
         return
 
-    new_key = args[1].lower().strip()
-
-    # 2. Validation: Check if the key exists in your 5-star dictionary
-    if new_key not in characters5:
-        await message.answer(f"❌ **Error:** `{new_key}` is not in the 5-star character list.")
-        return
-
-    # 3. Update Global Variables
-    global CURRENT_RATE_UP_KEY, CURRENT_RATE_UP_NAME
-    CURRENT_RATE_UP_KEY = new_key
-    CURRENT_RATE_UP_NAME = characters5[new_key]
-
-    # 4. Success Message
-    await message.answer(
-        f"✅ **Banner Updated!**\n"
-        f"⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯\n"
-        f"🌟 New Rate-Up: **{CURRENT_RATE_UP_NAME}**\n"
-        f"🔑 Key: `{CURRENT_RATE_UP_KEY}`\n"
-        f"🎯 Chance: 60% (or Guaranteed)"
-    )   
+    new_key = args[1].lower()
+    if new_key in characters5:
+        CURRENT_RATE_UP_KEY = new_key
+        CURRENT_RATE_UP_NAME = characters5[new_key]
+        await message.answer(f"✅ Banner Updated!\n**New Rate-Up:** {CURRENT_RATE_UP_NAME}")
+    else:
+        await message.answer(f"❌ Character `{new_key}` not found in 5-star list.")   
 # ---------------- Main ----------------
 async def main():
     # 1. Test MongoDB connection first
