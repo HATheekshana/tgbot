@@ -695,7 +695,7 @@ async def daily_wish(message: types.Message):
         streak = 1
 
     # 3. Calculate Rewards & Milestone Messages
-    wishes_to_add = 1
+    wishes_to_add = 5
     bonus_msg = ""
 
     if streak == 7:
