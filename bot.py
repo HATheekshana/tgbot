@@ -880,7 +880,7 @@ async def main():
         check_individual_dailies, 
         "interval", 
         minutes=15, 
-        args=[bot]
+        args=[bot],
         add_daily_wish, 
         "cron", 
         hour=0, 
