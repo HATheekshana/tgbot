@@ -714,7 +714,7 @@ async def daily_wish(message: types.Message):
     await users_col.update_one(
         {"user_id": user_id},
         {
-            "$set": {"last_daily_wish": now, "daily_streak": streak},
+            "$set": {"last_daily_wish": now, "daily_streak": streak ,"notification_sent": False},
             "$inc": {"wish_count": wishes_to_add}
         },
         upsert=True
@@ -729,42 +729,33 @@ async def daily_wish(message: types.Message):
         f"{bonus_msg}",
         parse_mode="Markdown"
     )
-async def add_daily_wish(bot: Bot):
-    try:
-        # 1. Update all users in one go
-        result = await users_col.update_many(
-            {}, 
-            {"$inc": {"wish_count": 1}}
-        )
-        logging.info(f"Successfully added daily wish to {result.modified_count} users.")
+async def check_individual_dailies(bot: Bot):
+    """Finds users whose 24h cooldown just expired and notifies them."""
+    now = datetime.utcnow()
+    # Find users where (now - last_daily_wish) >= 24 hours
+    # and you might want to add a 'notified' flag so you don't spam them
+    threshold = now - timedelta(days=1)
+    
+    cursor = users_col.find({
+        "last_daily_wish": {"$lte": threshold},
+        "notification_sent": {"$ne": True} # Only those not yet alerted
+    })
 
-        # 2. Broadcast the news to everyone
-        broadcast_msg = (
-            "✨ Daily Reset! ✨\n\n"
-            "🎁 You have received +1 Free Wish!\n"
-            "Check your balance with `/stats` and try your luck with `/wish`!"
-        )
-
-        cursor = users_col.find({})
-        success, fail = 0, 0
-
-        async for user in cursor:
-            try:
-                await bot.send_message(
-                    chat_id=user["user_id"], 
-                    text=broadcast_msg, 
-                    parse_mode="Markdown"
-                )
-                success += 1
-                await asyncio.sleep(0.05) # Prevent Telegram flood limits
-            except Exception:
-                fail += 1
-        
-        logging.info(f"Daily Broadcast: {success} sent, {fail} failed.")
-
-    except Exception as e:
-        logging.error(f"Error in daily wish task: {e}")
-
+    async for user in cursor:
+        try:
+            await bot.send_message(
+                chat_id=user["user_id"],
+                text="✨ **Your Daily Wish is ready!** ✨\nClaim it now to keep your streak alive!",
+                parse_mode="Markdown"
+            )
+            # Mark as notified so they don't get another message in 10 minutes
+            await users_col.update_one(
+                {"user_id": user["user_id"]},
+                {"$set": {"notification_sent": True}}
+            )
+            await asyncio.sleep(0.05) 
+        except Exception:
+            pass
 @dp.message(Command("collection"))
 async def show_collection(message: types.Message):
 
@@ -886,6 +877,10 @@ async def main():
     
     scheduler = AsyncIOScheduler(timezone=lk_timezone)
     scheduler.add_job(
+        check_individual_dailies, 
+        "interval", 
+        minutes=15, 
+        args=[bot]
         add_daily_wish, 
         "cron", 
         hour=0, 
