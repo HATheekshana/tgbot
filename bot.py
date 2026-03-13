@@ -886,7 +886,7 @@ async def main():
         hour=0, 
         minute=0, 
         args=[bot]  # Now 'bot' exists and can be passed!
-    )
+     )
     
     # 4. Start everything
     scheduler.start()
