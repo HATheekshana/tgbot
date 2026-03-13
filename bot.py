@@ -888,7 +888,7 @@ async def main():
 
     # --- JOB 2: Run the daily reset task at Midnight (Optional) ---
     scheduler.add_job(
-        add_daily_wish, 
+        daily_wish, 
         "cron", 
         hour=0, 
         minute=0, 
