@@ -873,24 +873,31 @@ async def main():
     # 2. Create the Bot object FIRST
     bot = Bot(token=TOKEN)
 
+    # Use your local Sri Lanka timezone
     lk_timezone = timezone("Asia/Colombo")
     
     scheduler = AsyncIOScheduler(timezone=lk_timezone)
+
+    # --- JOB 1: Check individual 24h cooldowns every 15 minutes ---
     scheduler.add_job(
         check_individual_dailies, 
         "interval", 
         minutes=15, 
-        args=[bot],
+        args=[bot]
+    )
+
+    # --- JOB 2: Run the daily reset task at Midnight (Optional) ---
+    scheduler.add_job(
         add_daily_wish, 
         "cron", 
         hour=0, 
         minute=0, 
-        args=[bot]  # Now 'bot' exists and can be passed!
-     )
+        args=[bot]
+    )
     
     # 4. Start everything
     scheduler.start()
-    print("⏰ Daily wish & broadcast scheduler started!")
+    print("⏰ Both schedulers started (Interval & Midnight)!")
 
     # 5. Start polling
     await dp.start_polling(bot)
