@@ -740,12 +740,22 @@ async def check_individual_dailies(bot: Bot):
         "last_daily_wish": {"$lte": threshold},
         "notification_sent": {"$ne": True} # Only those not yet alerted
     })
-
+    file_path = f"https://raw.githubusercontent.com/Mantan21/Genshin-Impact-Wish-Simulator/master/src/images/characters/splash-art/5star/{CURRENT_RATE_UP_KEY}.webp"
+    bg_path = "https://raw.githubusercontent.com/Mantan21/Genshin-Impact-Wish-Simulator/master/src/images/background/splash-background.webp"
+    splash_name = CURRENT_RATE_UP_NAME
+    splash_rarity = "Rate-Up"
+    combined_img = combine_images(file_path, bg_path, splash_name, splash_rarity)
+    
+    output = io.BytesIO()
+    combined_img.save(output, format="PNG")
+    output.seek(0)
+    photo_file = BufferedInputFile(output.read(), filename="wish.png")
     async for user in cursor:
         try:
-            await bot.send_message(
+            await bot.send_photo(
+                photo=photo_file
                 chat_id=user["user_id"],
-                text="✨ **Your Daily Wish is ready!** ✨\nClaim it now to keep your streak alive!",
+                text="✨ **Your Daily Wish is ready!** ✨\nClaim it now to keep your streak alive!\nCurrent Rate up :" + CURRENT_RATE_UP_NAME,
                 parse_mode="Markdown"
             )
             # Mark as notified so they don't get another message in 10 minutes
