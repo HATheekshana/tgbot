@@ -753,7 +753,7 @@ async def check_individual_dailies(bot: Bot):
     async for user in cursor:
         try:
             await bot.send_photo(
-                photo=photo_file
+                photo=photo_file,
                 chat_id=user["user_id"],
                 text="✨ **Your Daily Wish is ready!** ✨\nClaim it now to keep your streak alive!\nCurrent Rate up :" + CURRENT_RATE_UP_NAME,
                 parse_mode="Markdown"
