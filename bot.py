@@ -3,6 +3,7 @@ from motor.motor_asyncio import AsyncIOMotorClient
 import logging
 import sys
 import random
+from aioenkanetworkcard import encbanner
 import io
 from dotenv import load_dotenv
 import os
@@ -795,7 +796,7 @@ async def login_uid(message: types.Message):
 async def my_profile(message: types.Message):
     # 1. Get user from Database
     user_data = await users_col.find_one({"user_id": str(message.from_user.id)})
-    
+    uid = ENCpy.get("uid")
     if not user_data or "genshin_uid" not in user_data:
         return await message.answer("❌ You are not logged in! Use `/login <uid>`.", parse_mode="HTML")
 

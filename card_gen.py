@@ -16,10 +16,7 @@ async def generate_profile_card(uid):
             
             if not pill_image:
                 return None
-
-            # 4. Convert Pillow Image to Bytes for Telegram
             image_buffer = io.BytesIO()
-            # We save as PNG or JPEG
             pill_image.save(image_buffer, format='PNG')
             image_buffer.seek(0)
             
