@@ -9,6 +9,7 @@ import os
 from database import users_col, cluster
 from enka_api import fetch_enka_data
 import requests
+from aioenkanetworkcard import encbanner
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from datetime import datetime, timedelta
 from aiogram.types import FSInputFile, BufferedInputFile, InlineKeyboardMarkup, InlineKeyboardButton
