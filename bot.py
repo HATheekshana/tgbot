@@ -798,23 +798,29 @@ async def my_profile(message: types.Message):
     if not user_data or "genshin_uid" not in user_data:
         return await message.answer("❌ Use /login <uid> first.")
 
-    db_uid = user_data["genshin_uid"]
-    status = await message.answer("🖼 Generating Card...")
+    # FIX: Ensure UID is a clean string
+    db_uid = str(user_data["genshin_uid"]).strip()
+    status = await message.answer("🖼 Validating and Generating Card...")
 
     try:
         async with encbanner.ENC() as encard:
-            # 1. Fetch the data object (This replaces your old 'data' variable)
-            ENCpy = await encard.enc(uids=str(db_uid))
+            # 1. Fetch data (This is where 'Validate UID' usually fails)
+            ENCpy = await encard.enc(uids=db_uid)
             
-            # 2. Extract values for the caption
-            uid = ENCpy.get("uid")
+            # Check if ENCpy actually contains data
+            if not ENCpy or "uid" not in ENCpy:
+                await message.answer("❌ Enka couldn't find data for this UID. Is it correct?")
+                return
+
+            # 2. Extract values
+            uid_val = ENCpy.get("uid")
             player = ENCpy.get("playerInfo", {})
             nickname = player.get("nickname", "Traveler")
             level = player.get("level", 0)
             achievements = player.get("finishAchievementNum", 0)
             signature = player.get("signature", "")
 
-            # 3. Try to generate the image
+            # 3. Generate Card
             result = await encard.creat(ENCpy, 4)
             pill_image = result.get("card", {}).get("1-4")
 
@@ -823,19 +829,24 @@ async def my_profile(message: types.Message):
                 f"⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯\n"
                 f"💬 <i>{signature}</i>\n\n"
                 f"🏆 <b>Achievements:</b> {achievements}\n"
-                f"🆔 <b>UID:</b> <code>{uid}</code>"
+                f"🆔 <b>UID:</b> <code>{uid_val}</code>"
             )
 
             if pill_image:
                 img_bin = io.BytesIO()
                 pill_image.save(img_bin, format='PNG')
                 img_bin.seek(0)
-                await message.answer_photo(BufferedInputFile(img_bin.read(), filename="card.png"), caption=caption, parse_mode="HTML")
+                await message.answer_photo(
+                    BufferedInputFile(img_bin.read(), filename=f"{uid_val}.png"), 
+                    caption=caption, 
+                    parse_mode="HTML"
+                )
             else:
-                await message.answer(f"⚠️ Image failed, but here is your info:\n\n{caption}", parse_mode="HTML")
+                await message.answer(f"⚠️ Card failed, but here is your info:\n\n{caption}", parse_mode="HTML")
 
     except Exception as e:
-        await message.answer(f"❌ Error: {e}")
+        # If the library throws the "Validate UID failed" error, it will be caught here
+        await message.answer(f"❌ <b>Library Error:</b> {e}\nCheck if your UID is valid and public.", parse_mode="HTML")
     finally:
         await status.delete()
 # --- Logout Command ---
