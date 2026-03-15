@@ -769,7 +769,7 @@ async def set_rate_up(message: types.Message):
 async def login_uid(message: types.Message):
     args = message.text.split()
     if len(args) < 2:
-        return await message.answer("❓ **Usage:** `/login <uid>`", parse_mode="MarkdownV2")
+        return await message.answer("❓ <b>Usage:</b> `/login <uid>`")
 
     uid = args[1]
     if not uid.isdigit():
@@ -787,7 +787,7 @@ async def login_uid(message: types.Message):
         {"$set": {"genshin_uid": int(uid)}},
         upsert=True
     )
-    await status_msg.edit_text(f"✅ **Login Successful!**\n👤 **Player:** {player.get('nickname')} (AR {player.get('level')})", parse_mode="MarkdownV2")
+    await status_msg.edit_text(f"✅ <b>Login Successful!</b>\n👤 <b>Player:</b> {player.get('nickname')} (AR {player.get('level')})")
 
 # --- MyProfile Command ---
 @dp.message(Command("myprofile"))
@@ -807,9 +807,9 @@ async def my_profile(message: types.Message):
 
     caption = (
         f"👤 <b>{player.get('nickname', 'Traveler')}</b> (AR {player.get('level', 1)})\n"
-        f"**⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯**\n"
+        f"⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯\n"
         f"🏆 <b>Achievements:</b> {player.get('finishAchievementNum', 0)}\n"
-        f"🆔 <b>UID:</b> <code>{uid}</code>", parse_mode="MarkdownV2"
+        f"🆔 <b>UID:</b> <code>{uid}</code>"
     )
 
     try:
