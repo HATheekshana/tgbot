@@ -11,7 +11,7 @@ from enka_api import fetch_enka_data
 import requests
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from datetime import datetime, timedelta
-from aiogram.types import FSInputFile,BufferedInputFile, InlineKeyboardMarkup, InlineKeyboardButton
+from aiogram.types import FSInputFile, BufferedInputFile, InlineKeyboardMarkup, InlineKeyboardButton
 from aiogram import Bot, Dispatcher, types
 from aiogram.filters import Command
 from pytz import timezone
@@ -822,10 +822,16 @@ async def my_profile(message: types.Message):
     
     # Send as a photo
     photo = BufferedInputFile(card_image.read(), filename="profile_card.png")
-    await message.answer_photo(photo=photo, caption=caption, parse_mode="HTML")
+    try:
+        card_bytes = generate_profile_card(data)
+        photo = BufferedInputFile(card_bytes.read(), filename="profile.png")
+        await message.answer_photo(photo=photo, caption=caption, parse_mode="HTML")
+    except Exception as e:
+        await message.answer(f"❌ Error generating card: {e}")
+    finally:
+        await status.delete()
     
     # Remove the "Processing" message
-    await status.delete()
 # --- Logout Command ---
 @dp.message(Command("logout"))
 async def logout_user(message: types.Message):

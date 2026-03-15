@@ -6,4 +6,4 @@ motor
 apscheduler
 pytz
 python-dotenv
-
+aiohttp
