@@ -4,6 +4,7 @@ import logging
 import sys
 import random
 import io
+import aiohttp
 from dotenv import load_dotenv
 import os
 from database import users_col, cluster
@@ -765,7 +766,13 @@ async def set_rate_up(message: types.Message):
     else:
         await message.answer(f"❌ Character `{new_key}` not found in 5-star list.")  
 
-
+async def get_profile(uid):
+    # 1. Fetch data manually to skip the library's broken validation
+    async with aiohttp.ClientSession() as session:
+        async with session.get(f"https://enka.network/api/uid/{uid}/") as resp:
+            if resp.status != 200:
+                return None
+            return await resp.json()
 # ---------------- Main Enka ----------------
 @dp.message(Command("login"))
 async def login_uid(message: types.Message):
@@ -794,56 +801,30 @@ async def login_uid(message: types.Message):
 # --- MyProfile Command ---
 @dp.message(Command("myprofile"))
 async def my_profile(message: types.Message):
-    user_data = await users_col.find_one({"user_id": str(message.from_user.id)})
-    if not user_data:
-        return await message.answer("❌ Please /login first.")
-
-    # Get a clean string UID
-    db_uid = str(user_data.get("genshin_uid", "")).strip()
-    status = await message.answer("🖼 Connecting to Enka.Network...")
+    # ... (your database code to get db_uid) ...
+    
+    status = await message.answer("🔄 Bypassing validation and fetching data...")
+    
+    data = await get_profile(db_uid)
+    if not data:
+        return await message.answer("❌ Could not find data on Enka. Is the UID correct?")
 
     try:
-        # We use encbanner.ENC() directly
-        async with encbanner.ENC(lang="en") as encard: 
-            # 1. Fetch data - passing UID as a string
-            # This library sometimes expects a LIST of uids
-            ENCpy = await encard.enc(uids=db_uid)
+        async with encbanner.ENC() as encard:
+            # Instead of encard.enc(uids=...), we pass the data we already fetched
+            # We use the internal 'creat' method directly
+            result = await encard.creat(data, 4) 
             
-            # 2. Check if the UID returned data
-            if not ENCpy:
-                return await message.answer("❌ No data found. Is your 'Character Showcase' public?")
-
-            # 3. Create the image (Template 4)
-            # This returns a dict: {"card": {"1-4": <Image>, "5-8": <Image>}}
-            result = await encard.creat(ENCpy, 4)
-            
-            # Extract the first card
             cards = result.get("card", {})
             pill_image = cards.get("1-4")
 
             if pill_image:
-                img_bin = io.BytesIO()
-                pill_image.save(img_bin, format='PNG')
-                img_bin.seek(0)
-                
-                # Get nickname safely
-                player = ENCpy.get("playerInfo", {})
-                name = player.get("nickname", "Traveler")
-                
-                await message.answer_photo(
-                    photo=BufferedInputFile(img_bin.read(), filename=f"{db_uid}.png"),
-                    caption=f"👤 <b>{name}</b>\n🆔 UID: <code>{db_uid}</code>",
-                    parse_mode="HTML"
-                )
+                # ... (your existing code to save and send the photo) ...
+                await message.answer_photo(...)
             else:
-                await message.answer("⚠️ Could not generate image. Check your in-game showcase!")
-
+                await message.answer("⚠️ Data found, but card could not be drawn.")
     except Exception as e:
-        # Log the error to your VPS console so you can see the real cause
-        print(f"Detailed Error: {e}")
-        await message.answer(f"❌ <b>Library Error:</b> {e}")
-    finally:
-        await status.delete()
+        await message.answer(f"❌ Drawing Error: {e}")
 # --- Logout Command ---
 @dp.message(Command("logout"))
 async def logout_user(message: types.Message):
