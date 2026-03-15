@@ -832,6 +832,7 @@ async def my_profile(message: types.Message):
         await status.delete()
     
     # Remove the "Processing" message
+    await status.delete()
 # --- Logout Command ---
 @dp.message(Command("logout"))
 async def logout_user(message: types.Message):

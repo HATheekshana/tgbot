@@ -2,58 +2,48 @@ import io
 import requests
 from PIL import Image, ImageDraw, ImageFont
 
-def get_asset(url):
-    try:
-        response = requests.get(url, timeout=5)
-        return Image.open(io.BytesIO(response.content)).convert("RGBA")
-    except:
-        return None
-
 def generate_profile_card(data):
-    # 1. Create the Canvas
+    # 1. Setup Canvas
     width, height = 1000, 600
     try:
-        # Load your background image from the VPS
+        # Try to load your background
         card = Image.open("bg.png").convert("RGBA").resize((width, height))
     except:
-        card = Image.new('RGBA', (width, height), color=(20, 20, 20, 255))
+        # Fallback to dark grey if bg is missing
+        card = Image.new('RGBA', (width, height), color=(18, 18, 18, 255))
 
     draw = ImageDraw.Draw(card)
     player = data.get("playerInfo", {})
     
-    # 2. Load a better font (Upload a .ttf file to your /tgbot folder)
+    # 2. LOAD FONTS (CRITICAL: Replace "font.ttf" with your actual filename)
     try:
-        font_big = ImageFont.truetype("Arial.ttf", 45)
-        font_small = ImageFont.truetype("Arial.ttf", 25)
+        # Increase these numbers for bigger text
+        font_large = ImageFont.truetype("arial.ttf", 50) 
+        font_medium = ImageFont.truetype("arial.ttf", 35)
+        font_small = ImageFont.truetype("arial.ttf", 25)
     except:
-        font_big = font_small = ImageFont.load_default()
+        # If font file is missing, text will stay tiny!
+        font_large = font_medium = font_small = ImageFont.load_default()
 
-    # 3. Draw Header Stats (UID, AR, etc.)
-    # Draw a semi-transparent box for readability
-    overlay = Image.new('RGBA', (width, height), (0,0,0,0))
-    ol_draw = ImageDraw.Draw(overlay)
-    ol_draw.rounded_rectangle([600, 40, 950, 220], radius=15, fill=(0,0,0,160), outline="red", width=2)
-    card = Image.alpha_composite(card, overlay)
-    draw = ImageDraw.Draw(card)
+    # 3. Draw the Red Stats Box (Right Side)
+    # Using rounded_rectangle for that clean look
+    draw.rounded_rectangle([600, 50, 950, 280], radius=20, outline="red", width=3)
+    
+    # 4. Add the Data (Positioned correctly)
+    nickname = player.get("nickname", "RenxZero")
+    uid = data.get("uid", "1819096557")
+    ar = player.get("level", 57)
+    achievements = player.get("finishAchievementNum", 772)
 
-    draw.text((620, 60), f"UID: {data.get('uid')}", fill="red", font=font_small)
-    draw.text((60, 60), player.get("nickname", "Traveler"), fill="white", font=font_big)
-    draw.text((620, 110), f"AR {player.get('level')}", fill="white", font=font_small)
-    draw.text((620, 160), f"🏆 {player.get('finishAchievementNum')}", fill="white", font=font_small)
+    # Nickname (Top Left)
+    draw.text((50, 50), nickname, fill="white", font=font_large)
 
-    # 4. Paste Character Icons
-    # Showcase characters are usually in 'avatarIdList' or 'showcaseNextCharacters'
-    characters = player.get("showcaseNextCharacters", [])
-    x_offset = 60
-    for char in characters[:4]: # Let's start with 4 characters
-        icon_url = f"https://enka.network/ui/UI_AvatarIcon_{char}.png" # Note: IDs need mapping
-        icon = get_asset(icon_url)
-        if icon:
-            icon = icon.resize((120, 120))
-            card.paste(icon, (x_offset, 350), icon)
-            x_offset += 150
+    # Stats inside the red box
+    draw.text((630, 80), f"UID: {uid}", fill="red", font=font_small)
+    draw.text((630, 150), f"AR {ar}", fill="white", font=font_medium)
+    draw.text((630, 220), f"🏆 {achievements}", fill="white", font=font_medium)
 
-    # 5. Final Export
+    # 5. Convert and Return
     final = card.convert("RGB")
     buf = io.BytesIO()
     final.save(buf, format='PNG')
