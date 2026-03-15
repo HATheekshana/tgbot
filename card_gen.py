@@ -2,77 +2,60 @@ import io
 import requests
 from PIL import Image, ImageDraw, ImageFont
 
-def get_image_from_url(url):
+def get_asset(url):
     try:
         response = requests.get(url, timeout=5)
-        if response.status_code == 200:
-            return Image.open(io.BytesIO(response.content)).convert("RGBA")
+        return Image.open(io.BytesIO(response.content)).convert("RGBA")
     except:
         return None
-    return None
 
 def generate_profile_card(data):
-    # 1. Base Canvas (Matching the wide ratio of your image)
+    # 1. Create the Canvas
     width, height = 1000, 600
-    card = Image.new('RGBA', (width, height), color=(20, 20, 20, 255))
-    
-    # Optional: Load bg.png if you have one, else keep it dark
     try:
-        bg = Image.open("bg.png").convert("RGBA").resize((width, height))
-        card.paste(bg, (0,0))
+        # Load your background image from the VPS
+        card = Image.open("bg.png").convert("RGBA").resize((width, height))
     except:
-        pass
+        card = Image.new('RGBA', (width, height), color=(20, 20, 20, 255))
 
     draw = ImageDraw.Draw(card)
     player = data.get("playerInfo", {})
     
-    # 2. Draw the Header Info (Right side)
-    # We use rounded_rectangle to get that "pill" look from your image
-    stats = [
-        (f"UID: {data.get('uid')}", "red"),
-        (f"AR: {player.get('level')}", "white"),
-        (f"Achievements: {player.get('finishAchievementNum')}", "white")
-    ]
-    
-    y_offset = 50
-    for text, color in stats:
-        draw.rounded_rectangle([600, y_offset, 950, y_offset + 40], radius=20, fill=(0,0,0,180), outline="red")
-        draw.text((620, y_offset + 10), text, fill=color)
-        y_offset += 60
+    # 2. Load a better font (Upload a .ttf file to your /tgbot folder)
+    try:
+        font_big = ImageFont.truetype("Arial.ttf", 45)
+        font_small = ImageFont.truetype("Arial.ttf", 25)
+    except:
+        font_big = font_small = ImageFont.load_default()
 
-    # 3. Handle the Big Profile Avatar (Center Circle)
-    icon_id = player.get("profilePicture", {}).get("baseIcon", "UI_AvatarIcon_Side_PlayerBoy")
-    avatar = get_image_from_url(f"https://enka.network/ui/{icon_id}.png")
-    if avatar:
-        avatar = avatar.resize((200, 200))
-        # Create a circular mask
-        mask = Image.new('L', (200, 200), 0)
-        mask_draw = ImageDraw.Draw(mask)
-        mask_draw.ellipse((0, 0, 200, 200), fill=255)
-        card.paste(avatar, (400, 50), mask)
-        # Draw red border around circle
-        draw.ellipse((400, 50, 600, 250), outline="red", width=3)
+    # 3. Draw Header Stats (UID, AR, etc.)
+    # Draw a semi-transparent box for readability
+    overlay = Image.new('RGBA', (width, height), (0,0,0,0))
+    ol_draw = ImageDraw.Draw(overlay)
+    ol_draw.rounded_rectangle([600, 40, 950, 220], radius=15, fill=(0,0,0,160), outline="red", width=2)
+    card = Image.alpha_composite(card, overlay)
+    draw = ImageDraw.Draw(card)
 
-    # 4. Character Showcase (The Grid at the bottom)
-    showcase = player.get("showcaseNextCharacters", []) # Enka field for displayed chars
-    x_start, y_start = 50, 350
-    
-    for i, char in enumerate(showcase[:8]): # Limit to top 8
-        # Fetch individual character icon
-        # In a real setup, you'd map char ID to Icon Name
-        # For now, let's use a placeholder or the first available icon
-        col = i % 4
-        row = i // 4
-        
-        # Draw a small box for each character
-        box_x = x_start + (col * 230)
-        box_y = y_start + (row * 120)
-        draw.rounded_rectangle([box_x, box_y, box_x + 200, box_y + 100], radius=10, fill=(50,50,50,150), outline="red")
-        draw.text((box_x + 10, box_y + 70), f"Level {player.get('level')}", fill="white")
+    draw.text((620, 60), f"UID: {data.get('uid')}", fill="red", font=font_small)
+    draw.text((60, 60), player.get("nickname", "Traveler"), fill="white", font=font_big)
+    draw.text((620, 110), f"AR {player.get('level')}", fill="white", font=font_small)
+    draw.text((620, 160), f"🏆 {player.get('finishAchievementNum')}", fill="white", font=font_small)
 
-    # 5. Finalize
-    final_card = card.convert("RGB")
-    img_byte_arr = io.BytesIO()
-    final_card.save(img_byte_arr, format='PNG')
-    img_byte_arr.seek(0)
-    return img_byte_arr
+    # 4. Paste Character Icons
+    # Showcase characters are usually in 'avatarIdList' or 'showcaseNextCharacters'
+    characters = player.get("showcaseNextCharacters", [])
+    x_offset = 60
+    for char in characters[:4]: # Let's start with 4 characters
+        icon_url = f"https://enka.network/ui/UI_AvatarIcon_{char}.png" # Note: IDs need mapping
+        icon = get_asset(icon_url)
+        if icon:
+            icon = icon.resize((120, 120))
+            card.paste(icon, (x_offset, 350), icon)
+            x_offset += 150
+
+    # 5. Final Export
+    final = card.convert("RGB")
+    buf = io.BytesIO()
+    final.save(buf, format='PNG')
+    buf.seek(0)
+    return buf
