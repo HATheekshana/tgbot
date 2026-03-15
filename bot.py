@@ -787,21 +787,25 @@ async def login_uid(message: types.Message):
         {"$set": {"genshin_uid": int(uid)}},
         upsert=True
     )
-    await status_msg.edit_text(f"✅ <b>Login Successful!</b>\n👤 <b>Player:</b> {player.get('nickname')} (AR {player.get('level')})", parse_mode="HTML")
+    await status_msg.edit_text(f"✅ <b>Login Successful! <code>{uid}</code></b>\n👤 <b>Player:</b> {player.get('nickname')} (AR {player.get('level')})", parse_mode="HTML")
 
 # --- MyProfile Command ---
 @dp.message(Command("myprofile"))
 async def my_profile(message: types.Message):
     user_data = await users_col.find_one({"user_id": str(message.from_user.id)})
+    
     if not user_data or "genshin_uid" not in user_data:
-        return await message.answer("❌ You are not logged in! Use `/login <uid>`.")
+        return await message.answer("❌ You are not logged in! Use `/login <uid>`.", parse_mode="HTML")
 
     uid = user_data["genshin_uid"]
     data = await fetch_enka_data(str(uid))
+
     if not data:
-        return await message.answer("❌ Could not reach Enka.Network.")
+        return await message.answer("❌ Could not reach Enka.Network.", parse_mode="HTML")
 
     player = data.get("playerInfo", {})
+    
+    # CORRECT PFP LOGIC
     icon_name = player.get("profilePicture", {}).get("baseIcon", "UI_AvatarIcon_Side_PlayerBoy")
     pfp_url = f"https://enka.network/ui/{icon_name}.png"
 
@@ -811,6 +815,13 @@ async def my_profile(message: types.Message):
         f"🏆 <b>Achievements:</b> {player.get('finishAchievementNum', 0)}\n"
         f"🆔 <b>UID:</b> <code>{uid}</code>"
     )
+
+    try:
+        # This sends it as an actual image file in the chat
+        await message.answer_photo(photo=pfp_url, caption=caption, parse_mode="HTML")
+    except Exception as e:
+        # If the image fails, send just the text so the bot doesn't crash
+        await message.answer(caption, parse_mode="HTML")
 
     try:
         await message.answer_photo(photo=pfp_url, caption=caption, parse_mode="HTML")
@@ -824,7 +835,7 @@ async def logout_user(message: types.Message):
         {"user_id": str(message.from_user.id)},
         {"$unset": {"genshin_uid": ""}}
     )
-    await message.answer("✅ **Logged out!** Your UID has been removed.")
+    await message.answer("✅ <b>Logged out!</b> Your UID has been removed.", parse_mode="HTML")
 
 
 # ---------------- Main ----------------
