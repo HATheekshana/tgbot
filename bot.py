@@ -795,58 +795,53 @@ async def login_uid(message: types.Message):
 @dp.message(Command("myprofile"))
 async def my_profile(message: types.Message):
     user_data = await users_col.find_one({"user_id": str(message.from_user.id)})
-    if not user_data or "genshin_uid" not in user_data:
-        return await message.answer("❌ Use /login <uid> first.")
+    if not user_data:
+        return await message.answer("❌ Please /login first.")
 
-    # FIX: Ensure UID is a clean string
-    db_uid = str(user_data["genshin_uid"]).strip()
-    status = await message.answer("🖼 Validating and Generating Card...")
+    # Get a clean string UID
+    db_uid = str(user_data.get("genshin_uid", "")).strip()
+    status = await message.answer("🖼 Connecting to Enka.Network...")
 
     try:
-        async with encbanner.ENC() as encard:
-            # 1. Fetch data (This is where 'Validate UID' usually fails)
+        # We use encbanner.ENC() directly
+        async with encbanner.ENC(lang="en") as encard: 
+            # 1. Fetch data - passing UID as a string
+            # This library sometimes expects a LIST of uids
             ENCpy = await encard.enc(uids=db_uid)
             
-            # Check if ENCpy actually contains data
-            if not ENCpy or "uid" not in ENCpy:
-                await message.answer("❌ Enka couldn't find data for this UID. Is it correct?")
-                return
+            # 2. Check if the UID returned data
+            if not ENCpy:
+                return await message.answer("❌ No data found. Is your 'Character Showcase' public?")
 
-            # 2. Extract values
-            uid_val = ENCpy.get("uid")
-            player = ENCpy.get("playerInfo", {})
-            nickname = player.get("nickname", "Traveler")
-            level = player.get("level", 0)
-            achievements = player.get("finishAchievementNum", 0)
-            signature = player.get("signature", "")
-
-            # 3. Generate Card
+            # 3. Create the image (Template 4)
+            # This returns a dict: {"card": {"1-4": <Image>, "5-8": <Image>}}
             result = await encard.creat(ENCpy, 4)
-            pill_image = result.get("card", {}).get("1-4")
-
-            caption = (
-                f"👤 <b>{nickname}</b> (AR {level})\n"
-                f"⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯\n"
-                f"💬 <i>{signature}</i>\n\n"
-                f"🏆 <b>Achievements:</b> {achievements}\n"
-                f"🆔 <b>UID:</b> <code>{uid_val}</code>"
-            )
+            
+            # Extract the first card
+            cards = result.get("card", {})
+            pill_image = cards.get("1-4")
 
             if pill_image:
                 img_bin = io.BytesIO()
                 pill_image.save(img_bin, format='PNG')
                 img_bin.seek(0)
+                
+                # Get nickname safely
+                player = ENCpy.get("playerInfo", {})
+                name = player.get("nickname", "Traveler")
+                
                 await message.answer_photo(
-                    BufferedInputFile(img_bin.read(), filename=f"{uid_val}.png"), 
-                    caption=caption, 
+                    photo=BufferedInputFile(img_bin.read(), filename=f"{db_uid}.png"),
+                    caption=f"👤 <b>{name}</b>\n🆔 UID: <code>{db_uid}</code>",
                     parse_mode="HTML"
                 )
             else:
-                await message.answer(f"⚠️ Card failed, but here is your info:\n\n{caption}", parse_mode="HTML")
+                await message.answer("⚠️ Could not generate image. Check your in-game showcase!")
 
     except Exception as e:
-        # If the library throws the "Validate UID failed" error, it will be caught here
-        await message.answer(f"❌ <b>Library Error:</b> {e}\nCheck if your UID is valid and public.", parse_mode="HTML")
+        # Log the error to your VPS console so you can see the real cause
+        print(f"Detailed Error: {e}")
+        await message.answer(f"❌ <b>Library Error:</b> {e}")
     finally:
         await status.delete()
 # --- Logout Command ---
