@@ -6,6 +6,8 @@ import random
 import io
 from dotenv import load_dotenv
 import os
+from database import users_col, cluster
+from enka_api import fetch_enka_data
 import requests
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from datetime import datetime, timedelta
@@ -759,7 +761,72 @@ async def set_rate_up(message: types.Message):
         CURRENT_RATE_UP_NAME = characters5[new_key]
         await message.answer(f"✅ Banner Updated!\n**New Rate-Up:** {CURRENT_RATE_UP_NAME}")
     else:
-        await message.answer(f"❌ Character `{new_key}` not found in 5-star list.")   
+        await message.answer(f"❌ Character `{new_key}` not found in 5-star list.")  
+
+
+# ---------------- Main Enka ----------------
+@dp.message(Command("login"))
+async def login_uid(message: types.Message):
+    args = message.text.split()
+    if len(args) < 2:
+        return await message.answer("❓ **Usage:** `/login <uid>`")
+
+    uid = args[1]
+    if not uid.isdigit():
+        return await message.answer("❌ Please enter a numeric UID.")
+
+    status_msg = await message.answer(f"🔍 Verifying UID {uid}...")
+    data = await fetch_enka_data(uid)
+    
+    if not data or "playerInfo" not in data:
+        return await status_msg.edit_text("❌ UID not found or Showcase is private.")
+
+    player = data["playerInfo"]
+    await users_col.update_one(
+        {"user_id": str(message.from_user.id)},
+        {"$set": {"genshin_uid": int(uid)}},
+        upsert=True
+    )
+    await status_msg.edit_text(f"✅ **Login Successful!**\n👤 **Player:** {player.get('nickname')} (AR {player.get('level')})")
+
+# --- MyProfile Command ---
+@dp.message(Command("myprofile"))
+async def my_profile(message: types.Message):
+    user_data = await users_col.find_one({"user_id": str(message.from_user.id)})
+    if not user_data or "genshin_uid" not in user_data:
+        return await message.answer("❌ You are not logged in! Use `/login <uid>`.")
+
+    uid = user_data["genshin_uid"]
+    data = await fetch_enka_data(str(uid))
+    if not data:
+        return await message.answer("❌ Could not reach Enka.Network.")
+
+    player = data.get("playerInfo", {})
+    icon_name = player.get("profilePicture", {}).get("baseIcon", "UI_AvatarIcon_Side_PlayerBoy")
+    pfp_url = f"https://enka.network/ui/{icon_name}.png"
+
+    caption = (
+        f"👤 <b>{player.get('nickname', 'Traveler')}</b> (AR {player.get('level', 1)})\n"
+        f"⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯\n"
+        f"🏆 <b>Achievements:</b> {player.get('finishAchievementNum', 0)}\n"
+        f"🆔 <b>UID:</b> <code>{uid}</code>"
+    )
+
+    try:
+        await message.answer_photo(photo=pfp_url, caption=caption, parse_mode="HTML")
+    except Exception:
+        await message.answer(caption, parse_mode="HTML")
+
+# --- Logout Command ---
+@dp.message(Command("logout"))
+async def logout_user(message: types.Message):
+    await users_col.update_one(
+        {"user_id": str(message.from_user.id)},
+        {"$unset": {"genshin_uid": ""}}
+    )
+    await message.answer("✅ **Logged out!** Your UID has been removed.")
+
+
 # ---------------- Main ----------------
 async def main():
     # 1. Test MongoDB connection first
