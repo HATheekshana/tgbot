@@ -730,42 +730,49 @@ async def daily_wish(message: types.Message):
         parse_mode="Markdown"
     )
 async def check_individual_dailies(bot: Bot):
-    """Finds users whose 24h cooldown just expired and notifies them."""
     now = datetime.utcnow()
-    # Find users where (now - last_daily_wish) >= 24 hours
-    # and you might want to add a 'notified' flag so you don't spam them
     threshold = now - timedelta(days=1)
     
     cursor = users_col.find({
         "last_daily_wish": {"$lte": threshold},
-        "notification_sent": {"$ne": True} # Only those not yet alerted
+        "notification_sent": {"$ne": True}
     })
+
+    # 1. Generate the image once to save CPU/Memory
     file_path = f"https://raw.githubusercontent.com/Mantan21/Genshin-Impact-Wish-Simulator/master/src/images/characters/splash-art/5star/{CURRENT_RATE_UP_KEY}.webp"
     bg_path = "https://raw.githubusercontent.com/Mantan21/Genshin-Impact-Wish-Simulator/master/src/images/background/splash-background.webp"
-    splash_name = CURRENT_RATE_UP_NAME
-    splash_rarity = "Rate-Up"
-    combined_img = combine_images(file_path, bg_path, splash_name, splash_rarity)
     
-    output = io.BytesIO()
-    combined_img.save(output, format="PNG")
-    output.seek(0)
-    photo_file = BufferedInputFile(output.read(), filename="wish.png")
+    # Use the combine_images logic you already built
+    combined_img = combine_images(file_path, bg_path, CURRENT_RATE_UP_NAME, "Rate-Up")
+    
+    # Store the raw bytes in memory
+    img_byte_arr = io.BytesIO()
+    combined_img.save(img_byte_arr, format="PNG")
+    img_data = img_byte_arr.getvalue() # Get the actual bytes
+
     async for user in cursor:
         try:
+            # 2. Create a fresh file object for EACH user
+            photo_file = BufferedInputFile(img_data, filename="wish.png")
+            
             await bot.send_photo(
-                photo=photo_file,
                 chat_id=user["user_id"],
-                text="✨ **Your Daily Wish is ready!** ✨\nClaim it now to keep your streak alive!\nCurrent Rate up :" + CURRENT_RATE_UP_NAME,
+                photo=photo_file,
+                caption=( # Use 'caption' instead of 'text'
+                    f"✨ **Your Daily Wish is ready!** ✨\n"
+                    f"Claim it now to keep your streak alive!\n"
+                    f"Current Rate up: {CURRENT_RATE_UP_NAME}"
+                ),
                 parse_mode="Markdown"
             )
-            # Mark as notified so they don't get another message in 10 minutes
+            
             await users_col.update_one(
                 {"user_id": user["user_id"]},
                 {"$set": {"notification_sent": True}}
             )
-            await asyncio.sleep(0.05) 
-        except Exception:
-            pass
+            await asyncio.sleep(0.05) # Prevent Telegram flood limits
+        except Exception as e:
+            logging.error(f"Failed to notify {user['user_id']}: {e}")
 @dp.message(Command("collection"))
 async def show_collection(message: types.Message):
 
