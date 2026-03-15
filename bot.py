@@ -794,31 +794,43 @@ async def login_uid(message: types.Message):
 @dp.message(Command("myprofile"))
 async def my_profile(message: types.Message):
     user_data = await users_col.find_one({"user_id": str(message.from_user.id)})
+    
     if not user_data or "genshin_uid" not in user_data:
-        return await message.answer("❌ You are not logged in! Use `/login <uid>`.")
+        return await message.answer("❌ You are not logged in! Use `/login <uid>`.", parse_mode="HTML")
 
     uid = user_data["genshin_uid"]
-    status = await message.answer("🖼 Creating your Profile Card...")
-    player = data.get("playerInfo", {})
-    nickname = player.get("nickname", "Traveler")
-    level = player.get("level", 1)
-    signature = player.get("signature", "No signature")
-    achievements = player.get("finishAchievementNum", 0)
-    card_image = generate_profile_card(data)
-    caption = (
-        f"👤 <b>{nickname}</b> (AR {level})\n"
-        f"⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯\n"
-        f"💬 <i>{signature}</i>\n\n"
-        f"🏆 <b>Achievements:</b> {achievements}\n"
-        f"🆔 <b>UID:</b> <code>{uid}</code>"
-    )
+    status = await message.answer("🖼 Fetching data and creating your card...")
 
     try:
-        # Call the new library function
+        # 1. Fetch the raw data for your caption
+        # (Assuming you have a function named fetch_enka_data)
+        data = await fetch_enka_data(str(uid))
+        if not data:
+            raise Exception("Could not fetch data from Enka")
+
+        player = data.get("playerInfo", {})
+        nickname = player.get("nickname", "Traveler")
+        level = player.get("level", 1)
+        signature = player.get("signature", "No signature")
+        achievements = player.get("finishAchievementNum", 0)
+
+        # 2. Generate the visual card using the UID
         card_image = await generate_profile_card(uid)
+        card_image.seek(0)
         
         photo = BufferedInputFile(card_image.read(), filename=f"{uid}_card.png")
-        await message.answer_photo(photo=photo, caption=caption , parse_mode="HTML")
+
+        # 3. Create the caption with all the details
+        caption = (
+            f"👤 <b>{nickname}</b> (AR {level})\n"
+            f"⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯\n"
+            f"💬 <i>{signature}</i>\n\n"
+            f"🏆 <b>Achievements:</b> {achievements}\n"
+            f"🆔 <b>UID:</b> <code>{uid}</code>"
+        )
+
+        await message.answer_photo(photo=photo, caption=caption, parse_mode="HTML")
+
     except Exception as e:
         await message.answer(f"❌ Error: {e}")
     finally:
