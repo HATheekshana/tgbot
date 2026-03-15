@@ -769,7 +769,7 @@ async def set_rate_up(message: types.Message):
 async def login_uid(message: types.Message):
     args = message.text.split()
     if len(args) < 2:
-        return await message.answer("❓ <b>Usage:</b> `/login <uid>`"),parse_mode="HTML"
+        return await message.answer("❓ <b>Usage:</b> `/login <uid>`",parse_mode="HTML")
 
     uid = args[1]
     if not uid.isdigit():
