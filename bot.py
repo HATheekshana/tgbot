@@ -769,7 +769,7 @@ async def set_rate_up(message: types.Message):
 async def login_uid(message: types.Message):
     args = message.text.split()
     if len(args) < 2:
-        return await message.answer("❓ <b>Usage:</b> `/login <uid>`")
+        return await message.answer("❓ <b>Usage:</b> `/login <uid>`"),parse_mode="HTML"
 
     uid = args[1]
     if not uid.isdigit():
@@ -787,7 +787,7 @@ async def login_uid(message: types.Message):
         {"$set": {"genshin_uid": int(uid)}},
         upsert=True
     )
-    await status_msg.edit_text(f"✅ <b>Login Successful!</b>\n👤 <b>Player:</b> {player.get('nickname')} (AR {player.get('level')})")
+    await status_msg.edit_text(f"✅ <b>Login Successful!</b>\n👤 <b>Player:</b> {player.get('nickname')} (AR {player.get('level')})", parse_mode="HTML")
 
 # --- MyProfile Command ---
 @dp.message(Command("myprofile"))
