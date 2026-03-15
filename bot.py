@@ -793,60 +793,48 @@ async def login_uid(message: types.Message):
 # --- MyProfile Command ---
 @dp.message(Command("myprofile"))
 async def my_profile(message: types.Message):
-    # 1. Get user from Database
     user_data = await users_col.find_one({"user_id": str(message.from_user.id)})
-    
     if not user_data or "genshin_uid" not in user_data:
-        return await message.answer("❌ You are not logged in! Use `/login <uid>`.", parse_mode="HTML")
+        return await message.answer("❌ Use /login <uid> first.")
 
-    uid = str(user_data["genshin_uid"])
-    status = await message.answer("🖼 Fetching data and creating your card...")
+    db_uid = user_data["genshin_uid"]
+    status = await message.answer("🖼 Generating Card...")
 
     try:
-        # 2. Fetch raw data for the text caption
-        data = await fetch_enka_data(uid)
-        if not data:
-            return await message.answer("❌ Could not connect to Enka.Network. Try again later.")
+        async with encbanner.ENC() as encard:
+            # 1. Fetch the data object (This replaces your old 'data' variable)
+            ENCpy = await encard.enc(uids=str(db_uid))
+            
+            # 2. Extract values for the caption
+            uid = ENCpy.get("uid")
+            player = ENCpy.get("playerInfo", {})
+            nickname = player.get("nickname", "Traveler")
+            level = player.get("level", 0)
+            achievements = player.get("finishAchievementNum", 0)
+            signature = player.get("signature", "")
 
-        player = data.get("playerInfo", {})
-        nickname = player.get("nickname", "Traveler")
-        level = player.get("level", 1)
-        signature = player.get("signature", "No signature")
-        achievements = player.get("finishAchievementNum", 0)
+            # 3. Try to generate the image
+            result = await encard.creat(ENCpy, 4)
+            pill_image = result.get("card", {}).get("1-4")
 
-        # 3. Generate the Image Card using the library
-        # We wrap this in a try-except specifically for the library 'banner' error
-        try:
-            card_image = await generate_profile_card(uid)
-        except Exception as lib_e:
-            print(f"Library Error: {lib_e}")
-            card_image = None
-
-        # 4. Create the Caption
-        caption = (
-            f"👤 <b>{nickname}</b> (AR {level})\n"
-            f"⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯\n"
-            f"💬 <i>{signature}</i>\n\n"
-            f"🏆 <b>Achievements:</b> {achievements}\n"
-            f"🆔 <b>UID:</b> <code>{uid}</code>"
-        )
-
-        # 5. Send Response
-        if card_image:
-            card_image.seek(0)
-            photo = BufferedInputFile(card_image.read(), filename=f"{uid}_card.png")
-            await message.answer_photo(photo=photo, caption=caption, parse_mode="HTML")
-        else:
-            # Fallback if the image fails but data is okay
-            await message.answer(
-                f"⚠️ Card generation failed, but here is your info:\n\n{caption}\n\n"
-                "<i>Tip: Make sure 'Show Character Detail' is ON in game settings!</i>",
-                parse_mode="HTML"
+            caption = (
+                f"👤 <b>{nickname}</b> (AR {level})\n"
+                f"⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯\n"
+                f"💬 <i>{signature}</i>\n\n"
+                f"🏆 <b>Achievements:</b> {achievements}\n"
+                f"🆔 <b>UID:</b> <code>{uid}</code>"
             )
 
+            if pill_image:
+                img_bin = io.BytesIO()
+                pill_image.save(img_bin, format='PNG')
+                img_bin.seek(0)
+                await message.answer_photo(BufferedInputFile(img_bin.read(), filename="card.png"), caption=caption, parse_mode="HTML")
+            else:
+                await message.answer(f"⚠️ Image failed, but here is your info:\n\n{caption}", parse_mode="HTML")
+
     except Exception as e:
-        await message.answer(f"❌ Unexpected Error: {e}")
-        print(f"Full Error: {e}")
+        await message.answer(f"❌ Error: {e}")
     finally:
         await status.delete()
 # --- Logout Command ---
