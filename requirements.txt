@@ -7,4 +7,4 @@ apscheduler
 pytz
 python-dotenv
 aiohttp
-enkacard
+aioenkanetworkcard
