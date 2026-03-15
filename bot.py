@@ -793,7 +793,7 @@ async def login_uid(message: types.Message):
 @dp.message(Command("myprofile"))
 async def my_profile(message: types.Message):
     user_data = await users_col.find_one({"user_id": str(message.from_user.id)})
-    
+
     if not user_data or "genshin_uid" not in user_data:
         return await message.answer("❌ You are not logged in! Use `/login <uid>`.", parse_mode="HTML")
 
@@ -801,33 +801,24 @@ async def my_profile(message: types.Message):
     data = await fetch_enka_data(str(uid))
 
     if not data:
-        return await message.answer("❌ Could not reach Enka.Network.", parse_mode="HTML")
+        return await message.answer("❌ Could not reach Enka.Network. Try again later.", parse_mode="HTML")
 
     player = data.get("playerInfo", {})
-    
-    # CORRECT PFP LOGIC
-    icon_name = player.get("profilePicture", {}).get("baseIcon", "UI_AvatarIcon_Side_PlayerBoy")
-    pfp_url = f"https://enka.network/ui/{icon_name}.png"
+    nickname = player.get("nickname", "Traveler")
+    level = player.get("level", 1)
+    signature = player.get("signature", "No signature")
+    achievements = player.get("finishAchievementNum", 0)
 
     caption = (
-        f"👤 <b>{player.get('nickname', 'Traveler')}</b> (AR {player.get('level', 1)})\n"
+        f"👤 <b>{nickname}</b> (AR {level})\n"
         f"⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯\n"
-        f"🏆 <b>Achievements:</b> {player.get('finishAchievementNum', 0)}\n"
+        f"💬 <i>{signature}</i>\n\n"
+        f"🏆 <b>Achievements:</b> {achievements}\n"
         f"🆔 <b>UID:</b> <code>{uid}</code>"
     )
 
-    try:
-        # This sends it as an actual image file in the chat
-        await message.answer_photo(photo=pfp_url, caption=caption, parse_mode="HTML")
-    except Exception as e:
-        # If the image fails, send just the text so the bot doesn't crash
-        await message.answer(caption, parse_mode="HTML")
-
-    try:
-        await message.answer_photo(photo=pfp_url, caption=caption, parse_mode="HTML")
-    except Exception:
-        await message.answer(caption, parse_mode="HTML")
-
+    # We use .answer() instead of .answer_photo() since we removed the PFP lines
+    await message.answer(caption, parse_mode="HTML")
 # --- Logout Command ---
 @dp.message(Command("logout"))
 async def logout_user(message: types.Message):
