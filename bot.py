@@ -798,14 +798,7 @@ async def my_profile(message: types.Message):
         return await message.answer("❌ You are not logged in! Use `/login <uid>`.")
 
     uid = user_data["genshin_uid"]
-    data = await fetch_enka_data(str(uid))
-    if not data:
-        return await message.answer("❌ Could not reach Enka.Network.")
-
-    # Show a "Processing" message because image generation takes a second
-    status = await message.answer("🖼 Generating your profile...")
-
-    # Generate the image
+    status = await message.answer("🖼 Creating your Profile Card...")
     player = data.get("playerInfo", {})
     nickname = player.get("nickname", "Traveler")
     level = player.get("level", 1)
@@ -819,20 +812,17 @@ async def my_profile(message: types.Message):
         f"🏆 <b>Achievements:</b> {achievements}\n"
         f"🆔 <b>UID:</b> <code>{uid}</code>"
     )
-    
-    # Send as a photo
-    photo = BufferedInputFile(card_image.read(), filename="profile_card.png")
+
     try:
-        card_bytes = generate_profile_card(data)
-        photo = BufferedInputFile(card_bytes.read(), filename="profile.png")
-        await message.answer_photo(photo=photo, caption=caption, parse_mode="HTML")
+        # Call the new library function
+        card_image = await generate_profile_card(uid)
+        
+        photo = BufferedInputFile(card_image.read(), filename=f"{uid}_card.png")
+        await message.answer_photo(photo=photo, caption=caption , parse_mode="HTML")
     except Exception as e:
-        await message.answer(f"❌ Error generating card: {e}")
+        await message.answer(f"❌ Error: {e}")
     finally:
         await status.delete()
-    
-    # Remove the "Processing" message
-    await status.delete()
 # --- Logout Command ---
 @dp.message(Command("logout"))
 async def logout_user(message: types.Message):
