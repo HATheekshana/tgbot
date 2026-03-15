@@ -13,6 +13,11 @@ WORKDIR /app
 # Install the library directly to ensure it exists
 RUN pip install --no-cache-dir aioenkanetworkcard aiogram motor python-dotenv
 
+COPY requirements.txt .
+
+# 3. THIS IS THE INSTALL LINE
+RUN pip install --no-cache-dir -r requirements.txt
+
 COPY . .
 
 CMD ["python", "bot.py"]
