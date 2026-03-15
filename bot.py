@@ -793,20 +793,20 @@ async def login_uid(message: types.Message):
 # --- MyProfile Command ---
 @dp.message(Command("myprofile"))
 async def my_profile(message: types.Message):
+    # 1. Get user from Database
     user_data = await users_col.find_one({"user_id": str(message.from_user.id)})
     
     if not user_data or "genshin_uid" not in user_data:
         return await message.answer("❌ You are not logged in! Use `/login <uid>`.", parse_mode="HTML")
 
-    uid = user_data["genshin_uid"]
+    uid = str(user_data["genshin_uid"])
     status = await message.answer("🖼 Fetching data and creating your card...")
 
     try:
-        # 1. Fetch the raw data for your caption
-        # (Assuming you have a function named fetch_enka_data)
-        data = await fetch_enka_data(str(uid))
+        # 2. Fetch raw data for the text caption
+        data = await fetch_enka_data(uid)
         if not data:
-            raise Exception("Could not fetch data from Enka")
+            return await message.answer("❌ Could not connect to Enka.Network. Try again later.")
 
         player = data.get("playerInfo", {})
         nickname = player.get("nickname", "Traveler")
@@ -814,13 +814,15 @@ async def my_profile(message: types.Message):
         signature = player.get("signature", "No signature")
         achievements = player.get("finishAchievementNum", 0)
 
-        # 2. Generate the visual card using the UID
-        card_image = await generate_profile_card(uid)
-        card_image.seek(0)
-        
-        photo = BufferedInputFile(card_image.read(), filename=f"{uid}_card.png")
+        # 3. Generate the Image Card using the library
+        # We wrap this in a try-except specifically for the library 'banner' error
+        try:
+            card_image = await generate_profile_card(uid)
+        except Exception as lib_e:
+            print(f"Library Error: {lib_e}")
+            card_image = None
 
-        # 3. Create the caption with all the details
+        # 4. Create the Caption
         caption = (
             f"👤 <b>{nickname}</b> (AR {level})\n"
             f"⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯\n"
@@ -829,10 +831,22 @@ async def my_profile(message: types.Message):
             f"🆔 <b>UID:</b> <code>{uid}</code>"
         )
 
-        await message.answer_photo(photo=photo, caption=caption, parse_mode="HTML")
+        # 5. Send Response
+        if card_image:
+            card_image.seek(0)
+            photo = BufferedInputFile(card_image.read(), filename=f"{uid}_card.png")
+            await message.answer_photo(photo=photo, caption=caption, parse_mode="HTML")
+        else:
+            # Fallback if the image fails but data is okay
+            await message.answer(
+                f"⚠️ Card generation failed, but here is your info:\n\n{caption}\n\n"
+                "<i>Tip: Make sure 'Show Character Detail' is ON in game settings!</i>",
+                parse_mode="HTML"
+            )
 
     except Exception as e:
-        await message.answer(f"❌ Error: {e}")
+        await message.answer(f"❌ Unexpected Error: {e}")
+        print(f"Full Error: {e}")
     finally:
         await status.delete()
 # --- Logout Command ---
