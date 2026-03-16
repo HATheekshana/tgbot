@@ -802,7 +802,6 @@ async def login_uid(message: types.Message):
 # --- MyProfile Command ---
 @dp.message(Command("myprofile"))
 async def my_profile(message: types.Message):
-    # 1. Get UID from your MongoDB
     user_data = await users_col.find_one({"user_id": str(message.from_user.id)})
     if not user_data or "genshin_uid" not in user_data:
         return await message.answer("❌ Please /login <uid> first.")
@@ -811,7 +810,6 @@ async def my_profile(message: types.Message):
     status = await message.answer("🔄 Fetching Game Data...")
 
     try:
-        # 2. Get the raw JSON data
         raw_data = await get_enka_data(db_uid)
         
         if not raw_data:
@@ -820,11 +818,9 @@ async def my_profile(message: types.Message):
         if "avatarInfoList" not in raw_data:
             return await message.answer("❌ Character Showcase is hidden! Enable 'Show Character Details' in Genshin.")
 
-        # 3. Send data to the renderer
         pill_image = await generate_profile_card(raw_data)
 
         if pill_image:
-            # Convert PIL Image to bytes for Telegram
             img_bin = io.BytesIO()
             pill_image.save(img_bin, format='PNG')
             img_bin.seek(0)

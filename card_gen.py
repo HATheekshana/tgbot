@@ -1,24 +1,27 @@
 import io
 import traceback
 from aioenkanetworkcard import encbanner
-from enkanetwork import EnkaNetworkAPI # Correct class name
+from enkanetwork import EnkaNetworkAPI
 
 async def generate_profile_card(data: dict):
     try:
-        # 1. Use the correct API client to wrap the data
-        # This properly initializes the internal 'artifact_props' and 'Language' maps
+        # 1. Initialize the official API client
         client = EnkaNetworkAPI()
-        wrapped_data = client._parse_data(data)
+        
+        # 2. Set language and parse the raw dictionary
+        # This is the official way to turn JSON into the required Object
+        client.lang = "en"
+        wrapped_data = client.parse_data(data)
 
         async with encbanner.ENC() as encard:
-            # 2. Request Template 4
-            result = await encard.creat(wrapped_data, 4) 
+            # 3. Request Template 4
+            result = await encard.creat(wrapped_data, 1) 
             
             if not result or "card" not in result:
                 print("❌ Library Error: .creat() returned an empty result.")
                 return None
 
-            # 3. Extract the image for Template 4 (Key '1-4')
+            # 4. Extract the image for Template 4 (Key '1-4')
             pill_image = result.get("card", {}).get("1-4")
             
             if pill_image:
