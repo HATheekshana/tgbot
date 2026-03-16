@@ -18,7 +18,7 @@ async def generate_profile_card(data: dict):
         async with encbanner.ENC() as encard:
             # 3. Request Template 4
             # We use Template 4 as you originally wanted
-            result = await encard.creat(wrapped_data, 4) 
+            result = await encard.creat(wrapped_data, 1) 
             
             if not result or "card" not in result:
                 print("❌ Library Error: .creat() returned no card dictionary.")
