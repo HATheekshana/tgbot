@@ -766,13 +766,14 @@ async def set_rate_up(message: types.Message):
     else:
         await message.answer(f"❌ Character `{new_key}` not found in 5-star list.")  
 
-async def get_profile(uid):
-    # 1. Fetch data manually to skip the library's broken validation
+async def get_enka_data(uid: str):
+    """Directly fetches data from Enka.Network API"""
+    url = f"https://enka.network/api/uid/{uid}/"
     async with aiohttp.ClientSession() as session:
-        async with session.get(f"https://enka.network/api/uid/{uid}/") as resp:
-            if resp.status != 200:
-                return None
-            return await resp.json()
+        async with session.get(url) as resp:
+            if resp.status == 200:
+                return await resp.json()
+            return None
 # ---------------- Main Enka ----------------
 @dp.message(Command("login"))
 async def login_uid(message: types.Message):
@@ -801,49 +802,44 @@ async def login_uid(message: types.Message):
 # --- MyProfile Command ---
 @dp.message(Command("myprofile"))
 async def my_profile(message: types.Message):
-    # 1. Fetch user from MongoDB
+    # 1. Get UID from your MongoDB
     user_data = await users_col.find_one({"user_id": str(message.from_user.id)})
-    
     if not user_data or "genshin_uid" not in user_data:
-        return await message.answer("❌ You are not logged in. Use /login <uid>")
+        return await message.answer("❌ Please /login <uid> first.")
 
     db_uid = str(user_data["genshin_uid"]).strip()
-    status = await message.answer("🔄 Connecting to Enka.Network...")
+    status = await message.answer("🔄 Fetching Game Data...")
 
     try:
-        # 2. Manual Fetch (Bypassing library's UID validation)
-        data = await get_profile(db_uid)
+        # 2. Get the raw JSON data
+        raw_data = await get_enka_data(db_uid)
         
-        if not data or "playerInfo" not in data:
-            return await message.answer("❌ Could not find public data for this UID. Is your showcase public?")
-
-        # 3. Generate the Image using the fetched data
-        async with encbanner.ENC() as encard:
-            # We pass the 'data' dictionary directly to .creat()
-            result = await encard.creat(data, 4) 
+        if not raw_data:
+            return await message.answer("❌ UID not found on Enka.Network.")
             
-            cards = result.get("card", {})
-            pill_image = cards.get("1-4")
+        if "avatarInfoList" not in raw_data:
+            return await message.answer("❌ Character Showcase is hidden! Enable 'Show Character Details' in Genshin.")
 
-            if pill_image:
-                # Prepare image for Telegram
-                img_bin = io.BytesIO()
-                pill_image.save(img_bin, format='PNG')
-                img_bin.seek(0)
-                
-                nickname = data.get("playerInfo", {}).get("nickname", "Traveler")
-                
-                await message.answer_photo(
-                    photo=BufferedInputFile(img_bin.read(), filename=f"{db_uid}.png"),
-                    caption=f"👤 <b>{nickname}</b>\n🆔 UID: <code>{db_uid}</code>",
-                    parse_mode="HTML"
-                )
-            else:
-                await message.answer("⚠️ Data fetched, but image generation failed.")
+        # 3. Send data to the renderer
+        pill_image = await generate_profile_card(raw_data)
+
+        if pill_image:
+            # Convert PIL Image to bytes for Telegram
+            img_bin = io.BytesIO()
+            pill_image.save(img_bin, format='PNG')
+            img_bin.seek(0)
+            
+            nickname = raw_data.get("playerInfo", {}).get("nickname", "Traveler")
+            await message.answer_photo(
+                photo=BufferedInputFile(img_bin.read(), filename=f"{db_uid}.png"),
+                caption=f"👤 <b>{nickname}</b>\n🆔 UID: <code>{db_uid}</code>",
+                parse_mode="HTML"
+            )
+        else:
+            await message.answer("⚠️ Rendering failed. Please try again later.")
 
     except Exception as e:
-        await message.answer(f"❌ <b>Error:</b> {e}")
-        print(f"Detailed Card Error: {e}") # Check your VPS logs for this!
+        await message.answer(f"❌ Error: {e}")
     finally:
         await status.delete()
 # --- Logout Command ---
