@@ -1,31 +1,30 @@
 import io
 import traceback
 from aioenkanetworkcard import encbanner
-from enkanetwork.model.base import EnkaNetworkResponse # Add this import
+from enkanetwork.model.base import EnkaNetworkResponse
+from enkanetwork import Assets # Important new import
 
 async def generate_profile_card(data: dict):
     try:
-        # 1. Convert the raw dictionary into the Object the library wants
-        # This adds the .characters attribute the error was complaining about
+        # 1. FORCE ASSET RELOAD
+        # This ensures the 'artifact_props' key actually exists in memory
+        await Assets.reload_assets() 
+
+        # 2. Wrap the data
         wrapped_data = EnkaNetworkResponse.parse_obj(data)
 
         async with encbanner.ENC() as encard:
-            print("🎨 Rendering with wrapped data...")
-            
-            # 2. Pass the WRAPPED data, not the raw 'data'
+            # We use template 1 for testing stability
             result = await encard.creat(wrapped_data, 1) 
             
             if not result or "card" not in result:
-                print("❌ Library returned empty result.")
+                print("❌ Library Error: Result dictionary is empty.")
                 return None
 
-            cards = result.get("card", {})
-            # For Template 1, use '1-1'. For Template 4, use '1-4'.
-            pill_image = cards.get("1-1") 
-            
+            pill_image = result.get("card", {}).get("1-1")
             return pill_image
 
     except Exception as e:
-        print("--- 🚨 RENDERING ERROR 🚨 ---")
-        traceback.print_exc() 
+        print("--- 🚨 FINAL DEBUG LOG 🚨 ---")
+        traceback.print_exc()
         return None
