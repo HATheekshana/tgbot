@@ -1,22 +1,29 @@
 import io
+import traceback
 from aioenkanetworkcard import encbanner
 
 async def generate_profile_card(data: dict):
-    """
-    Takes raw JSON data from Enka API and returns a PIL Image object.
-    """
     try:
-        # We use the ENC context manager to handle the drawing assets
+        # We use template 1 for testing because it has the fewest requirements
         async with encbanner.ENC() as encard:
-            # We use 'creat' instead of 'enc' to bypass UID validation
-            # 4 is the template ID (you can change this to 1, 2, or 3)
-            result = await encard.creat(data, 4)
+            print("🎨 Starting render for template 1...")
+            result = await encard.creat(data, 1) 
             
-            # The library returns a dict containing the image
+            if not result or "card" not in result:
+                # If result is empty, the library failed internally without raising an error
+                print("❌ Library Error: .creat() returned an empty dictionary.")
+                return None
+
             cards = result.get("card", {})
-            pill_image = cards.get("1-4")
+            # Template 1 uses index "1-1"
+            pill_image = cards.get("1-1")
             
+            if pill_image:
+                print("✅ Render successful!")
             return pill_image
+
     except Exception as e:
-        print(f"Rendering Error: {e}")
+        print("--- 🚨 CRITICAL RENDERING ERROR 🚨 ---")
+        traceback.print_exc() 
+        print("---------------------------------------")
         return None
