@@ -3,7 +3,6 @@ from motor.motor_asyncio import AsyncIOMotorClient
 import logging
 import sys
 import random
-import genshin
 import io
 import aiohttp
 from dotenv import load_dotenv
@@ -802,11 +801,6 @@ async def login_uid(message: types.Message):
     await status_msg.edit_text(f"✅ <b>Login Successful! <code>{uid}</code></b>\n👤 <b>Player:</b> {player.get('nickname')} (AR {player.get('level')})", parse_mode="HTML")
 
 # --- MyProfile Command ---
-from aiogram import types
-from aiogram.filters import Command
-import asyncio
-
-# --- The Profile Command ---
 @dp.message(Command("myprofile"))
 async def my_profile(message: types.Message):
     # 1. Get UID from MongoDB
@@ -854,37 +848,6 @@ async def my_profile(message: types.Message):
         try: await status.delete()
         except: pass
         await message.reply(f"❌ <b>Error:</b> <code>{str(e)}</code>", parse_mode="HTML")
-
-# --- Supporting Utility Function for Abyss ---
-async def get_abyss_data(uid: int):
-    """Formats Abyss data into the 'Floor/Chamber' box style"""
-    client = genshin.Client(COOKIES)
-    client.region = genshin.Region.OVERSEAS
-    
-    try:
-        abyss = await client.get_genshin_spiral_abyss(uid)
-        if not abyss.floors:
-            return None
-
-        abyss_msg = ""
-        # We target Floors 11 and 12 specifically
-        for floor in abyss.floors:
-            if floor.floor < 11:
-                continue
-                
-            abyss_msg += f"┏【FLOOR {floor.floor}】\n"
-            
-            for chamber in floor.chambers:
-                stars = "★" * chamber.stars
-                empty = "☆" * (3 - chamber.stars)
-                abyss_msg += f"┣ Chamber {chamber.chamber} - {stars}{empty}\n"
-            
-            abyss_msg += "┗━━━━━━━━━━━━━━━━\n"
-            
-        return abyss_msg
-
-    except Exception:
-        return None
 # ---------------- Main ----------------
 async def main():
     # 1. Test MongoDB connection first
