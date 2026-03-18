@@ -808,33 +808,33 @@ async def my_profile(message: types.Message):
         return await message.answer("❌ Please /login <uid> first.")
 
     db_uid = str(user_data["genshin_uid"]).strip()
+    
+    # 1. Send the temporary status message and store it in 'status'
     status = await message.answer("🔄 Fetching Game Data...")
 
-    exploration_data = await get_exploration_data(db_uid)
-    
-    if not exploration_data:
-        await message.reply("Could not find data. Is your profile public?")
-        return
+    try:
+        exploration_data = await get_exploration_data(db_uid)
+        
+        # 2. DELETE the "Fetching..." message now that the work is done
+        await status.delete()
 
-    # 2. Format the message string
-    msg = f"<b>🌍 Exploration for {db_uid}</b>\n"
-    msg += "═" * 20 + "\n"
-    
-    # Only show major regions to keep the message short
-    for area in exploration_data: 
-        msg += f"📍 <code>{area['name']:15}</code>: {area['percent']}%\n"
-    
-    await message.reply(msg, parse_mode="HTML")
-# --- Logout Command ---
-@dp.message(Command("logout"))
-async def logout_user(message: types.Message):
-    await users_col.update_one(
-        {"user_id": str(message.from_user.id)},
-        {"$unset": {"genshin_uid": ""}}
-    )
-    await message.answer("✅ <b>Logged out!</b> Your UID has been removed.", parse_mode="HTML")
+        if not exploration_data:
+            return await message.reply("Could not find data. Is your profile public?")
 
+        # 3. Format the final message
+        msg = f"<b>🌍 Exploration for {db_uid}</b>\n"
+        msg += "═" * 20 + "\n"
+        
+        for area in exploration_data: 
+            msg += f"📍 <code>{area['name']:15}</code>: {area['percent']}%\n"
+        
+        # 4. Send the final results
+        await message.reply(msg, parse_mode="HTML")
 
+    except Exception as e:
+        # Also delete the status message if an error occurs so it's not stuck there
+        await status.delete()
+        await message.reply(f"❌ An error occurred: {e}")
 # ---------------- Main ----------------
 async def main():
     # 1. Test MongoDB connection first
