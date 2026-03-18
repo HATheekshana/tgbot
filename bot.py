@@ -3,6 +3,7 @@ from motor.motor_asyncio import AsyncIOMotorClient
 import logging
 import sys
 import random
+import genshin
 import io
 import aiohttp
 from dotenv import load_dotenv
