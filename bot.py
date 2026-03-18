@@ -19,6 +19,7 @@ from aiogram.filters import Command
 from pytz import timezone
 from card_gen import generate_profile_card
 from wishing import combine_images
+from genshin_utils import get_exploration_data
 from data import weapons3, characters4, characters5, rare
 
 ITEMS_PER_PAGE = 10
@@ -809,35 +810,21 @@ async def my_profile(message: types.Message):
     db_uid = str(user_data["genshin_uid"]).strip()
     status = await message.answer("🔄 Fetching Game Data...")
 
-    try:
-        raw_data = await get_enka_data(db_uid)
-        
-        if not raw_data:
-            return await message.answer("❌ UID not found on Enka.Network.")
-            
-        if "avatarInfoList" not in raw_data:
-            return await message.answer("❌ Character Showcase is hidden! Enable 'Show Character Details' in Genshin.")
+    exploration_data = await fetch_user_exploration(db_uid)
+    
+    if not exploration_data:
+        await message.reply("Could not find data. Is your profile public?")
+        return
 
-        pill_image = await generate_profile_card(raw_data)
-
-        if pill_image:
-            img_bin = io.BytesIO()
-            pill_image.save(img_bin, format='PNG')
-            img_bin.seek(0)
-            
-            nickname = raw_data.get("playerInfo", {}).get("nickname", "Traveler")
-            await message.answer_photo(
-                photo=BufferedInputFile(img_bin.read(), filename=f"{db_uid}.png"),
-                caption=f"👤 <b>{nickname}</b>\n🆔 UID: <code>{db_uid}</code>",
-                parse_mode="HTML"
-            )
-        else:
-            await message.answer("⚠️ Rendering failed. Please try again later.")
-
-    except Exception as e:
-        await message.answer(f"❌ Error: {e}")
-    finally:
-        await status.delete()
+    # 2. Format the message string
+    msg = f"<b>🌍 Exploration for {uid}</b>\n"
+    msg += "═" * 20 + "\n"
+    
+    # Only show major regions to keep the message short
+    for area in exploration_data[:8]: 
+        msg += f"📍 <code>{area['name']:15}</code>: {area['percent']}%\n"
+    
+    await message.reply(msg, parse_mode="HTML")
 # --- Logout Command ---
 @dp.message(Command("logout"))
 async def logout_user(message: types.Message):
