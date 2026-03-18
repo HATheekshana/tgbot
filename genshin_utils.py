@@ -7,7 +7,7 @@ COOKIES = {
     "ltoken_v2": "v2_CAISDGM5b3FhcTNzM2d1OBokZTFmZTViNmItZDgxOS00MzNlLWJiZDktYWJkMTEzMWY1ZmY0INeWk8cGKOrUmKYFMO7Jy-ABQgtiYnNfb3ZlcnNlYVhq.yaO6aQAAAAAB.MEYCIQDQBTz_522dl6rUMbI-jxblNiNf4e4A0wCl77JnTabgjwIhAJ6sy3bnNbxS_3LlSZRgKaAM4HMMZrFD4WwPMHvsGcmq"
 }
 
-async def fetch_user_exploration(uid: int):
+async def get_user_exploration(uid: int):
     client = genshin.Client(COOKIES)
     client.region = genshin.Region.OVERSEAS
     
