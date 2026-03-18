@@ -6,7 +6,7 @@ COOKIES = {
     "ltuid_v2": "471000302",
     "ltoken_v2": "v2_CAISDGM5b3FhcTNzM2d1OBokZTFmZTViNmItZDgxOS00MzNlLWJiZDktYWJkMTEzMWY1ZmY0IKKB680GKK2E3O0DMO7Jy-ABQgtiYnNfb3ZlcnNlYVhqagJTRw.osC6aQAAAAAB.MEQCIC1EZw11MIyxRrnXaBoYbja47_FMu200rMVZEEYS7SL_AiAuQdbtZZc-G7CDtR0IciOV_tJg8iw8tG5FbL1sFkpYAw"
 }
-async def get_player_basics(uid: int):
+async def get_player_full_data(uid: int):
     client = genshin.Client(COOKIES)
     client.region = genshin.Region.OVERSEAS
     
@@ -15,14 +15,15 @@ async def get_player_basics(uid: int):
         
         return {
             "name": data.info.nickname,
-            "level": data.info.level,          # AR
+            "level": data.info.level,             # AR
             "world_level": data.info.world_level, 
-            "signature": data.info.signature,   # Bio
-            "achievements": data.stats.achievements, # Achievement Count
-            "icon": data.info.icon              # PFP URL
+            "signature": data.info.signature,      # Bio
+            "achievements": data.stats.achievements,
+            "days_active": data.stats.days_active, # Total days played
+            "icon": data.info.icon                 # PFP URL
         }
     except Exception as e:
-        print(f"Basic Info Error: {e}")
+        print(f"Data Fetch Error: {e}")
         return None
 async def get_abyss_data(uid: int):
     client = genshin.Client(COOKIES)
