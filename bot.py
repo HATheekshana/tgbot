@@ -19,7 +19,7 @@ from aiogram.filters import Command
 from pytz import timezone
 from card_gen import generate_profile_card
 from wishing import combine_images
-from genshin_utils import get_exploration_data,get_abyss_data
+from genshin_utils import get_exploration_data,get_abyss_data,get_player_basics
 from data import weapons3, characters4, characters5, rare
 
 ITEMS_PER_PAGE = 10
@@ -803,51 +803,53 @@ async def login_uid(message: types.Message):
 # --- MyProfile Command ---
 @dp.message(Command("myprofile"))
 async def my_profile(message: types.Message):
-    # 1. Get UID from MongoDB
+    # Get UID from DB
     user_data = await users_col.find_one({"user_id": str(message.from_user.id)})
     if not user_data or "genshin_uid" not in user_data:
         return await message.answer("❌ Please /login <uid> first.")
 
     db_uid = str(user_data["genshin_uid"]).strip()
     
-    # 2. Send temporary status (This will be deleted later)
-    status = await message.answer("🔄 <b>Fetching Game Data...</b>", parse_mode="HTML")
+    # 1. Send & Delete "Loading" status
+    status = await message.answer("🔄 <b>Accessing Akasha Terminal...</b>", parse_mode="HTML")
+    
+    user_info = await get_player_full_data(db_uid)
+    exploration_data = await get_exploration_data(db_uid)
+    abyss_data = await get_abyss_data(db_uid)
+    
+    await status.delete()
 
-    try:
-        # 3. Fetch Data from both sources
-        # (Assuming these functions are in your utils or defined below)
-        exploration_data = await get_exploration_data(db_uid)
-        abyss_data = await get_abyss_data(db_uid)
+    if not user_info:
+        return await message.reply("Could not find data. Is your profile public?")
+
+    # 2. Build the Caption String
+    caption = f"👤 <b>{user_info['name']}</b> | AR {user_info['level']}\n"
+    caption += f"🏆 <b>Achievements:</b> {user_info['achievements']} | 📅 <b>Days:</b> {user_info['days_active']}\n"
+    
+    if user_info['signature']:
+        caption += f"<i>\"{user_info['signature']}\"</i>\n"
         
-        # 4. Delete the "Fetching" message immediately
-        await status.delete()
+    caption += "<code>" + "═" * 25 + "</code>\n\n"
 
-        if not exploration_data:
-            return await message.reply("Could not find data. Is your profile public?")
+    # Exploration Section
+    caption += "<b>🌍 EXPLORATION</b>\n"
+    for area in exploration_data:
+        caption += f"📍 <code>{area['name']:15}</code>: {area['percent']}%\n"
 
-        # 5. Build the Exploration Section
-        msg = f"<b>🌍 EXPLORATION PROGRESS ({db_uid})</b>\n"
-        msg += "<code>" + "═" * 25 + "</code>\n"
-        
-        for area in exploration_data:
-            # Formatting: Icon + Name (padded to 15 chars) + Percent
-            msg += f"📍 <code>{area['name']:15}</code>: {area['percent']}%\n"
+    # Abyss Section
+    if abyss_data:
+        caption += f"\n<b>⚔️ SPIRAL ABYSS</b>\n{abyss_data}"
 
-        # 6. Build the Abyss Section
-        if abyss_data:
-            msg += f"\n<b>⚔️ SPIRAL ABYSS STATUS</b>\n"
-            msg += abyss_data
-        else:
-            msg += "\n<i>(No Abyss data found for this cycle)</i>"
-
-        # 7. Send the final compiled message
-        await message.reply(msg, parse_mode="HTML")
-
-    except Exception as e:
-        # Safety: Delete status message even if it crashes
-        try: await status.delete()
-        except: pass
-        await message.reply(f"❌ <b>Error:</b> <code>{str(e)}</code>", parse_mode="HTML")
+    # 3. Send PFP as Photo with the Stats as Caption
+    if user_info['icon']:
+        await message.answer_photo(
+            photo=user_info['icon'], 
+            caption=caption, 
+            parse_mode="HTML"
+        )
+    else:
+        # Fallback if no PFP is found
+        await message.answer(caption, parse_mode="HTML")
 # ---------------- Main ----------------
 async def main():
     # 1. Test MongoDB connection first
