@@ -810,7 +810,7 @@ async def my_profile(message: types.Message):
     db_uid = str(user_data["genshin_uid"]).strip()
     status = await message.answer("🔄 Fetching Game Data...")
 
-    exploration_data = await fetch_user_exploration(db_uid)
+    exploration_data = await get_exploration_data(db_uid)
     
     if not exploration_data:
         await message.reply("Could not find data. Is your profile public?")
