@@ -13,16 +13,15 @@ async def get_player_full_data(uid: int):
     try:
         data = await client.get_genshin_user(uid)
         
-        # We use .getattr() or .get() style to prevent crashing if a field is missing
+        # Safe data extraction
         return {
             "name": data.info.nickname,
             "level": data.info.level,
-            "world_level": getattr(data.info, 'world_level', 0),
-            # FIX: Use empty string if signature is missing or moved
-            "signature": getattr(data.info, 'signature', ""), 
+            "world_level": getattr(data.info, "world_level", "N/A"),
+            "signature": getattr(data.info, "signature", ""),
             "achievements": data.stats.achievements,
             "days_active": data.stats.days_active,
-            "icon": data.info.icon
+            "icon": data.info.icon # This is the PFP URL
         }
     except Exception as e:
         import sys
