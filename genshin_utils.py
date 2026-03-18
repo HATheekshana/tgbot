@@ -11,19 +11,19 @@ async def get_player_full_data(uid: int):
     client.region = genshin.Region.OVERSEAS
     
     try:
+        # Just fetch the absolute basics first
         data = await client.get_genshin_user(uid)
         return {
             "name": data.info.nickname,
             "level": data.info.level,
-            "world_level": data.info.world_level, 
-            "signature": data.info.signature,
+            "signature": data.info.signature or "No Bio",
             "achievements": data.stats.achievements,
             "days_active": data.stats.days_active,
-            "icon": data.info.icon
         }
     except Exception as e:
-        # This will print the actual error in your 'docker logs'
-        print(f"CRITICAL ERROR for UID {uid}: {type(e).__name__} - {e}")
+        # FORCE the error to show in Docker logs immediately
+        import sys
+        print(f"!!! GENSHIN API ERROR: {e}", file=sys.stderr, flush=True)
         return None
 async def get_abyss_data(uid: int):
     client = genshin.Client(COOKIES)
