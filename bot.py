@@ -803,27 +803,27 @@ async def login_uid(message: types.Message):
 # --- MyProfile Command ---
 @dp.message(Command("myprofile"))
 async def my_profile(message: types.Message):
-    # 1. Get UID from your MongoDB
+    # 1. Get UID from MongoDB
     user_data = await users_col.find_one({"user_id": str(message.from_user.id)})
     if not user_data or "genshin_uid" not in user_data:
         return await message.answer("❌ Please /login <uid> first.")
 
     db_uid = str(user_data["genshin_uid"]).strip()
     
-    # 2. Show loading status
+    # 2. Loading State
     status = await message.answer("🔄 <b>Accessing Akasha Terminal...</b>", parse_mode="HTML")
     
-    # 3. Fetch Data
+    # 3. Fetch Data (Exploration and Abyss functions assumed to be defined elsewhere)
     user_info = await get_player_full_data(db_uid)
-    exploration_data = await get_exploration_data(db_uid) # Your existing exploration function
-    abyss_data = await get_abyss_data(db_uid)           # Your existing abyss function
+    exploration_data = await get_exploration_data(db_uid)
+    abyss_data = await get_abyss_data(db_uid)
     
     await status.delete()
 
     if not user_info:
         return await message.reply("❌ Data hidden. Is your 'Battle Chronicle' public in HoYoLAB?")
 
-    # 4. Build the Caption String
+    # 4. Build the Text Message
     msg = f"👤 <b>{user_info['name']}</b> | UID: <code>{db_uid}</code>\n"
     msg += f"⭐ <b>AR {user_info['level']}</b> | WL {user_info['world_level']}\n"
     msg += f"🏆 <b>Achievements:</b> {user_info['achievements']} | 📅 <b>Days:</b> {user_info['days_active']}\n"
@@ -833,26 +833,17 @@ async def my_profile(message: types.Message):
         
     msg += "<code>" + "═" * 25 + "</code>\n\n"
 
+    # Exploration Section
     msg += "<b>🌍 EXPLORATION</b>\n"
     for area in exploration_data:
+        # :15 ensures the percentages stay aligned in a column
         msg += f"📍 <code>{area['name']:15}</code>: {area['percent']}%\n"
 
+    # Abyss Section
     if abyss_data:
         msg += f"\n<b>⚔️ SPIRAL ABYSS</b>\n{abyss_data}"
 
-    # 5. Send Photo with Caption (with Fallback)
-    if user_info['icon']:
-        try:
-            return await message.answer_photo(
-                photo=user_info['icon'], 
-                caption=msg, 
-                parse_mode="HTML"
-            )
-        except Exception as e:
-            # If Telegram rejects the URL, log it and fall back to text
-            print(f"!!! PHOTO SEND FAILED: {e} | URL: {user_info['icon']}", file=sys.stderr, flush=True)
-
-    # 6. Fallback to Text-only if photo fails
+    # 5. Send final text message
     await message.answer(msg, parse_mode="HTML")
 # ---------------- Main ----------------
 async def main():
