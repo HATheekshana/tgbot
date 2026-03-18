@@ -817,7 +817,7 @@ async def my_profile(message: types.Message):
         return
 
     # 2. Format the message string
-    msg = f"<b>🌍 Exploration for {uid}</b>\n"
+    msg = f"<b>🌍 Exploration for {db_uid}</b>\n"
     msg += "═" * 20 + "\n"
     
     # Only show major regions to keep the message short
