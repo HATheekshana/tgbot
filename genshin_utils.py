@@ -15,9 +15,11 @@ async def get_player_basics(uid: int):
         
         return {
             "name": data.info.nickname,
-            "level": data.info.level,       # This is the AR
-            "signature": data.info.signature, # This is the Bio
-            "icon": data.info.icon          # URL for the profile picture
+            "level": data.info.level,          # AR
+            "world_level": data.info.world_level, 
+            "signature": data.info.signature,   # Bio
+            "achievements": data.stats.achievements, # Achievement Count
+            "icon": data.info.icon              # PFP URL
         }
     except Exception as e:
         print(f"Basic Info Error: {e}")
