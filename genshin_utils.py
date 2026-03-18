@@ -4,7 +4,7 @@ import genshin
 # Your Central Cookie Store
 COOKIES = {
     "ltuid_v2": "471000302",
-    "ltoken_v2": "v2_CAISDGM5b3FhcTNzM2d1OBokZTFmZTViNmItZDgxOS00MzNlLWJiZDktYWJkMTEzMWY1ZmY0INeWk8cGKOrUmKYFMO7Jy-ABQgtiYnNfb3ZlcnNlYVhq.yaO6aQAAAAAB.MEYCIQDQBTz_522dl6rUMbI-jxblNiNf4e4A0wCl77JnTabgjwIhAJ6sy3bnNbxS_3LlSZRgKaAM4HMMZrFD4WwPMHvsGcmq"
+    "ltoken_v2": "v2_CAISDGM5b3FhcTNzM2d1OBokZTFmZTViNmItZDgxOS00MzNlLWJiZDktYWJkMTEzMWY1ZmY0IKKB680GKK2E3O0DMO7Jy-ABQgtiYnNfb3ZlcnNlYVhqagJTRw.osC6aQAAAAAB.MEQCIC1EZw11MIyxRrnXaBoYbja47_FMu200rMVZEEYS7SL_AiAuQdbtZZc-G7CDtR0IciOV_tJg8iw8tG5FbL1sFkpYAw"
 }
 
 async def get_exploration_data(uid: int):
