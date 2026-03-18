@@ -11,18 +11,20 @@ async def get_player_full_data(uid: int):
     client.region = genshin.Region.OVERSEAS
     
     try:
-        # Just fetch the absolute basics first
         data = await client.get_genshin_user(uid)
+        
+        # We use .getattr() or .get() style to prevent crashing if a field is missing
         return {
             "name": data.info.nickname,
             "level": data.info.level,
-            "signature": data.info.signature or "No Bio",
+            "world_level": getattr(data.info, 'world_level', 0),
+            # FIX: Use empty string if signature is missing or moved
+            "signature": getattr(data.info, 'signature', ""), 
             "achievements": data.stats.achievements,
             "days_active": data.stats.days_active,
             "icon": data.info.icon
         }
     except Exception as e:
-        # FORCE the error to show in Docker logs immediately
         import sys
         print(f"!!! GENSHIN API ERROR: {e}", file=sys.stderr, flush=True)
         return None
