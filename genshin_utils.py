@@ -6,6 +6,22 @@ COOKIES = {
     "ltuid_v2": "471000302",
     "ltoken_v2": "v2_CAISDGM5b3FhcTNzM2d1OBokZTFmZTViNmItZDgxOS00MzNlLWJiZDktYWJkMTEzMWY1ZmY0IKKB680GKK2E3O0DMO7Jy-ABQgtiYnNfb3ZlcnNlYVhqagJTRw.osC6aQAAAAAB.MEQCIC1EZw11MIyxRrnXaBoYbja47_FMu200rMVZEEYS7SL_AiAuQdbtZZc-G7CDtR0IciOV_tJg8iw8tG5FbL1sFkpYAw"
 }
+async def get_player_basics(uid: int):
+    client = genshin.Client(COOKIES)
+    client.region = genshin.Region.OVERSEAS
+    
+    try:
+        data = await client.get_genshin_user(uid)
+        
+        return {
+            "name": data.info.nickname,
+            "level": data.info.level,       # This is the AR
+            "signature": data.info.signature, # This is the Bio
+            "icon": data.info.icon          # URL for the profile picture
+        }
+    except Exception as e:
+        print(f"Basic Info Error: {e}")
+        return None
 async def get_abyss_data(uid: int):
     client = genshin.Client(COOKIES)
     client.region = genshin.Region.OVERSEAS
