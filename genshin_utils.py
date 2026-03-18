@@ -3,8 +3,8 @@ import genshin
 
 # Your Central Cookie Store
 COOKIES = {
-    "ltuid_v2": "471000302",
-    "ltoken_v2": "v2_CAQSDGM5b3FhcTNzM2d1OBokZTFmZTViNmItZDgxOS00MzNlLWJiZDktYWJkMTEzMWY1ZmY0IKKB680GKJPeqIkEMO7Jy-ABQgtiYnNfb3ZlcnNlYVhqagJTRw.osC6aQAAAAAB.MEYCIQCyDmkR5l7eEpT_K03RDWA29cpjTaMaGTXvm9Ov1mdQCwIhAIjnMgwQrsfrjJLycxXV1LOkhDlVh4suNmD8J_iP5ZZp"
+    "ltuid_v2": "449108883",
+    "ltoken_v2": "v2_CAISDGM5b3FhcTNzM2d1OBokZTFmZTViNmItZDgxOS00MzNlLWJiZDktYWJkMTEzMWY1ZmY0IJOa680GKN2dpW8wk7eT1gFCC2Jic19vdmVyc2VhWGpqAlNH.E826aQAAAAAB.MEYCIQC4613SjXxJLp6Ki55JQ8XdW6aAWrSLn4cr4sdyJdNmuAIhALA28AO3gDgq_iYuFyQgMXmHIZVLmIb6FWQTwtO9jro_"
 }
 async def get_player_full_data(uid: int):
     client = genshin.Client(COOKIES)
@@ -19,6 +19,7 @@ async def get_player_full_data(uid: int):
             "signature": data.info.signature or "No Bio",
             "achievements": data.stats.achievements,
             "days_active": data.stats.days_active,
+            "icon": data.info.icon
         }
     except Exception as e:
         # FORCE the error to show in Docker logs immediately
