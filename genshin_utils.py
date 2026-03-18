@@ -21,7 +21,6 @@ async def get_player_full_data(uid: int):
             "signature": getattr(data.info, "signature", ""),
             "achievements": data.stats.achievements,
             "days_active": data.stats.days_active,# Updated check for the icon location
-            "icon": getattr(data.info, 'icon', None) or getattr(data.stats, 'icon', None)
         }
     except Exception as e:
         import sys
