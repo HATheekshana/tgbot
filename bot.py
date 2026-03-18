@@ -821,7 +821,7 @@ async def my_profile(message: types.Message):
     msg += "═" * 20 + "\n"
     
     # Only show major regions to keep the message short
-    for area in exploration_data[:8]: 
+    for area in exploration_data: 
         msg += f"📍 <code>{area['name']:15}</code>: {area['percent']}%\n"
     
     await message.reply(msg, parse_mode="HTML")
