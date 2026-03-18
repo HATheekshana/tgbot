@@ -803,38 +803,32 @@ async def login_uid(message: types.Message):
 # --- MyProfile Command ---
 @dp.message(Command("myprofile"))
 async def my_profile(message: types.Message):
-    user_data = await users_col.find_one({"user_id": str(message.from_user.id)})
-    if not user_data or "genshin_uid" not in user_data:
-        return await message.answer("❌ Please /login <uid> first.")
-
-    db_uid = str(user_data["genshin_uid"]).strip()
+    # ... (Keep your existing user_data check) ...
     
-    # 1. Send the temporary status message and store it in 'status'
     status = await message.answer("🔄 Fetching Game Data...")
 
-    try:
-        exploration_data = await get_exploration_data(db_uid)
-        
-        # 2. DELETE the "Fetching..." message now that the work is done
-        await status.delete()
+    # Fetch both Exploration and Abyss
+    exploration_data = await get_exploration_data(db_uid)
+    abyss_text = await get_abyss_data(db_uid)
+    
+    await status.delete()
 
-        if not exploration_data:
-            return await message.reply("Could not find data. Is your profile public?")
+    if not exploration_data:
+        return await message.reply("Could not find data. Is your profile public?")
 
-        # 3. Format the final message
-        msg = f"<b>🌍 Exploration for {db_uid}</b>\n"
-        msg += "═" * 20 + "\n"
-        
-        for area in exploration_data: 
-            msg += f"📍 <code>{area['name']:15}</code>: {area['percent']}%\n"
-        
-        # 4. Send the final results
-        await message.reply(msg, parse_mode="HTML")
-
-    except Exception as e:
-        # Also delete the status message if an error occurs so it's not stuck there
-        await status.delete()
-        await message.reply(f"❌ An error occurred: {e}")
+    # 1. Format Exploration
+    msg = f"<b>🌍 Exploration for {db_uid}</b>\n"
+    msg += "═" * 20 + "\n"
+    for area in exploration_data: 
+        msg += f"📍 <code>{area['name']:15}</code>: {area['percent']}%\n"
+    
+    msg += "\n" # Space between sections
+    
+    # 2. Add Abyss info if it exists
+    if abyss_text:
+        msg += f"<b>⚔️ Spiral Abyss Status</b>\n{abyss_text}"
+    
+    await message.reply(msg, parse_mode="HTML")
 # ---------------- Main ----------------
 async def main():
     # 1. Test MongoDB connection first
