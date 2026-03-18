@@ -12,18 +12,18 @@ async def get_player_full_data(uid: int):
     
     try:
         data = await client.get_genshin_user(uid)
-        
         return {
             "name": data.info.nickname,
-            "level": data.info.level,             # AR
+            "level": data.info.level,
             "world_level": data.info.world_level, 
-            "signature": data.info.signature,      # Bio
+            "signature": data.info.signature,
             "achievements": data.stats.achievements,
-            "days_active": data.stats.days_active, # Total days played
-            "icon": data.info.icon                 # PFP URL
+            "days_active": data.stats.days_active,
+            "icon": data.info.icon
         }
     except Exception as e:
-        print(f"Data Fetch Error: {e}")
+        # This will print the actual error in your 'docker logs'
+        print(f"CRITICAL ERROR for UID {uid}: {type(e).__name__} - {e}")
         return None
 async def get_abyss_data(uid: int):
     client = genshin.Client(COOKIES)
