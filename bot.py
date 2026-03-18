@@ -803,53 +803,47 @@ async def login_uid(message: types.Message):
 # --- MyProfile Command ---
 @dp.message(Command("myprofile"))
 async def my_profile(message: types.Message):
-    # Get UID from DB
+    # 1. Get UID from MongoDB
     user_data = await users_col.find_one({"user_id": str(message.from_user.id)})
     if not user_data or "genshin_uid" not in user_data:
         return await message.answer("❌ Please /login <uid> first.")
 
     db_uid = str(user_data["genshin_uid"]).strip()
     
-    # 1. Send & Delete "Loading" status
+    # 2. Send and store the "Loading" status
     status = await message.answer("🔄 <b>Accessing Akasha Terminal...</b>", parse_mode="HTML")
     
+    # 3. Fetch all data
     user_info = await get_player_full_data(db_uid)
     exploration_data = await get_exploration_data(db_uid)
     abyss_data = await get_abyss_data(db_uid)
     
+    # 4. Delete the "Loading" message
     await status.delete()
 
     if not user_info:
         return await message.reply("Could not find data. Is your profile public?")
 
-    # 2. Build the Caption String
-    caption = f"👤 <b>{user_info['name']}</b> | AR {user_info['level']}\n"
-    caption += f"🏆 <b>Achievements:</b> {user_info['achievements']} | 📅 <b>Days:</b> {user_info['days_active']}\n"
+    # 5. Build the Text Message (No PFP)
+    msg = f"👤 <b>{user_info['name']}</b> | AR {user_info['level']}\n"
+    msg += f"🏆 <b>Achievements:</b> {user_info['achievements']} | 📅 <b>Days:</b> {user_info['days_active']}\n"
     
     if user_info['signature']:
-        caption += f"<i>\"{user_info['signature']}\"</i>\n"
+        msg += f"<i>\"{user_info['signature']}\"</i>\n"
         
-    caption += "<code>" + "═" * 25 + "</code>\n\n"
+    msg += "<code>" + "═" * 25 + "</code>\n\n"
 
     # Exploration Section
-    caption += "<b>🌍 EXPLORATION</b>\n"
+    msg += "<b>🌍 EXPLORATION</b>\n"
     for area in exploration_data:
-        caption += f"📍 <code>{area['name']:15}</code>: {area['percent']}%\n"
+        msg += f"📍 <code>{area['name']:15}</code>: {area['percent']}%\n"
 
     # Abyss Section
     if abyss_data:
-        caption += f"\n<b>⚔️ SPIRAL ABYSS</b>\n{abyss_data}"
+        msg += f"\n<b>⚔️ SPIRAL ABYSS</b>\n{abyss_data}"
 
-    # 3. Send PFP as Photo with the Stats as Caption
-    if user_info['icon']:
-        await message.answer_photo(
-            photo=user_info['icon'], 
-            caption=caption, 
-            parse_mode="HTML"
-        )
-    else:
-        # Fallback if no PFP is found
-        await message.answer(caption, parse_mode="HTML")
+    # 6. Send as a regular text message
+    await message.answer(msg, parse_mode="HTML")
 # ---------------- Main ----------------
 async def main():
     # 1. Test MongoDB connection first
