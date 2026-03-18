@@ -801,34 +801,89 @@ async def login_uid(message: types.Message):
     await status_msg.edit_text(f"✅ <b>Login Successful! <code>{uid}</code></b>\n👤 <b>Player:</b> {player.get('nickname')} (AR {player.get('level')})", parse_mode="HTML")
 
 # --- MyProfile Command ---
+from aiogram import types
+from aiogram.filters import Command
+import asyncio
+
+# --- The Profile Command ---
 @dp.message(Command("myprofile"))
 async def my_profile(message: types.Message):
-    # ... (Keep your existing user_data check) ...
-    
-    status = await message.answer("🔄 Fetching Game Data...")
+    # 1. Get UID from MongoDB
+    user_data = await users_col.find_one({"user_id": str(message.from_user.id)})
+    if not user_data or "genshin_uid" not in user_data:
+        return await message.answer("❌ Please /login <uid> first.")
 
-    # Fetch both Exploration and Abyss
-    exploration_data = await get_exploration_data(db_uid)
-    abyss_text = await get_abyss_data(db_uid)
+    db_uid = str(user_data["genshin_uid"]).strip()
     
-    await status.delete()
+    # 2. Send temporary status (This will be deleted later)
+    status = await message.answer("🔄 <b>Fetching Game Data...</b>", parse_mode="HTML")
 
-    if not exploration_data:
-        return await message.reply("Could not find data. Is your profile public?")
+    try:
+        # 3. Fetch Data from both sources
+        # (Assuming these functions are in your utils or defined below)
+        exploration_data = await get_exploration_data(db_uid)
+        abyss_data = await get_abyss_data(db_uid)
+        
+        # 4. Delete the "Fetching" message immediately
+        await status.delete()
 
-    # 1. Format Exploration
-    msg = f"<b>🌍 Exploration for {db_uid}</b>\n"
-    msg += "═" * 20 + "\n"
-    for area in exploration_data: 
-        msg += f"📍 <code>{area['name']:15}</code>: {area['percent']}%\n"
+        if not exploration_data:
+            return await message.reply("Could not find data. Is your profile public?")
+
+        # 5. Build the Exploration Section
+        msg = f"<b>🌍 EXPLORATION PROGRESS ({db_uid})</b>\n"
+        msg += "<code>" + "═" * 25 + "</code>\n"
+        
+        for area in exploration_data:
+            # Formatting: Icon + Name (padded to 15 chars) + Percent
+            msg += f"📍 <code>{area['name']:15}</code>: {area['percent']}%\n"
+
+        # 6. Build the Abyss Section
+        if abyss_data:
+            msg += f"\n<b>⚔️ SPIRAL ABYSS STATUS</b>\n"
+            msg += abyss_data
+        else:
+            msg += "\n<i>(No Abyss data found for this cycle)</i>"
+
+        # 7. Send the final compiled message
+        await message.reply(msg, parse_mode="HTML")
+
+    except Exception as e:
+        # Safety: Delete status message even if it crashes
+        try: await status.delete()
+        except: pass
+        await message.reply(f"❌ <b>Error:</b> <code>{str(e)}</code>", parse_mode="HTML")
+
+# --- Supporting Utility Function for Abyss ---
+async def get_abyss_data(uid: int):
+    """Formats Abyss data into the 'Floor/Chamber' box style"""
+    client = genshin.Client(COOKIES)
+    client.region = genshin.Region.OVERSEAS
     
-    msg += "\n" # Space between sections
-    
-    # 2. Add Abyss info if it exists
-    if abyss_text:
-        msg += f"<b>⚔️ Spiral Abyss Status</b>\n{abyss_text}"
-    
-    await message.reply(msg, parse_mode="HTML")
+    try:
+        abyss = await client.get_genshin_spiral_abyss(uid)
+        if not abyss.floors:
+            return None
+
+        abyss_msg = ""
+        # We target Floors 11 and 12 specifically
+        for floor in abyss.floors:
+            if floor.floor < 11:
+                continue
+                
+            abyss_msg += f"┏【FLOOR {floor.floor}】\n"
+            
+            for chamber in floor.chambers:
+                stars = "★" * chamber.stars
+                empty = "☆" * (3 - chamber.stars)
+                abyss_msg += f"┣ Chamber {chamber.chamber} - {stars}{empty}\n"
+            
+            abyss_msg += "┗━━━━━━━━━━━━━━━━\n"
+            
+        return abyss_msg
+
+    except Exception:
+        return None
 # ---------------- Main ----------------
 async def main():
     # 1. Test MongoDB connection first
