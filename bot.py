@@ -826,8 +826,8 @@ async def my_profile(message: types.Message):
     # 4. Build the Text Message
     msg = f"👤 <b>{user_info['name']}</b> | UID: <code>{db_uid}</code>\n"
     msg += f"⭐ <b>AR {user_info['level']}</b> | WL {user_info['world_level']}\n"
-    msg += f"🏆 <b>Achievements:</b> {user_info['achievements']} | 📅 <b>Days:</b> {user_info['days_active']}\n"
-    
+    msg += f"🏆 <b>Achievements:</b> {user_info['achievements']}\n"
+    msg+=f"📅 <b>Days:</b> {user_info['days_active']}\n"
     if user_info['signature']:
         msg += f"<i>\"{user_info['signature']}\"</i>\n"
         
@@ -837,11 +837,11 @@ async def my_profile(message: types.Message):
     msg += "<b>🌍 EXPLORATION</b>\n"
     for area in exploration_data:
         # :15 ensures the percentages stay aligned in a column
-        msg += f"📍 <code>{area['name']:15}</code>: {area['percent']}%\n"
+        msg += f"❀ <code>{area['name']:15}</code>: {area['percent']}%\n"
 
     # Abyss Section
     if abyss_data:
-        msg += f"\n<b>⚔️ SPIRAL ABYSS</b>\n{abyss_data}"
+        msg += f"\n<b>⚔︎ SPIRAL ABYSS</b>\n{abyss_data}"
 
     # 5. Send final text message
     await message.answer(msg, parse_mode="HTML")
