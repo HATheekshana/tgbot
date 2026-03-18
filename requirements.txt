@@ -7,4 +7,5 @@ apscheduler
 pytz
 python-dotenv
 aiohttp
+genshin
 aioenkanetworkcard
