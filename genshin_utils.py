@@ -4,7 +4,7 @@ import genshin
 # Your Central Cookie Store
 COOKIES = {
     "ltuid_v2": "471000302",
-    "ltoken_v2": "v2_CAISDGM5b3FhcTNzM2d1OBokZTFmZTViNmItZDgxOS00MzNlLWJiZDktYWJkMTEzMWY1ZmY0IKKB680GKK2E3O0DMO7Jy-ABQgtiYnNfb3ZlcnNlYVhqagJTRw.osC6aQAAAAAB.MEQCIC1EZw11MIyxRrnXaBoYbja47_FMu200rMVZEEYS7SL_AiAuQdbtZZc-G7CDtR0IciOV_tJg8iw8tG5FbL1sFkpYAw"
+    "ltoken_v2": "v2_CAQSDGM5b3FhcTNzM2d1OBokZTFmZTViNmItZDgxOS00MzNlLWJiZDktYWJkMTEzMWY1ZmY0IKKB680GKJPeqIkEMO7Jy-ABQgtiYnNfb3ZlcnNlYVhqagJTRw.osC6aQAAAAAB.MEYCIQCyDmkR5l7eEpT_K03RDWA29cpjTaMaGTXvm9Ov1mdQCwIhAIjnMgwQrsfrjJLycxXV1LOkhDlVh4suNmD8J_iP5ZZp"
 }
 async def get_player_full_data(uid: int):
     client = genshin.Client(COOKIES)
