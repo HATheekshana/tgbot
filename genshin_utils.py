@@ -13,23 +13,29 @@ import aiohttp
 CHARACTER_CACHE = {}
 
 async def get_char_name(char_id: str):
-    """Automatically gets the character name from Enka's metadata."""
     char_id_str = str(char_id)
-    if char_id_str in CHARACTER_CACHE:
-        return CHARACTER_CACHE[char_id_str]
     
+    # 1. Check Cache first
+    if char_id_str in CHAR_NAME_CACHE and CHAR_NAME_CACHE[char_id_str] is not None:
+        return CHAR_NAME_CACHE[char_id_str]
+    
+    # 2. Try to fetch from Enka metadata
     try:
-        # Enka's official naming dictionary
         url = "https://raw.githubusercontent.com/EnkaNetwork/EnkaData/master/dictionary/en.json"
         async with aiohttp.ClientSession() as session:
-            async with session.get(url) as r:
+            async with session.get(url, timeout=5) as r:
                 if r.status == 200:
                     data = await r.json()
-                    name = data.get(char_id_str, f"Hero {char_id_str}")
-                    CHAR_NAME_CACHE[char_id_str] = name
-                    return name
-    except:
-        return f"Hero {char_id_str}"
+                    name = data.get(char_id_str)
+                    if name:
+                        CHAR_NAME_CACHE[char_id_str] = str(name)
+                        return str(name)
+    except Exception as e:
+        print(f"Metadata fetch error: {e}")
+
+    # 3. FINAL FALLBACK: If everything fails, return the ID as a string
+    # This prevents the "NoneType" error that crashed your bot
+    return f"Character {char_id_str}"
 
 async def parse_character_data(data, char_id):
     if not data or "avatarInfoList" not in data:
