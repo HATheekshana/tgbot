@@ -848,98 +848,129 @@ async def my_profile(message: types.Message):
     await message.answer(msg, parse_mode="HTML")
 @dp.message(Command("compare"))
 async def cmd_compare_reply(message: types.Message):
-    # 1. Check if it's a reply
     if not message.reply_to_message:
-        return await message.reply("❌ Please <b>reply</b> to someone's message with <code>/compare</code> to see their stats.", parse_mode="HTML")
+        return await message.reply("❌ Please <b>reply</b> to a message with <code>/compare</code>", parse_mode="HTML")
 
-    sender_id = str(message.from_user.id)
-    target_id = str(message.reply_to_message.from_user.id)
-
-    # 2. Database Lookup
+    sender_id, target_id = str(message.from_user.id), str(message.reply_to_message.from_user.id)
     sender_data = await users_col.find_one({"user_id": sender_id})
     target_data = await users_col.find_one({"user_id": target_id})
 
-    if not sender_data:
-        return await message.reply("❌ You are not logged in. Use <code>/login [UID]</code>", parse_mode="HTML")
-    
-    if not target_data:
-        return await message.reply(f"❌ <b>{message.reply_to_message.from_user.first_name}</b> has not registered their UID with this bot yet.")
+    if not sender_data or not target_data:
+        return await message.reply("❌ Both users must be /login-ed to compare.")
 
-    # 3. Create the Comparison Button
     builder = InlineKeyboardBuilder()
-    # Pass both UIDs into the callback_data
-    builder.row(types.InlineKeyboardButton(
-        text="📊 Compare Exploration", 
-        callback_data=f"comp_{sender_data['genshin_uid']}_{target_data['genshin_uid']}")
-    )
+    uids = f"{sender_data['genshin_uid']}_{target_data['genshin_uid']}"
+    
+    # Two separate buttons for different comparison types
+    builder.row(types.InlineKeyboardButton(text="🌍 Compare Exploration", callback_data=f"comp_expl_{uids}"))
+    builder.row(types.InlineKeyboardButton(text="👤 Compare Profile Stats", callback_data=f"comp_prof_{uids}"))
 
     await message.answer(
-        f"⚔️ <b>Comparison Ready!</b>\n"
-        f"Click the button below to compare your exploration with <b>{message.reply_to_message.from_user.first_name}</b>.",
+        f"⚔️ <b>Comparison Menu</b>\nComparing with <b>{message.reply_to_message.from_user.first_name}</b>",
         reply_markup=builder.as_markup(),
         parse_mode="HTML"
     )
-@dp.callback_query(F.data.startswith("comp_"))
+@dp.callback_query(F.data.startswith("comp_prof_"))
+async def execute_profile_comparison(callback: types.CallbackQuery):
+    _, _, my_uid, target_uid = callback.data.split("_")
+    await callback.answer("⚖️ Comparing Profiles...")
+
+    try:
+        me = await get_player_full_data(my_uid)
+        them = await get_player_full_data(target_uid)
+        
+        # We assume abyss_data for each is a string or dict like "12-3"
+        # If your function returns a dict, use me_abyss['max_floor']
+        me_abyss = await get_abyss_data(my_uid) 
+        them_abyss = await get_abyss_data(target_uid)
+
+        msg = f"⚖️ <b>PROFILE BATTLE</b>\n"
+        msg += f"👤 <code>{me['name'][:10]}</code> <b>VS</b> 👤 <code>{them['name'][:10]}</code>\n"
+        msg += "<code>" + "═" * 25 + "</code>\n\n"
+
+        # Comparison Helper
+        def get_row(label, val1, val2, reverse=False):
+            v1, v2 = int(val1 or 0), int(val2 or 0)
+            icon = "⬅️" if v1 > v2 else "➡️" if v2 > v1 else "🤝"
+            if reverse: icon = "➡️" if v1 > v2 else "⬅️" if v2 > v1 else "🤝"
+            return f"<b>{label}:</b>\n<code>{v1:>5}</code> {icon} <code>{v2:>5}</code>\n\n"
+
+        msg += get_row("⭐ Adventure Rank", me.get('level'), them.get('level'))
+        msg += get_row("🌍 World Level", me.get('world_level'), them.get('world_level'))
+        msg += get_row("🏆 Achievements", me.get('achievements'), them.get('achievements'))
+        msg += get_row("📅 Days Active", me.get('days_active'), them.get('days_active'))
+
+        msg += "<code>" + "─" * 25 + "</code>\n"
+        msg += "<b>⚔️ SPIRAL ABYSS</b>\n"
+        msg += f"Floor: <code>{me_abyss}</code> vs <code>{them_abyss}</code>\n\n"
+        
+        # Imaginarium Theater (Stygian) if available in your data
+        me_theater = me.get('theater_act', '0')
+        them_theater = them.get('theater_act', '0')
+        msg += f"🎭 <b>Theater Act:</b>\n<code>{me_theater}</code> vs <code>{them_theater}</code>"
+
+        back_btn = InlineKeyboardBuilder()
+        back_btn.row(types.InlineKeyboardButton(text="⬅️ Back", callback_data=f"back_comp_{my_uid}_{target_uid}"))
+        
+        await callback.message.edit_text(msg, reply_markup=back_btn.as_markup(), parse_mode="HTML")
+
+    except Exception as e:
+        print(f"Profile Error: {e}")
+        await callback.message.edit_text("❌ Profile data hidden or error occurred.")
+@dp.callback_query(F.data.startswith("comp_expl_")) # Or your exploration prefix
 async def execute_comparison(callback: types.CallbackQuery):
-    _, my_uid, target_uid = callback.data.split("_")
+    _, _, my_uid, target_uid = callback.data.split("_")
     await callback.answer("⚖️ Comparing Stats...")
 
     try:
-        # 1. Fetch data for both players
-        me_expl = await get_exploration_data(my_uid)
-        them_expl = await get_exploration_data(target_uid)
-        
         me_info = await get_player_full_data(my_uid)
         them_info = await get_player_full_data(target_uid)
+        me_expl = await get_exploration_data(my_uid)
+        them_expl = await get_exploration_data(target_uid)
 
-        # 2. Header
+        # 1. Header
         msg = f"⚖️ <b>BATTLE OF THE TRAVELERS</b>\n"
-        msg += f"👤 <code>{me_info['name'][:10]}</code> <b>VS</b> 👤 <code>{them_info['name'][:10]}</code>\n"
+        msg += f"👤 <code>{me_info.get('name', '??')[:10]}</code> <b>VS</b> 👤 <code>{them_info.get('name', '??')[:10]}</code>\n"
         msg += "<code>" + "═" * 25 + "</code>\n\n"
 
-        # 3. Chest Comparison Section
+        # 2. FIXED CHEST SECTION
         msg += "<b>🎁 CHEST COUNTS</b>\n"
-        # Mapping standard chest keys from your user_info object
-        chest_types = [
-            ("Luxurious", "luxurious_chest"),
-            ("Precious", "precious_chest"),
-            ("Exquisite", "exquisite_chest"),
-            ("Common", "common_chest")
+        
+        # We check multiple possible keys because HoYoLAB API wrappers vary
+        chest_map = [
+            ("Luxurious", ["luxurious_chest", "luxurious_chest_number", "luxurious"]),
+            ("Precious", ["precious_chest", "precious_chest_number", "precious"]),
+            ("Exquisite", ["exquisite_chest", "exquisite_chest_number", "exquisite"]),
+            ("Common", ["common_chest", "common_chest_number", "common"])
         ]
 
-        for label, key in chest_types:
-            c1 = int(me_info.get(key, 0))
-            c2 = int(them_info.get(key, 0))
+        for label, keys in chest_map:
+            # Try to find the first key that exists in the dictionary
+            c1 = next((int(me_info[k]) for k in keys if k in me_info), 0)
+            c2 = next((int(them_info[k]) for k in keys if k in them_info), 0)
+            
             icon = "⬅️" if c1 > c2 else "➡️" if c2 > c1 else "🤝"
             msg += f"📦 {label}: <code>{c1}</code> {icon} <code>{c2}</code>\n"
 
         msg += "\n<code>" + "─" * 25 + "</code>\n\n"
 
-        # 4. Exploration Comparison Section
+        # 3. Exploration Section (Your existing logic)
         msg += "<b>🌍 EXPLORATION</b>\n"
         them_map = {area['name']: area['percent'] for area in them_expl}
-
         for area in me_expl:
             name = area['name']
-            p1 = float(area['percent'])
-            p2 = float(them_map.get(name, 0))
+            p1, p2 = float(area['percent']), float(them_map.get(name, 0))
             icon = "⬅️" if p1 > p2 else "➡️" if p2 > p1 else "🤝"
-            
-            msg += f"<b>{name}</b>\n"
-            msg += f"<code>{p1:>5.1f}%</code> {icon} <code>{p2:>5.1f}%</code>\n\n"
+            msg += f"<b>{name}</b>\n<code>{p1:>5.1f}%</code> {icon} <code>{p2:>5.1f}%</code>\n\n"
 
-        # 5. The BACK Button
-        back_builder = InlineKeyboardBuilder()
-        back_builder.row(types.InlineKeyboardButton(
-            text="⬅️ Back to Menu", 
-            callback_data=f"back_comp_{my_uid}_{target_uid}")
-        )
-
-        await callback.message.edit_text(msg, reply_markup=back_builder.as_markup(), parse_mode="HTML")
+        # 4. Back Button
+        back_btn = InlineKeyboardBuilder()
+        back_btn.row(types.InlineKeyboardButton(text="⬅️ Back", callback_data=f"back_comp_{my_uid}_{target_uid}"))
+        await callback.message.edit_text(msg, reply_markup=back_btn.as_markup(), parse_mode="HTML")
 
     except Exception as e:
         print(f"Comparison Error: {e}")
-        await callback.message.edit_text("❌ Error: Could not compare chests. Ensure Battle Chronicle is Public.")
+        await callback.message.edit_text("❌ Error loading comparison.")
 
 @dp.callback_query(F.data.startswith("back_comp_"))
 async def back_to_compare_prep(callback: types.CallbackQuery):
