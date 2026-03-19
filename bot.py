@@ -846,6 +846,76 @@ async def my_profile(message: types.Message):
 
     # 5. Send final text message
     await message.answer(msg, parse_mode="HTML")
+@dp.message(Command("compare"))
+async def cmd_compare_reply(message: types.Message):
+    # 1. Check if it's a reply
+    if not message.reply_to_message:
+        return await message.reply("❌ Please <b>reply</b> to someone's message with <code>/compare</code> to see their stats.", parse_mode="HTML")
+
+    sender_id = str(message.from_user.id)
+    target_id = str(message.reply_to_message.from_user.id)
+
+    # 2. Database Lookup
+    sender_data = await users_col.find_one({"user_id": sender_id})
+    target_data = await users_col.find_one({"user_id": target_id})
+
+    if not sender_data:
+        return await message.reply("❌ You are not logged in. Use <code>/login [UID]</code>", parse_mode="HTML")
+    
+    if not target_data:
+        return await message.reply(f"❌ <b>{message.reply_to_message.from_user.first_name}</b> has not registered their UID with this bot yet.")
+
+    # 3. Create the Comparison Button
+    builder = InlineKeyboardBuilder()
+    # Pass both UIDs into the callback_data
+    builder.row(types.InlineKeyboardButton(
+        text="📊 Compare Exploration", 
+        callback_data=f"comp_{sender_data['genshin_uid']}_{target_data['genshin_uid']}")
+    )
+
+    await message.answer(
+        f"⚔️ <b>Comparison Ready!</b>\n"
+        f"Click the button below to compare your exploration with <b>{message.reply_to_message.from_user.first_name}</b>.",
+        reply_markup=builder.as_markup(),
+        parse_mode="HTML"
+    )
+@dp.callback_query(F.data.startswith("comp_"))
+async def execute_comparison(callback: types.CallbackQuery):
+    _, my_uid, target_uid = callback.data.split("_")
+    await callback.answer("⚖️ Comparing Explorations...")
+
+    try:
+        # Fetch data for both users
+        me_expl = await get_exploration_data(my_uid)
+        them_expl = await get_exploration_data(target_uid)
+        
+        me_info = await get_player_full_data(my_uid)
+        them_info = await get_player_full_data(target_uid)
+
+        # Map target user's percentages for easy matching
+        them_map = {area['name']: area['percent'] for area in them_expl}
+
+        msg = f"⚖️ <b>EXPLORATION BATTLE</b>\n"
+        msg += f"👤 <code>{me_info['name'][:10]}</code> <b>VS</b> 👤 <code>{them_info['name'][:10]}</code>\n"
+        msg += "<code>" + "═" * 25 + "</code>\n\n"
+
+        for area in me_expl:
+            name = area['name']
+            p1 = float(area['percent'])
+            p2 = float(them_map.get(name, 0))
+
+            # Visual indicator: Arrow points to whoever has the higher %
+            icon = "⬅️" if p1 > p2 else "➡️" if p2 > p1 else "🤝"
+            
+            msg += f"<b>{name}</b>\n"
+            msg += f"<code>{p1:>5.1f}%</code> {icon} <code>{p2:>5.1f}%</code>\n\n"
+
+        # Edit the previous "Comparison Ready" message into the actual report
+        await callback.message.edit_text(msg, parse_mode="HTML")
+
+    except Exception as e:
+        print(f"Comparison Error: {e}")
+        await callback.message.edit_text("❌ Comparison failed. Ensure both users have 'Public' Battle Chronicles.")
 # ---------------- Main ----------------
 async def main():
     # 1. Test MongoDB connection first
