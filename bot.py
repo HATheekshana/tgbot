@@ -22,7 +22,7 @@ from aiogram.filters import Command
 from pytz import timezone
 from card_gen import generate_profile_card
 from wishing import combine_images
-from genshin_utils import get_exploration_data,get_abyss_data,get_player_full_data,parse_character_data
+from genshin_utils import get_character_name ,get_exploration_data,get_abyss_data,get_player_full_data,parse_character_data
 from data import weapons3, characters4, characters5, rare ,CHAR_NAMES
 
 ITEMS_PER_PAGE = 10
@@ -888,39 +888,32 @@ async def handle_character_details(callback: types.CallbackQuery):
 @dp.message(Command("characters"))
 async def show_character_list(message: types.Message):
     uid = await get_user_uid(str(message.from_user.id))
-    if not uid:
-        return await message.answer("❌ Please /login <uid> first.")
+    if not uid: return await message.answer("❌ Login first.")
 
-    status = await message.answer("🔍 Fetching characters...")
+    status = await message.answer("🔍 Loading Showcase...")
     data = await fetch_enka_data(uid)
     await status.delete()
 
     if not data or "avatarInfoList" not in data:
-        return await message.answer("❌ Showcase is empty or private in-game.")
+        return await message.answer("❌ Showcase private.")
 
-    # --- START OF THE PART YOU ASKED ABOUT ---
     builder = InlineKeyboardBuilder()
     
     for char in data["avatarInfoList"]:
         char_id = str(char["avatarId"])
-        # Look up name from your CHAR_NAMES dictionary
-        char_name = CHAR_NAMES.get(char_id, f"Hero {char_id}")
         
-        # Use .add() instead of .row() to allow the grid layout
+        # --- SMART NAME FETCHING ---
+        name = await get_character_name(char_id)
+        
         builder.add(types.InlineKeyboardButton(
-            text=char_name, 
+            text=name, 
             callback_data=f"enka_{uid}_{char_id}")
         )
 
-    # This line tells the builder to group them into rows of 3
     builder.adjust(3)
-    # --- END OF THE PART YOU ASKED ABOUT ---
-
-    await message.answer(
-        "👤 <b>Your Character Showcase</b>\nSelect a character to see stats:",
-        reply_markup=builder.as_markup(),
-        parse_mode="HTML"
-    )
+    await message.answer("👤 <b>Select Character:</b>", 
+                         reply_markup=builder.as_markup(), 
+                         parse_mode="HTML")
 # ---------------- Main ----------------
 async def main():
     # 1. Test MongoDB connection first
