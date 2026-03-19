@@ -1097,28 +1097,45 @@ async def handle_poll_answer(poll_answer: types.PollAnswer):
 # --- LEADERBOARD COMMAND (Group Specific) ---
 @dp.message(Command("topquiz"))
 async def cmd_top_quiz(message: types.Message):
+    # 1. Force check for Group
     if message.chat.type not in ["group", "supergroup"]:
-        return await message.reply("❌ Use this in a group to see the leaderboard!")
+        return await message.reply("❌ Use this in a group!")
 
+    # 2. Stringify the chat ID safely
     chat_id = str(message.chat.id)
     
-    # Query for users with points in THIS group
-    cursor = users_col.find({f"group_quiz.{chat_id}": {"$exists": True}}).sort(f"group_quiz.{chat_id}", -1).limit(10)
-    top_players = await cursor.to_list(length=10)
+    # 3. Create the exact field name
+    score_field = f"group_quiz.{chat_id}"
 
-    if not top_players:
-        return await message.answer("🏆 <b>No scores yet!</b> Start playing to be #1.", parse_mode="HTML")
+    # 4. Filter: Find users where this specific group ID exists and is > 0
+    query = {score_field: {"$exists": True, "$gt": 0}}
+    
+    try:
+        # Sort by the dynamic field name
+        cursor = users_col.find(query).sort(score_field, -1).limit(10)
+        top_players = await cursor.to_list(length=10)
 
-    msg = f"🏆 <b>TOP QUIZ MASTERS</b>\n"
-    msg += f"📍 <i>{message.chat.title}</i>\n"
-    msg += "<code>" + "─" * 22 + "</code>\n\n"
+        if not top_players:
+            return await message.answer("🏆 <b>No scores yet!</b> Correct answers in this group will appear here.", parse_mode="HTML")
 
-    for i, p in enumerate(top_players, 1):
-        name = p.get("last_known_name") or f"User_{p['user_id'][-4:]}"
-        pts = p.get("group_quiz", {}).get(chat_id, 0)
-        msg += f"{i}. <b>{name}</b> — <code>{pts} pts</code>\n"
+        msg = f"🏆 <b>{message.chat.title} Leaderboard</b>\n"
+        msg += "<code>" + "─" * 25 + "</code>\n\n"
 
-    await message.answer(msg, parse_mode="HTML")
+        for i, p in enumerate(top_players, 1):
+            # Check for different name fields
+            name = p.get("last_known_name") or p.get("nickname") or f"Player_{str(p['user_id'])[-4:]}"
+            
+            # Get the score from the nested dictionary
+            group_data = p.get("group_quiz", {})
+            pts = group_data.get(chat_id, 0)
+            
+            msg += f"{i}. <b>{name}</b> — <code>{pts} pts</code>\n"
+
+        await message.answer(msg, parse_mode="HTML")
+        
+    except Exception as e:
+        print(f"Leaderboard Error: {e}")
+        await message.answer("⚠️ Error fetching scores. Make sure the bot has admin rights to read messages.")
 async def clear_old_polls():
     while True:
         await asyncio.sleep(3600) # Check every hour
