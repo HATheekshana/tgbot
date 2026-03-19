@@ -52,6 +52,46 @@ active_polls = {}
 
 CURRENT_RATE_UP_KEY = "chasca" 
 CURRENT_RATE_UP_NAME = characters5.get(CURRENT_RATE_UP_KEY, "Chasca")
+@dp.message(Command("topquiz"))
+async def cmd_top_quiz(message: types.Message):
+    if message.chat.type == "private":
+        return await message.reply("❌ Use this in a group!")
+
+    chat_id = str(message.chat.id)
+    # This is the path to the score inside your 'Object'
+    score_path = f"group_quiz.{chat_id}"
+
+    try:
+        # 1. We use a filter to find users who HAVE this key in their group_quiz object
+        # and ensure the value is a number greater than 0
+        cursor = users_col.find({score_path: {"$gt": 0}}).sort(score_path, -1).limit(10)
+        top_players = await cursor.to_list(length=10)
+
+        if not top_players:
+            # If this shows up, it means the ID in the DB doesn't match the Group ID
+            return await message.answer(
+                f"🏆 <b>Leaderboard</b>\n\n"
+                "No scores found. Try answering a quiz first! 🧠", 
+                parse_mode="HTML"
+            )
+
+        msg = f"🏆 <b>TOP 10: {message.chat.title}</b>\n"
+        msg += "<code>" + "─" * 22 + "</code>\n\n"
+
+        for i, p in enumerate(top_players, 1):
+            name = p.get("last_known_name") or f"Player_{str(p['user_id'])[-4:]}"
+            
+            # 2. Extract the points safely from the nested dictionary
+            all_groups = p.get("group_quiz", {})
+            pts = all_groups.get(chat_id, 0)
+            
+            msg += f"{i}. <b>{name}</b> — <code>{pts} pts</code>\n"
+
+        await message.answer(msg, parse_mode="HTML")
+
+    except Exception as e:
+        print(f"CRITICAL DB ERROR: {e}")
+        await message.answer("⚠️ Error accessing the leaderboard database.")
 
 def get_rarity(name):
     # Ensure name is stripped of extra spaces for matching
@@ -1098,44 +1138,6 @@ async def handle_poll_answer(poll_answer: types.PollAnswer):
         
         data["winners"].append((user_name, points))
 # --- LEADERBOARD COMMAND ---
-@dp.message(Command("topquiz"))
-async def cmd_top_quiz(message: types.Message):
-    # 1. Block Private Chats
-    if message.chat.type == "private":
-        return await message.reply("❌ Use this in a group!")
-
-    # 2. Force the Chat ID to be a String
-    chat_id = str(message.chat.id)
-    score_field = f"group_quiz.{chat_id}"
-
-    print(f"DEBUG: Searching for scores in {score_field}")
-
-    try:
-        # 3. Find only people who have points in THIS specific group
-        query = {score_field: {"$gt": 0}}
-        
-        # Sort by the dynamic field (e.g., group_quiz.-1001234)
-        cursor = users_col.find(query).sort(score_field, -1).limit(10)
-        top_players = await cursor.to_list(length=10)
-
-        if not top_players:
-            return await message.answer(
-                f"🏆 <b>Leaderboard</b>\n\n"
-                "No scores found for this group yet! 🧐", 
-                parse_mode="HTML"
-            )
-
-        msg = f"🏆 <b>TOP 10 QUIZ MASTERS</b>\n📍 <i>{message.chat.title}</i>\n\n"
-        for i, p in enumerate(top_players, 1):
-            name = p.get("last_known_name") or f"Player_{str(p['user_id'])[-4:]}"
-            # Extract score from the Object
-            pts = p.get("group_quiz", {}).get(chat_id, 0)
-            msg += f"{i}. <b>{name}</b> — <code>{pts} pts</code>\n"
-
-        await message.answer(msg, parse_mode="HTML")
-
-    except Exception as e:
-        print(f"DB ERROR: {e}")
 # ---------------- Main ----------------
 async def main():
     # 1. Test MongoDB connection first
