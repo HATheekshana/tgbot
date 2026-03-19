@@ -870,68 +870,74 @@ async def cmd_compare_reply(message: types.Message):
         reply_markup=builder.as_markup(),
         parse_mode="HTML"
     )
+# Helper to handle "N/A" or missing stats
+def to_int(val):
+    if val is None or str(val).strip().upper() == "N/A" or str(val).strip() == "":
+        return 0
+    try:
+        return int(float(val))
+    except (ValueError, TypeError):
+        return 0
+
 @dp.callback_query(F.data.startswith("comp_prof_"))
 async def execute_profile_comparison(callback: types.CallbackQuery):
-    _, _, my_uid, target_uid = callback.data.split("_")
+    # Callback data format: comp_prof_{my_uid}_{target_uid}
+    parts = callback.data.split("_")
+    my_uid, target_uid = parts[2], parts[3]
+    
     await callback.answer("⚖️ Comparing Profiles...")
 
-    # --- 1. SAFE CONVERSION HELPER ---
-    def to_int(val):
-        """Converts N/A, None, or strings to 0 safely."""
-        if val is None or str(val).strip().upper() == "N/A" or str(val).strip() == "":
-            return 0
-        try:
-            return int(float(val)) # float handles cases like "60.0"
-        except (ValueError, TypeError):
-            return 0
-
     try:
+        # Fetch data for both using your existing functions
         me = await get_player_full_data(my_uid)
         them = await get_player_full_data(target_uid)
         
+        me_abyss = await get_abyss_data(my_uid)
+        them_abyss = await get_abyss_data(target_uid)
+
         if not me or not them:
-            return await callback.message.edit_text("❌ Data hidden. Check HoYoLAB Privacy.")
+            return await callback.message.edit_text("❌ Profile data hidden or error occurred.")
 
         msg = f"⚖️ <b>PROFILE BATTLE</b>\n"
-        msg += f"👤 <code>{me.get('nickname', 'User1')[:10]}</code> <b>VS</b> 👤 <code>{them.get('nickname', 'User2')[:10]}</code>\n"
+        msg += f"👤 <code>{me['name'][:10]}</code> <b>VS</b> 👤 <code>{them['name'][:10]}</code>\n"
         msg += "<code>" + "═" * 25 + "</code>\n\n"
 
-        # --- 2. COMPARE STATS SAFELY ---
-        # Update these keys based on your "DEBUG DATA" logs
-        stats_map = [
-            ("⭐ AR", "level"),
-            ("🌍 WL", "world_level"),
-            ("🏆 Achievements", "achievement_number"),
-            ("📅 Days Active", "active_day_number")
+        # List of stats based on your /myprofile code
+        # Format: (Label, Key_Name)
+        stats_list = [
+            ("⭐ Adventure Rank", "level"),
+            ("🌍 World Level", "world_level"),
+            ("🏆 Achievements", "achievements"),
+            ("📅 Days Active", "days_active")
         ]
 
-        for label, key in stats_map:
-            # Use to_int to prevent the 'N/A' error
-            v1 = to_int(me.get(key) or me.get('stats', {}).get(key, 0))
-            v2 = to_int(them.get(key) or them.get('stats', {}).get(key, 0))
+        for label, key in stats_list:
+            v1 = to_int(me.get(key, 0))
+            v2 = to_int(them.get(key, 0))
             
             icon = "⬅️" if v1 > v2 else "➡️" if v2 > v1 else "🤝"
             msg += f"<b>{label}:</b>\n<code>{v1:>5}</code> {icon} <code>{v2:>5}</code>\n\n"
 
-        # --- 3. ABYSS & THEATER (Strings, no int comparison) ---
-        me_abyss = await get_abyss_data(my_uid) or "N/A"
-        them_abyss = await get_abyss_data(target_uid) or "N/A"
-        
+        # Abyss Section
         msg += "<code>" + "─" * 25 + "</code>\n"
-        msg += f"⚔️ <b>Abyss Max:</b> <code>{me_abyss}</code> vs <code>{them_abyss}</code>\n"
+        msg += "<b>⚔️ SPIRAL ABYSS</b>\n"
+        # We don't use to_int here because Abyss is often a string like "12-3"
+        msg += f"Floor: <code>{me_abyss or 'N/A'}</code> vs <code>{them_abyss or 'N/A'}</code>\n"
 
-        back_btn = InlineKeyboardBuilder()
-        back_btn.row(types.InlineKeyboardButton(text="⬅️ Back", callback_data=f"back_comp_{my_uid}_{target_uid}"))
+        # Navigation Buttons
+        builder = InlineKeyboardBuilder()
+        builder.row(types.InlineKeyboardButton(text="⬅️ Back", callback_data=f"back_comp_{my_uid}_{target_uid}"))
         
-        await callback.message.edit_text(msg, reply_markup=back_btn.as_markup(), parse_mode="HTML")
+        await callback.message.edit_text(msg, reply_markup=builder.as_markup(), parse_mode="HTML")
 
     except Exception as e:
-        print(f"Profile Error: {e}")
-        await callback.message.edit_text(f"❌ Error: {e}")
-@dp.callback_query(F.data.startswith("comp_expl_")) # Or your exploration prefix
-async def execute_comparison(callback: types.CallbackQuery):
-    _, _, my_uid, target_uid = callback.data.split("_")
-    await callback.answer("⚖️ Comparing Stats...")
+        print(f"Profile Comparison Error: {e}")
+        await callback.message.edit_text(f"❌ Error comparing profiles: {e}")
+@dp.callback_query(F.data.startswith("comp_expl_"))
+async def execute_exploration_comparison(callback: types.CallbackQuery):
+    parts = callback.data.split("_")
+    my_uid, target_uid = parts[2], parts[3]
+    await callback.answer("⚖️ Comparing Exploration...")
 
     try:
         me_info = await get_player_full_data(my_uid)
@@ -939,50 +945,43 @@ async def execute_comparison(callback: types.CallbackQuery):
         me_expl = await get_exploration_data(my_uid)
         them_expl = await get_exploration_data(target_uid)
 
-        # 1. Header
-        msg = f"⚖️ <b>BATTLE OF THE TRAVELERS</b>\n"
-        msg += f"👤 <code>{me_info.get('name', '??')[:10]}</code> <b>VS</b> 👤 <code>{them_info.get('name', '??')[:10]}</code>\n"
+        msg = f"⚖️ <b>EXPLORATION BATTLE</b>\n"
+        msg += f"👤 <code>{me_info['name'][:10]}</code> <b>VS</b> 👤 <code>{them_info['name'][:10]}</code>\n"
         msg += "<code>" + "═" * 25 + "</code>\n\n"
 
-        # 2. FIXED CHEST SECTION
+        # --- CHEST SECTION ---
         msg += "<b>🎁 CHEST COUNTS</b>\n"
-        
-        # We check multiple possible keys because HoYoLAB API wrappers vary
-        chest_map = [
-            ("Luxurious", ["luxurious_chest", "luxurious_chest_number", "luxurious"]),
-            ("Precious", ["precious_chest", "precious_chest_number", "precious"]),
-            ("Exquisite", ["exquisite_chest", "exquisite_chest_number", "exquisite"]),
-            ("Common", ["common_chest", "common_chest_number", "common"])
+        # Adjusted keys to match your flat dictionary style
+        chest_keys = [
+            ("Luxurious", "luxurious_chest"),
+            ("Precious", "precious_chest"),
+            ("Exquisite", "exquisite_chest"),
+            ("Common", "common_chest")
         ]
 
-        for label, keys in chest_map:
-            # Try to find the first key that exists in the dictionary
-            c1 = next((int(me_info[k]) for k in keys if k in me_info), 0)
-            c2 = next((int(them_info[k]) for k in keys if k in them_info), 0)
-            
+        for label, key in chest_keys:
+            c1 = to_int(me_info.get(key, 0))
+            c2 = to_int(them_info.get(key, 0))
             icon = "⬅️" if c1 > c2 else "➡️" if c2 > c1 else "🤝"
             msg += f"📦 {label}: <code>{c1}</code> {icon} <code>{c2}</code>\n"
 
         msg += "\n<code>" + "─" * 25 + "</code>\n\n"
 
-        # 3. Exploration Section (Your existing logic)
-        msg += "<b>🌍 EXPLORATION</b>\n"
+        # --- EXPLORATION SECTION ---
         them_map = {area['name']: area['percent'] for area in them_expl}
         for area in me_expl:
             name = area['name']
-            p1, p2 = float(area['percent']), float(them_map.get(name, 0))
+            p1 = float(area['percent'])
+            p2 = float(them_map.get(name, 0))
             icon = "⬅️" if p1 > p2 else "➡️" if p2 > p1 else "🤝"
             msg += f"<b>{name}</b>\n<code>{p1:>5.1f}%</code> {icon} <code>{p2:>5.1f}%</code>\n\n"
 
-        # 4. Back Button
-        back_btn = InlineKeyboardBuilder()
-        back_btn.row(types.InlineKeyboardButton(text="⬅️ Back", callback_data=f"back_comp_{my_uid}_{target_uid}"))
-        await callback.message.edit_text(msg, reply_markup=back_btn.as_markup(), parse_mode="HTML")
+        builder = InlineKeyboardBuilder()
+        builder.row(types.InlineKeyboardButton(text="⬅️ Back", callback_data=f"back_comp_{my_uid}_{target_uid}"))
+        await callback.message.edit_text(msg, reply_markup=builder.as_markup(), parse_mode="HTML")
 
     except Exception as e:
-        print(f"Comparison Error: {e}")
-        await callback.message.edit_text("❌ Error loading comparison.")
-
+        await callback.message.edit_text(f"❌ Error: {e}")
 @dp.callback_query(F.data.startswith("back_comp_"))
 async def back_to_compare_prep(callback: types.CallbackQuery):
     _, _, my_uid, target_uid = callback.data.split("_")
