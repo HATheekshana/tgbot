@@ -925,37 +925,67 @@ async def execute_profile_comparison(callback: types.CallbackQuery):
 async def execute_exploration_comparison(callback: types.CallbackQuery):
     parts = callback.data.split("_")
     my_uid, target_uid = parts[2], parts[3]
-    await callback.answer("⚖️ Comparing Chests...")
+    await callback.answer("⚖️ Comparing World Exploration...")
 
     try:
         me = await get_player_full_data(my_uid)
         them = await get_player_full_data(target_uid)
 
-        msg = f"⚖️ <b>CHEST BATTLE</b>\n"
-        msg += f"👤 <code>{me.get('info', {}).get('nickname', 'User1')}</code> <b>VS</b> 👤 <code>{them.get('info', {}).get('nickname', 'User2')}</code>\n"
+        # 1. Header with Nicknames
+        n1 = me.get('info', {}).get('nickname', 'User1')
+        n2 = them.get('info', {}).get('nickname', 'User2')
+        
+        msg = f"⚖️ <b>EXPLORATION BATTLE</b>\n"
+        msg += f"👤 <code>{n1[:10]}</code> <b>VS</b> 👤 <code>{n2[:10]}</code>\n"
         msg += "<code>" + "═" * 25 + "</code>\n\n"
 
-        # Correct Chest Names from your genshin_data.json
+        # 2. Chest Section
+        msg += "<b>🎁 CHEST COUNTS</b>\n"
         chests = [
             ("Luxurious", "luxurious_chests"),
             ("Precious", "precious_chests"),
             ("Exquisite", "exquisite_chests"),
-            ("Common", "common_chests"),
-            ("Remarkable", "remarkable_chests")
+            ("Common", "common_chests")
         ]
 
         for label, key in chests:
             c1 = to_int(get_val(me, key))
             c2 = to_int(get_val(them, key))
-            icon = "⬅️" if c1 > c2 else "➡️" if v2 > v1 else "🤝"
-            msg += f"<b>{label}:</b>\n<code>{c1:>5}</code> {icon} <code>{c2:>5}</code>\n\n"
+            icon = "⬅️" if c1 > c2 else "➡️" if c2 > c1 else "🤝"
+            msg += f"📦 {label}: <code>{c1}</code> {icon} <code>{c2}</code>\n"
 
+        msg += "\n<code>" + "─" * 25 + "</code>\n"
+
+        # 3. Regional Exploration Section
+        msg += "<b>🌍 REGIONAL PROGRESS</b>\n"
+        
+        # Get exploration lists from both
+        me_expl = me.get("explorations", [])
+        them_expl = them.get("explorations", [])
+
+        # Create a map for the second person so we can look up their % by region name
+        them_map = {area.get('name'): area.get('raw_explored', 0) for area in them_expl}
+
+        for area in me_expl:
+            name = area.get('name')
+            # raw_explored is like 1000 for 100%. Divide by 10 for percentage.
+            p1 = float(area.get('raw_explored', 0)) / 10.0
+            p2 = float(them_map.get(name, 0)) / 10.0
+            
+            icon = "⬅️" if p1 > p2 else "➡️" if p2 > p1 else "🤝"
+            
+            # Show region name and side-by-side percentage
+            msg += f"📍 <b>{name}</b>\n"
+            msg += f"<code>{p1:>5.1f}%</code> {icon} <code>{p2:>5.1f}%</code>\n\n"
+
+        # 4. Navigation
         builder = InlineKeyboardBuilder()
         builder.row(types.InlineKeyboardButton(text="⬅️ Back", callback_data=f"back_comp_{my_uid}_{target_uid}"))
+        
         await callback.message.edit_text(msg, reply_markup=builder.as_markup(), parse_mode="HTML")
 
     except Exception as e:
-        await callback.message.edit_text(f"❌ Chest Error: {e}")
+        await callback.message.edit_text(f"❌ Comparison Error: {e}")
 @dp.callback_query(F.data.startswith("back_comp_"))
 async def back_to_compare_prep(callback: types.CallbackQuery):
     parts = callback.data.split("_")
