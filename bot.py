@@ -881,58 +881,63 @@ def to_int(val):
 
 @dp.callback_query(F.data.startswith("comp_prof_"))
 async def execute_profile_comparison(callback: types.CallbackQuery):
-    # Callback data format: comp_prof_{my_uid}_{target_uid}
-    parts = callback.data.split("_")
-    my_uid, target_uid = parts[2], parts[3]
-    
+    _, _, my_uid, target_uid = callback.data.split("_")
     await callback.answer("⚖️ Comparing Profiles...")
 
     try:
-        # Fetch data for both using your existing functions
         me = await get_player_full_data(my_uid)
         them = await get_player_full_data(target_uid)
-        
         me_abyss = await get_abyss_data(my_uid)
         them_abyss = await get_abyss_data(target_uid)
 
-        if not me or not them:
-            return await callback.message.edit_text("❌ Profile data hidden or error occurred.")
-
         msg = f"⚖️ <b>PROFILE BATTLE</b>\n"
-        msg += f"👤 <code>{me['name'][:10]}</code> <b>VS</b> 👤 <code>{them['name'][:10]}</code>\n"
+        msg += f"👤 <code>{me.get('name', 'User1')[:10]}</code> <b>VS</b> 👤 <code>{them.get('name', 'User2')[:10]}</code>\n"
         msg += "<code>" + "═" * 25 + "</code>\n\n"
 
-        # List of stats based on your /myprofile code
-        # Format: (Label, Key_Name)
         stats_list = [
-            ("⭐ Adventure Rank", "level"),
-            ("🌍 World Level", "world_level"),
-            ("🏆 Achievements", "achievements"),
-            ("📅 Days Active", "days_active")
+            ("⭐ AR", ["level", "player_level"]),
+            ("🌍 World Level", ["world_level", "worldlevel", "wl"]),
+            ("🏆 Achievements", ["achievements", "achievement_number"]),
+            ("📅 Days Active", ["days_active", "active_day_number"])
         ]
 
-        for label, key in stats_list:
-            v1 = to_int(me.get(key, 0))
-            v2 = to_int(them.get(key, 0))
-            
+        for label, keys in stats_list:
+            v1 = to_int(get_val(me, keys))
+            v2 = to_int(get_val(them, keys))
             icon = "⬅️" if v1 > v2 else "➡️" if v2 > v1 else "🤝"
             msg += f"<b>{label}:</b>\n<code>{v1:>5}</code> {icon} <code>{v2:>5}</code>\n\n"
 
-        # Abyss Section
         msg += "<code>" + "─" * 25 + "</code>\n"
-        msg += "<b>⚔️ SPIRAL ABYSS</b>\n"
-        # We don't use to_int here because Abyss is often a string like "12-3"
-        msg += f"Floor: <code>{me_abyss or 'N/A'}</code> vs <code>{them_abyss or 'N/A'}</code>\n"
+        msg += f"⚔️ <b>Abyss Max:</b> <code>{me_abyss}</code> vs <code>{them_abyss}</code>\n"
 
-        # Navigation Buttons
-        builder = InlineKeyboardBuilder()
-        builder.row(types.InlineKeyboardButton(text="⬅️ Back", callback_data=f"back_comp_{my_uid}_{target_uid}"))
-        
-        await callback.message.edit_text(msg, reply_markup=builder.as_markup(), parse_mode="HTML")
-
+        back_btn = InlineKeyboardBuilder()
+        back_btn.row(types.InlineKeyboardButton(text="⬅️ Back", callback_data=f"back_comp_{my_uid}_{target_uid}"))
+        await callback.message.edit_text(msg, reply_markup=back_btn.as_markup(), parse_mode="HTML")
     except Exception as e:
-        print(f"Profile Comparison Error: {e}")
-        await callback.message.edit_text(f"❌ Error comparing profiles: {e}")
+        await callback.message.edit_text(f"❌ Error: {e}")
+def to_int(val):
+    """Safely converts strings like 'World Level 8' or 'N/A' to integers."""
+    if val is None or str(val).strip().upper() == "N/A" or str(val).strip() == "":
+        return 0
+    try:
+        # Extract only numbers (e.g., "Level 60" -> "60")
+        digits = "".join(filter(str.isdigit, str(val)))
+        return int(digits) if digits else 0
+    except (ValueError, TypeError):
+        return 0
+
+def get_val(data, keys):
+    """Searches multiple keys in root and 'stats' folder to find the data."""
+    if not isinstance(keys, list):
+        keys = [keys]
+    for k in keys:
+        # Check root
+        if k in data and data[k] is not None:
+            return data[k]
+        # Check nested 'stats' folder
+        if "stats" in data and k in data["stats"]:
+            return data["stats"][k]
+    return 0
 @dp.callback_query(F.data.startswith("comp_expl_"))
 async def execute_exploration_comparison(callback: types.CallbackQuery):
     parts = callback.data.split("_")
