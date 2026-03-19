@@ -8,6 +8,7 @@ COOKIES = {
     "ltoken_v2": "v2_CAISDGM5b3FhcTNzM2d1OBokNDcwMGJhYzAtMTAxZi00YjRlLTk2YmItN2M4YjhjMjMxZDAwIPWn780GKOuk4-0HMJO3k9YBQgtiYnNfb3ZlcnNlYVhqagJTRw.9dO7aQAAAAAB.MEUCIA5OHCjpxUDGrSJ8AQVHNuK4nwpW7XdJhtZhYnXcMhiFAiEAn0azB_VtrCvO57QPc72lKVKK_lTyMHAjDM2LrvENUco"
 }
 # Function to calculate World Level from AR (since API doesn't give it)
+# Helper to calculate World Level
 def calculate_world_level(ar):
     ar = int(ar)
     if ar < 20: return 0
@@ -19,6 +20,40 @@ def calculate_world_level(ar):
     if ar < 50: return 6
     if ar < 55: return 7
     return 8
+
+async def get_player_full_data(uid):
+    # This calls the genshin.py client
+    raw_data = await client.get_genshin_user(uid)
+    data = raw_data.dict()
+    
+    # We create a simple dictionary that your /myprofile command expects
+    return {
+        "name": data.get("info", {}).get("nickname", "Unknown"),
+        "level": data.get("info", {}).get("level", 0),
+        "world_level": calculate_world_level(data.get("info", {}).get("level", 0)),
+        "achievements": data.get("stats", {}).get("achievements", 0),
+        "days_active": data.get("stats", {}).get("days_active", 0),
+        # ADD CHESTS HERE SO THEY AREN'T 0
+        "luxurious": data.get("stats", {}).get("luxurious_chests", 0),
+        "precious": data.get("stats", {}).get("precious_chests", 0),
+        "exquisite": data.get("stats", {}).get("exquisite_chests", 0),
+        "common": data.get("stats", {}).get("common_chests", 0),
+        "signature": "Akasha Terminal Active" # HoYoLAB doesn't provide the in-game signature
+    }
+
+async def get_exploration_data(uid):
+    raw_data = await client.get_genshin_user(uid)
+    data = raw_data.dict()
+    
+    expl_list = data.get("explorations", [])
+    results = []
+    for area in expl_list:
+        results.append({
+            "name": area.get("name"),
+            # raw_explored 720 becomes 72.0
+            "percent": float(area.get("raw_explored", 0)) / 10.0
+        })
+    return results
 
 # Universal getter simplified for your specific JSON structure
 def get_val(data, key, section="stats"):
@@ -33,26 +68,6 @@ def to_int(val):
         return int(float(val)) if val else 0
     except:
         return 0
-async def get_player_full_data(uid: int):
-    client = genshin.Client(COOKIES)
-    client.region = genshin.Region.OVERSEAS
-    
-    try:
-        data = await client.get_genshin_user(uid)
-        
-        # Safe data extraction
-        return {
-            "name": data.info.nickname,
-            "level": data.info.level,
-            "world_level": getattr(data.info, "world_level", "N/A"),
-            "signature": getattr(data.info, "signature", ""),
-            "achievements": data.stats.achievements,
-            "days_active": data.stats.days_active,# Updated check for the icon location
-        }
-    except Exception as e:
-        import sys
-        print(f"!!! GENSHIN API ERROR: {e}", file=sys.stderr, flush=True)
-        return None
 async def get_abyss_data(uid: int):
     client = genshin.Client(COOKIES)
     client.region = genshin.Region.OVERSEAS
@@ -84,28 +99,4 @@ async def get_abyss_data(uid: int):
 
     except Exception as e:
         print(f"Abyss Error: {e}")
-        return None
-async def get_exploration_data(uid: int):
-    client = genshin.Client(COOKIES)
-    client.region = genshin.Region.OVERSEAS
-    
-    try:
-        data = await client.get_genshin_user(uid)
-        results = []
-        
-        for area in data.explorations:
-            # Using the 'raw_explored' fix we found in debug
-            raw_val = getattr(area, 'raw_explored', 0)
-            percentage = raw_val / 10
-            
-            results.append({
-                "name": area.name,
-                "percent": percentage,
-                "icon": area.icon  # You can use this for the bot's UI!
-            })
-        
-        return results
-
-    except Exception as e:
-        print(f"Error fetching exploration: {e}")
         return None

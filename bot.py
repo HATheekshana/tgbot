@@ -923,62 +923,60 @@ async def execute_profile_comparison(callback: types.CallbackQuery):
 
 @dp.callback_query(F.data.startswith("comp_expl_"))
 async def execute_exploration_comparison(callback: types.CallbackQuery):
+    # 1. Extract UIDs from callback data
     parts = callback.data.split("_")
     my_uid, target_uid = parts[2], parts[3]
-    await callback.answer("⚖️ Comparing World Exploration...")
+    await callback.answer("⚖️ Comparing World Progress...")
 
     try:
+        # 2. Fetch data for both players
         me = await get_player_full_data(my_uid)
         them = await get_player_full_data(target_uid)
-
-        # 1. Header with Nicknames
-        n1 = me.get('info', {}).get('nickname', 'User1')
-        n2 = them.get('info', {}).get('nickname', 'User2')
         
+        # We need the raw lists for the region comparison
+        me_expl = await get_exploration_data(my_uid)
+        them_expl = await get_exploration_data(target_uid)
+
+        # 3. Header
         msg = f"⚖️ <b>EXPLORATION BATTLE</b>\n"
-        msg += f"👤 <code>{n1[:10]}</code> <b>VS</b> 👤 <code>{n2[:10]}</code>\n"
+        msg += f"👤 <code>{me['name']}</code> <b>VS</b> 👤 <code>{them['name']}</code>\n"
         msg += "<code>" + "═" * 25 + "</code>\n\n"
 
-        # 2. Chest Section
+        # 4. Chest Section (Using the keys from your JSON)
         msg += "<b>🎁 CHEST COUNTS</b>\n"
-        chests = [
-            ("Luxurious", "luxurious_chests"),
-            ("Precious", "precious_chests"),
-            ("Exquisite", "exquisite_chests"),
-            ("Common", "common_chests")
+        chest_types = [
+            ("Luxurious", "luxurious"),
+            ("Precious", "precious"),
+            ("Exquisite", "exquisite"),
+            ("Common", "common")
         ]
 
-        for label, key in chests:
-            c1 = to_int(get_val(me, key))
-            c2 = to_int(get_val(them, key))
-            icon = "⬅️" if c1 > c2 else "➡️" if c2 > c1 else "🤝"
-            msg += f"📦 {label}: <code>{c1}</code> {icon} <code>{c2}</code>\n"
+        for label, key in chest_types:
+            v1 = me[key]
+            v2 = them[key]
+            icon = "⬅️" if v1 > v2 else "➡️" if v2 > v1 else "🤝"
+            msg += f"{label}: <code>{v1}</code> {icon} <code>{v2}</code>\n"
 
         msg += "\n<code>" + "─" * 25 + "</code>\n"
 
-        # 3. Regional Exploration Section
-        msg += "<b>🌍 REGIONAL PROGRESS</b>\n"
+        # 5. Regional Exploration Section
+        msg += "<b>🌍 REGIONS</b>\n"
         
-        # Get exploration lists from both
-        me_expl = me.get("explorations", [])
-        them_expl = them.get("explorations", [])
-
-        # Create a map for the second person so we can look up their % by region name
-        them_map = {area.get('name'): area.get('raw_explored', 0) for area in them_expl}
+        # Create a dictionary for the target player to look up by name
+        them_map = {area['name']: area['percent'] for area in them_expl}
 
         for area in me_expl:
-            name = area.get('name')
-            # raw_explored is like 1000 for 100%. Divide by 10 for percentage.
-            p1 = float(area.get('raw_explored', 0)) / 10.0
-            p2 = float(them_map.get(name, 0)) / 10.0
+            name = area['name']
+            p1 = area['percent']
+            p2 = them_map.get(name, 0.0)
             
             icon = "⬅️" if p1 > p2 else "➡️" if p2 > p1 else "🤝"
             
-            # Show region name and side-by-side percentage
-            msg += f"📍 <b>{name}</b>\n"
+            # Format: Region Name \n 100.0% [Icon] 85.0%
+            msg += f"❀ <b>{name}</b>\n"
             msg += f"<code>{p1:>5.1f}%</code> {icon} <code>{p2:>5.1f}%</code>\n\n"
 
-        # 4. Navigation
+        # 6. Navigation
         builder = InlineKeyboardBuilder()
         builder.row(types.InlineKeyboardButton(text="⬅️ Back", callback_data=f"back_comp_{my_uid}_{target_uid}"))
         
