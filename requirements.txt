@@ -9,4 +9,3 @@ python-dotenv
 aiohttp
 genshin
 aioenkanetworkcard
-enkapnetwork
