@@ -21,7 +21,7 @@ from aiogram.filters import Command
 from pytz import timezone
 from wishing import combine_images
 from genshin_utils import get_character_name ,get_exploration_data,get_abyss_data,get_player_full_data,parse_character_data
-from data import weapons3, characters4, characters5, rare ,CHAR_NAMES
+from data import weapons3, characters4, characters5, rare 
 
 ITEMS_PER_PAGE = 10
 dp = Dispatcher()
