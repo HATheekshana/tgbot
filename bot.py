@@ -1011,7 +1011,7 @@ async def group_quiz_trigger(message: types.Message):
         with open("quizzes.json", "r") as f:
             quiz_list = json.load(f)
         
-        q = random.choice(quiz_list)
+        q = random.choice(quiz_list) # Picks a random question from your pool
         options = random.sample(q["wrong_pool"], 3) + [q["correct"]]
         random.shuffle(options)
         
@@ -1023,76 +1023,72 @@ async def group_quiz_trigger(message: types.Message):
             type='quiz',
             correct_option_id=correct_id,
             is_anonymous=False,
+            open_period=60,
             explanation="Speed = More Points!"
         )
 
-        # Store poll info
-        active_polls[poll_msg.poll.id] = {
+        # Store poll info and an empty list for winners
+        poll_id = poll_msg.poll.id
+        active_polls[poll_id] = {
             "start_time": time.time(),
             "difficulty": q["difficulty"],
             "correct_id": correct_id,
-            "is_active": True, # Scoring is active
-            "chat_id": message.chat.id
+            "chat_id": message.chat.id,
+            "winners": [] # This will store (name, points)
         }
 
-        # --- THE TIMER ---
-        await asyncio.sleep(60) # Wait 60 seconds
-        if poll_msg.poll.id in active_polls:
-            active_polls[poll_msg.poll.id]["is_active"] = False
-            # Optional: Tell the group the timer is up
-            await message.answer("⏰ <b>Time's up for the last quiz!</b> No more points will be awarded.", parse_mode="HTML")
+        # --- WAIT FOR TIMER TO END ---
+        await asyncio.sleep(61) 
+        
+        # --- SEND SUMMARY MESSAGE ---
+        if poll_id in active_polls:
+            data = active_polls[poll_id]
+            if data["winners"]:
+                # Build the list of winners
+                winner_text = "\n".join([f"✨ {name}: <b>+{pts} pts</b>" for name, pts in data["winners"]])
+                await message.answer(f"🏁 <b>Quiz Results:</b>\n\n{winner_text}", parse_mode="HTML")
+            else:
+                await message.answer("⏰ Time's up! No one got it right this time. 🫥")
+            
+            del active_polls[poll_id]
 # --- Handler: Scoring Logic ---
 @dp.poll_answer()
 async def poll_answer_handler(poll_answer: types.PollAnswer):
     poll_id = poll_answer.poll_id
-    
     if poll_id not in active_polls:
         return
 
     data = active_polls[poll_id]
     
-    # 1. Check if the "Timer" has expired
-    if not data["is_active"]:
-        # We don't send a message here so we don't spam the group for late answers
-        return
-
-    user_choice = poll_answer.option_ids[0]
-    
-    # 2. If the user is correct
-    if user_choice == data["correct_id"]:
+    if poll_answer.option_ids[0] == data["correct_id"]:
         elapsed = time.time() - data["start_time"]
-        points = get_quiz_score(data["difficulty"], elapsed) # Using your scoring function
+        points = get_quiz_score(data["difficulty"], elapsed)
         
-        # 3. Update MongoDB
-        user_id = str(poll_answer.user.id)
-        name = poll_answer.user.first_name
-        
+        # Save to DB
         await users_col.update_one(
-            {"user_id": user_id},
+            {"user_id": str(poll_answer.user.id)},
             {"$inc": {"quiz_points": points}},
             upsert=True
         )
         
-        # 4. Send Message to the Group (Announcement)
-        await bot.send_message(
-            data["chat_id"],
-            f"🎉 <b>{name}</b> got it right!\n"
-            f"💰 Points: <b>+{points}</b>\n"
-            f"⏱ Time: <code>{elapsed:.1f}s</code>",
-            parse_mode="HTML"
-        )
-
+        # Add to the winner list for the final message
+        data["winners"].append((poll_answer.user.first_name, points))
 # --- Command: Check Leaderboard ---
 @dp.message(Command("topquiz"))
 async def quiz_leaderboard(message: types.Message):
-    cursor = users_col.find().sort("quiz_points", -1).limit(10)
+    # 1. Fetch users who HAVE quiz_points, sorted highest to lowest
+    cursor = users_col.find({"quiz_points": {"$exists": True}}).sort("quiz_points", -1).limit(10)
     top_players = await cursor.to_list(length=10)
     
-    msg = "🏆 <b>QUIZ HALL OF FAME</b>\n\n"
+    if not top_players:
+        return await message.answer("No one has earned quiz points yet! 🧐")
+
+    msg = "🏆 <b>QUIZ LEADERBOARD</b>\n\n"
     for i, p in enumerate(top_players, 1):
-        # Fallback to User ID if nickname isn't saved
-        name = p.get("nickname") or p.get("name") or f"User_{p['user_id'][-4:]}"
-        msg += f"{i}. <b>{name}</b> — <code>{p.get('quiz_points', 0)} pts</code>\n"
+        # Check all possible name fields you might use
+        name = p.get("nickname") or p.get("full_name") or f"User_{p['user_id'][-4:]}"
+        points = p.get("quiz_points", 0)
+        msg += f"{i}. <b>{name}</b> — <code>{points} pts</code>\n"
         
     await message.answer(msg, parse_mode="HTML")
 async def clear_old_polls():
