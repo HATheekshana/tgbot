@@ -878,8 +878,20 @@ async def show_character_list(message: types.Message):
                 parse_mode="HTML"
             )
     except Exception as e:
-        print(f"List Error: {e}")
-        await status.edit_text("❌ Failed to load characters.")
+        import traceback
+        import sys
+        # This prints the error to your 'docker logs'
+        print("--- ENKA ERROR DEBUG ---", file=sys.stderr)
+        traceback.print_exc(file=sys.stderr)
+        print("------------------------", file=sys.stderr)
+        
+        # This tells the user the specific error type
+        error_name = type(e).__name__
+        await status.edit_text(f"❌ <b>Error:</b> {error_name}\n\n"
+                               f"Possible causes:\n"
+                               f"1. In-game 'Show Character Details' is OFF.\n"
+                               f"2. UID is incorrect.\n"
+                               f"3. Enka API is temporarily down.")
 
 @dp.callback_query(F.data.startswith("char_"))
 async def character_detail_callback(callback: types.CallbackQuery):
