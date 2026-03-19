@@ -20,7 +20,7 @@ from aiogram import Bot, Dispatcher, types
 from aiogram.filters import Command
 from pytz import timezone
 from wishing import combine_images
-from genshin_utils import get_char_name ,get_exploration_data,get_abyss_data,get_player_full_data,parse_character_data
+from genshin_utils import get_character_name ,get_exploration_data,get_abyss_data,get_player_full_data,parse_character_data
 from data import weapons3, characters4, characters5, rare ,CHAR_NAMES
 
 ITEMS_PER_PAGE = 10
