@@ -15,8 +15,8 @@ CHARACTER_CACHE = {}
 async def get_char_name(char_id: str):
     """Automatically gets the character name from Enka's metadata."""
     char_id_str = str(char_id)
-    if char_id_str in CHAR_NAME_CACHE:
-        return CHAR_NAME_CACHE[char_id_str]
+    if char_id_str in CHARACTER_CACHE:
+        return CHARACTER_CACHE[char_id_str]
     
     try:
         # Enka's official naming dictionary
