@@ -848,54 +848,86 @@ async def my_profile(message: types.Message):
     await message.answer(msg, parse_mode="HTML")
 @dp.message(Command("characters"))
 async def show_character_list(message: types.Message):
-    uid = await get_user_uid(str(message.from_user.id))
-    if not uid: return await message.answer("❌ Please /login <uid> first.")
+    user_data = await users_col.find_one({"user_id": str(message.from_user.id)})
+    if not user_data:
+        return await message.answer("❌ Please /login <uid> first.")
 
-    status = await message.answer("🔍 Loading Showcase...")
-    data = await fetch_enka_data(uid)
-    await status.delete()
+    uid = user_data["genshin_uid"]
+    status = await message.answer("🔍 Fetching Showcase Names...")
 
-    if not data or "avatarInfoList" not in data:
-        return await message.answer("❌ Showcase is private or empty.")
+    try:
+        async with enka:
+            data = await enka.fetch_user(uid)
+            if not data.characters:
+                return await status.edit_text("❌ Showcase is empty or hidden.")
 
-    builder = InlineKeyboardBuilder()
-    for char in data["avatarInfoList"]:
-        char_id = str(char["avatarId"])
-        name = await get_char_name(char_id) # Get real name
-        
-        builder.add(types.InlineKeyboardButton(
-            text=name, 
-            callback_data=f"enka_{uid}_{char_id}")
-        )
-    
-    builder.adjust(3) # 3 buttons per row
-    await message.answer("👤 <b>Select a Character:</b>", reply_markup=builder.as_markup(), parse_mode="HTML")
+            builder = InlineKeyboardBuilder()
+            for char in data.characters:
+                # Use char.name (Enka library usually handles the translation)
+                # If it shows an ID, we use this fallback:
+                char_name = char.name if char.name else f"Hero {char.id}"
+                
+                builder.row(types.InlineKeyboardButton(
+                    text=f"✨ {char_name} (Lvl {char.level})", 
+                    callback_data=f"char_{char.id}") # Shorter callback to avoid errors
+                )
 
-@dp.callback_query(F.data.startswith("enka_"))
-async def handle_character_details(callback: types.CallbackQuery):
+            await status.delete()
+            await message.answer(
+                f"👤 <b>{data.player.nickname}'s Characters</b>\nSelect one to see full stats:",
+                reply_markup=builder.as_markup(),
+                parse_mode="HTML"
+            )
+    except Exception as e:
+        print(f"List Error: {e}")
+        await status.edit_text("❌ Failed to load characters.")
+@dp.callback_query(F.data.startswith("char_"))
+async def character_detail_callback(callback: types.CallbackQuery):
+    # Parsing the UID and CharID from the button data
     _, uid, char_id = callback.data.split("_")
-    data = await fetch_enka_data(uid)
-    stats = await parse_character_data(data, char_id)
-    name = await get_char_name(char_id)
+    
+    await callback.answer("Loading Stats...")
+    
+    try:
+        async with enka:
+            data = await enka.fetch_user(int(uid))
+            char = next((c for c in data.characters if str(c.id) == char_id), None)
+            
+            if not char:
+                return await callback.message.answer("Character no longer in showcase.")
 
-    if not stats: return await callback.answer("Stats not found.")
+            # Formatting Stats
+            s = char.stats
+            msg = (
+                f"<b>🎭 {char.name}</b> (Lvl {char.level})\n"
+                f"✨ <b>Friendship:</b> {char.friendship}\n"
+                f"<code>" + "═" * 20 + "</code>\n"
+                f"❤️ <b>HP:</b> {s.hp.value:.0f}\n"
+                f"⚔️ <b>ATK:</b> {s.atk.value:.0f}\n"
+                f"🛡️ <b>DEF:</b> {s.defense.value:.0f}\n"
+                f"🧪 <b>EM:</b> {s.elemental_mastery.value:.0f}\n"
+                f"⚡ <b>ER:</b> {s.energy_recharge.value * 100:.1f}%\n"
+                f"🎯 <b>CR:</b> {s.crit_rate.value * 100:.1f}%\n"
+                f"💥 <b>CD:</b> {s.crit_damage.value * 100:.1f}%\n"
+                f"<code>" + "═" * 20 + "</code>\n"
+            )
+            
+            if char.weapon:
+                msg += f"🗡️ <b>{char.weapon.name}</b> (R{char.weapon.refinement})"
 
-    msg = (
-        f"<b>🎭 Character: {name}</b>\n"
-        f"✨ <b>Level:</b> {stats['level']}\n"
-        "<code>" + "═" * 20 + "</code>\n"
-        f"❤️ <b>HP:</b> {stats['hp']}\n"
-        f"⚔️ <b>ATK:</b> {stats['atk']}\n"
-        f"🛡️ <b>DEF:</b> {stats['def']}\n"
-        f"🧪 <b>EM:</b> {stats['em']}\n"
-        f"🎯 <b>Crit Rate:</b> {stats['cr']}\n"
-        f"💥 <b>Crit Damage:</b> {stats['cd']}\n"
-        f"⚡ <b>Energy:</b> {stats['er']}\n"
-        "<code>" + "═" * 20 + "</code>"
-    )
+            # UPDATE THE IMAGE AND TEXT
+            await callback.message.edit_media(
+                media=types.InputMediaPhoto(
+                    media=char.image.url, 
+                    caption=msg, 
+                    parse_mode="HTML"
+                ),
+                reply_markup=callback.message.reply_markup
+            )
 
-    await callback.message.edit_text(msg, parse_mode="HTML", reply_markup=callback.message.reply_markup)
-    await callback.answer()
+    except Exception as e:
+        print(f"!!! CALLBACK ERROR: {e}")
+        await callback.message.answer("❌ Error: Showcase might be private.")
 # ---------------- Main ----------------
 async def main():
     # 1. Test MongoDB connection first
