@@ -21,7 +21,7 @@ from aiogram.filters import Command
 from pytz import timezone
 from wishing import combine_images
 from genshin_utils import get_char_name ,get_exploration_data,get_abyss_data,get_player_full_data,parse_character_data
-from data import weapons3, characters4, characters5, rare
+from data import weapons3, characters4, characters5, rare ,CHAR_NAMES
 
 ITEMS_PER_PAGE = 10
 dp = Dispatcher()
@@ -848,101 +848,54 @@ async def my_profile(message: types.Message):
     await message.answer(msg, parse_mode="HTML")
 @dp.message(Command("characters"))
 async def show_character_list(message: types.Message):
-    user_data = await users_col.find_one({"user_id": str(message.from_user.id)})
-    if not user_data:
-        return await message.answer("❌ Please /login <uid> first.")
+    uid = await get_user_uid(str(message.from_user.id))
+    if not uid: return await message.answer("❌ Please /login <uid> first.")
 
-    uid = user_data["genshin_uid"]
-    status = await message.answer("🔍 Fetching Showcase Names...")
+    status = await message.answer("🔍 Loading Showcase...")
+    data = await fetch_enka_data(uid)
+    await status.delete()
 
-    try:
-        async with enka:
-            data = await enka.fetch_user(uid)
-            if not data.characters:
-                return await status.edit_text("❌ Showcase is empty or hidden.")
+    if not data or "avatarInfoList" not in data:
+        return await message.answer("❌ Showcase is private or empty.")
 
-            builder = InlineKeyboardBuilder()
-            for char in data.characters:
-                char_name = char.name if char.name else f"Hero {char.id}"
-                
-                # IMPORTANT: Data must be "char_UID_CHARID" to match the callback split
-                builder.row(types.InlineKeyboardButton(
-                    text=f"✨ {char_name} (Lvl {char.level})", 
-                    callback_data=f"char_{uid}_{char.id}") 
-                )
-
-            await status.delete()
-            await message.answer(
-                f"👤 <b>{data.player.nickname}'s Characters</b>\nSelect one to see full stats:",
-                reply_markup=builder.as_markup(),
-                parse_mode="HTML"
-            )
-    except Exception as e:
-        import traceback
-        import sys
-        # This prints the error to your 'docker logs'
-        print("--- ENKA ERROR DEBUG ---", file=sys.stderr)
-        traceback.print_exc(file=sys.stderr)
-        print("------------------------", file=sys.stderr)
+    builder = InlineKeyboardBuilder()
+    for char in data["avatarInfoList"]:
+        char_id = str(char["avatarId"])
+        name = await get_char_name(char_id) # Get real name
         
-        # This tells the user the specific error type
-        error_name = type(e).__name__
-        await status.edit_text(f"❌ <b>Error:</b> {error_name}\n\n"
-                               f"Possible causes:\n"
-                               f"1. In-game 'Show Character Details' is OFF.\n"
-                               f"2. UID is incorrect.\n"
-                               f"3. Enka API is temporarily down.")
-
-@dp.callback_query(F.data.startswith("char_"))
-async def character_detail_callback(callback: types.CallbackQuery):
-    # This now correctly matches the "char_uid_charid" format
-    parts = callback.data.split("_")
-    if len(parts) != 3:
-        return await callback.answer("❌ Internal Button Error")
-
-    _, uid, char_id = parts
+        builder.add(types.InlineKeyboardButton(
+            text=name, 
+            callback_data=f"enka_{uid}_{char_id}")
+        )
     
-    await callback.answer("Loading Stats...")
-    
-    try:
-        async with enka:
-            data = await enka.fetch_user(int(uid))
-            char = next((c for c in data.characters if str(c.id) == char_id), None)
-            
-            if not char:
-                return await callback.message.answer("Character no longer in showcase.")
+    builder.adjust(3) # 3 buttons per row
+    await message.answer("👤 <b>Select a Character:</b>", reply_markup=builder.as_markup(), parse_mode="HTML")
 
-            s = char.stats
-            msg = (
-                f"<b>🎭 {char.name}</b> (Lvl {char.level})\n"
-                f"✨ <b>Friendship:</b> {char.friendship}\n"
-                f"<code>" + "═" * 20 + "</code>\n"
-                f"❤️ <b>HP:</b> {s.hp.value:.0f}\n"
-                f"⚔️ <b>ATK:</b> {s.atk.value:.0f}\n"
-                f"🛡️ <b>DEF:</b> {s.defense.value:.0f}\n"
-                f"🧪 <b>EM:</b> {s.elemental_mastery.value:.0f}\n"
-                f"⚡ <b>ER:</b> {s.energy_recharge.value * 100:.1f}%\n"
-                f"🎯 <b>CR:</b> {s.crit_rate.value * 100:.1f}%\n"
-                f"💥 <b>CD:</b> {s.crit_damage.value * 100:.1f}%\n"
-                f"<code>" + "═" * 20 + "</code>\n"
-            )
-            
-            if char.weapon:
-                msg += f"🗡️ <b>{char.weapon.name}</b> (R{char.weapon.refinement})"
+@dp.callback_query(F.data.startswith("enka_"))
+async def handle_character_details(callback: types.CallbackQuery):
+    _, uid, char_id = callback.data.split("_")
+    data = await fetch_enka_data(uid)
+    stats = await parse_character_data(data, char_id)
+    name = await get_char_name(char_id)
 
-            # Update existing message with character splash art
-            await callback.message.edit_media(
-                media=types.InputMediaPhoto(
-                    media=char.image.url, 
-                    caption=msg, 
-                    parse_mode="HTML"
-                ),
-                reply_markup=callback.message.reply_markup
-            )
+    if not stats: return await callback.answer("Stats not found.")
 
-    except Exception as e:
-        print(f"!!! CALLBACK ERROR: {e}")
-        await callback.message.answer("❌ Error: Showcase might be private.")
+    msg = (
+        f"<b>🎭 Character: {name}</b>\n"
+        f"✨ <b>Level:</b> {stats['level']}\n"
+        "<code>" + "═" * 20 + "</code>\n"
+        f"❤️ <b>HP:</b> {stats['hp']}\n"
+        f"⚔️ <b>ATK:</b> {stats['atk']}\n"
+        f"🛡️ <b>DEF:</b> {stats['def']}\n"
+        f"🧪 <b>EM:</b> {stats['em']}\n"
+        f"🎯 <b>Crit Rate:</b> {stats['cr']}\n"
+        f"💥 <b>Crit Damage:</b> {stats['cd']}\n"
+        f"⚡ <b>Energy:</b> {stats['er']}\n"
+        "<code>" + "═" * 20 + "</code>"
+    )
+
+    await callback.message.edit_text(msg, parse_mode="HTML", reply_markup=callback.message.reply_markup)
+    await callback.answer()
 # ---------------- Main ----------------
 async def main():
     # 1. Test MongoDB connection first
@@ -953,18 +906,7 @@ async def main():
         print(f"❌ MongoDB Connection Error: {e}")
         return 
 
-    # --- NEW: UPDATE ENKA ASSETS HERE ---
-    print("⏳ Updating Enka assets (Character names & Images)...")
-    try:
-        # We use a context manager to ensure the connection closes after update
-        async with enka:
-            await enka.update_assets()
-        print("✅ Enka assets updated successfully!")
-    except Exception as e:
-        print(f"⚠️ Warning: Enka assets update failed (ID names might show): {e}")
-    # ------------------------------------
-
-    # 2. Create the Bot object
+    # 2. Create the Bot object FIRST
     bot = Bot(token=TOKEN)
 
     # Use your local Sri Lanka timezone

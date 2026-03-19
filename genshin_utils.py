@@ -1,58 +1,39 @@
 import asyncio
 import genshin
-from enka_api import fetch_enka_data, get_user_uid  
-# Your Central Cookie Store
 
+# Your Central Cookie Store
 COOKIES = {
     "ltuid_v2": "449108883",
     "ltoken_v2": "v2_CAISDGM5b3FhcTNzM2d1OBokZTFmZTViNmItZDgxOS00MzNlLWJiZDktYWJkMTEzMWY1ZmY0IJOa680GKN2dpW8wk7eT1gFCC2Jic19vdmVyc2VhWGpqAlNH.E826aQAAAAAB.MEYCIQC4613SjXxJLp6Ki55JQ8XdW6aAWrSLn4cr4sdyJdNmuAIhALA28AO3gDgq_iYuFyQgMXmHIZVLmIb6FWQTwtO9jro_"
 }
-import aiohttp
-
-# Cache for character names to avoid hitting the API too much
-CHAR_NAME_CACHE = {}
-
-async def get_char_name(char_id: str):
-    char_id_str = str(char_id)
-    
-    # 1. Check Cache first
-    if char_id_str in CHAR_NAME_CACHE and CHAR_NAME_CACHE[char_id_str] is not None:
-        return CHAR_NAME_CACHE[char_id_str]
-    
-    # 2. Try to fetch from Enka metadata
-    try:
-        url = "https://raw.githubusercontent.com/EnkaNetwork/EnkaData/master/dictionary/en.json"
-        async with aiohttp.ClientSession() as session:
-            async with session.get(url, timeout=5) as r:
-                if r.status == 200:
-                    data = await r.json()
-                    name = data.get(char_id_str)
-                    if name:
-                        CHAR_NAME_CACHE[char_id_str] = str(name)
-                        return str(name)
-    except Exception as e:
-        print(f"Metadata fetch error: {e}")
-
-    # 3. FINAL FALLBACK: If everything fails, return the ID as a string
-    # This prevents the "NoneType" error that crashed your bot
-    return f"Character {char_id_str}"
-
 async def parse_character_data(data, char_id):
+    """Finds a character in the Enka JSON and extracts combat stats."""
     if not data or "avatarInfoList" not in data:
         return None
+
+    # Find the specific character
     char = next((c for c in data["avatarInfoList"] if str(c["avatarId"]) == char_id), None)
-    if not char: return None
-    
+    if not char:
+        return None
+
+    # FightPropMap contains the combat stats (HP, ATK, Crit, etc.)
     f_props = char.get("fightPropMap", {})
-    def s(prop_id, percent=False):
+
+    # Helper to format stats
+    def get_val(prop_id, is_percent=False):
         val = f_props.get(str(prop_id), 0)
-        return f"{val * 100:.1f}%" if percent else f"{val:.0f}"
+        return f"{val * 100:.1f}%" if is_percent else f"{val:.0f}"
 
     return {
         "id": char_id,
         "level": char.get("propMap", {}).get("4001", {}).get("val", "??"),
-        "hp": s(2000), "atk": s(2001), "def": s(2002),
-        "em": s(28), "er": s(23, True), "cr": s(20, True), "cd": s(22, True)
+        "hp": get_val(2000),
+        "atk": get_val(2001),
+        "def": get_val(2002),
+        "em": get_val(28),
+        "er": get_val(23, True),
+        "cr": get_val(20, True),
+        "cd": get_val(22, True)
     }
 async def get_player_full_data(uid: int):
     client = genshin.Client(COOKIES)
