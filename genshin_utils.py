@@ -1,5 +1,6 @@
 import asyncio
 import genshin
+from data import CHARACTER_MAP
 
 # Your Central Cookie Store
 
