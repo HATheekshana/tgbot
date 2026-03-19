@@ -848,27 +848,44 @@ async def my_profile(message: types.Message):
 
     # 5. Send final text message
     await message.answer(msg, parse_mode="HTML")
+@dp.message(Command("characters"))
+async def show_character_list(message: types.Message):
+    uid = await get_user_uid(str(message.from_user.id))
+    if not uid: return await message.answer("❌ Please /login <uid> first.")
+
+    status = await message.answer("🔍 Loading Showcase...")
+    data = await fetch_enka_data(uid)
+    await status.delete()
+
+    if not data or "avatarInfoList" not in data:
+        return await message.answer("❌ Showcase is private or empty.")
+
+    builder = InlineKeyboardBuilder()
+    for char in data["avatarInfoList"]:
+        char_id = str(char["avatarId"])
+        name = await get_char_name(char_id) # Get real name
+        
+        builder.add(types.InlineKeyboardButton(
+            text=name, 
+            callback_data=f"enka_{uid}_{char_id}")
+        )
+    
+    builder.adjust(3) # 3 buttons per row
+    await message.answer("👤 <b>Select a Character:</b>", reply_markup=builder.as_markup(), parse_mode="HTML")
+
 @dp.callback_query(F.data.startswith("enka_"))
 async def handle_character_details(callback: types.CallbackQuery):
-    # Data format: enka_UID_CHARID
     _, uid, char_id = callback.data.split("_")
-    
-    await callback.answer("Loading Character Stats...")
-    
-    # 1. Fetch raw data using your existing fetch_enka_data
-    raw_data = await fetch_enka_data(uid)
-    
-    # 2. Parse it using the new utility function
-    stats = await parse_character_data(raw_data, char_id)
-    
-    if not stats:
-        return await callback.message.answer("❌ Character data not found.")
-    char_name = CHAR_NAMES.get(stats['id'], f"Hero {stats['id']}")
-    # 3. Format the message
+    data = await fetch_enka_data(uid)
+    stats = await parse_character_data(data, char_id)
+    name = await get_char_name(char_id)
+
+    if not stats: return await callback.answer("Stats not found.")
+
     msg = (
-        f"<b>🎭 Character: {char_name}</b>\n"
+        f"<b>🎭 Character: {name}</b>\n"
         f"✨ <b>Level:</b> {stats['level']}\n"
-        f"<code>" + "═" * 20 + "</code>\n"
+        "<code>" + "═" * 20 + "</code>\n"
         f"❤️ <b>HP:</b> {stats['hp']}\n"
         f"⚔️ <b>ATK:</b> {stats['atk']}\n"
         f"🛡️ <b>DEF:</b> {stats['def']}\n"
@@ -876,44 +893,11 @@ async def handle_character_details(callback: types.CallbackQuery):
         f"🎯 <b>Crit Rate:</b> {stats['cr']}\n"
         f"💥 <b>Crit Damage:</b> {stats['cd']}\n"
         f"⚡ <b>Energy:</b> {stats['er']}\n"
-        f"<code>" + "═" * 20 + "</code>"
+        "<code>" + "═" * 20 + "</code>"
     )
 
-    # 4. Edit the message to show the stats
-    await callback.message.edit_text(
-        text=msg, 
-        parse_mode="HTML", 
-        reply_markup=callback.message.reply_markup # Keep buttons so they can switch
-    )
-@dp.message(Command("characters"))
-async def show_character_list(message: types.Message):
-    uid = await get_user_uid(str(message.from_user.id))
-    if not uid: return await message.answer("❌ Login first.")
-
-    status = await message.answer("🔍 Loading Showcase...")
-    data = await fetch_enka_data(uid)
-    await status.delete()
-
-    if not data or "avatarInfoList" not in data:
-        return await message.answer("❌ Showcase private.")
-
-    builder = InlineKeyboardBuilder()
-    
-    for char in data["avatarInfoList"]:
-        char_id = str(char["avatarId"])
-        
-        # --- SMART NAME FETCHING ---
-        name = await get_character_name(char_id)
-        
-        builder.add(types.InlineKeyboardButton(
-            text=name, 
-            callback_data=f"enka_{uid}_{char_id}")
-        )
-
-    builder.adjust(3)
-    await message.answer("👤 <b>Select Character:</b>", 
-                         reply_markup=builder.as_markup(), 
-                         parse_mode="HTML")
+    await callback.message.edit_text(msg, parse_mode="HTML", reply_markup=callback.message.reply_markup)
+    await callback.answer()
 # ---------------- Main ----------------
 async def main():
     # 1. Test MongoDB connection first
