@@ -879,35 +879,40 @@ async def execute_profile_comparison(callback: types.CallbackQuery):
         me = await get_player_full_data(my_uid)
         them = await get_player_full_data(target_uid)
         
-        # We assume abyss_data for each is a string or dict like "12-3"
-        # If your function returns a dict, use me_abyss['max_floor']
-        me_abyss = await get_abyss_data(my_uid) 
-        them_abyss = await get_abyss_data(target_uid)
+        # Check if the data actually returned something
+        if not me or not them:
+            return await callback.message.edit_text("❌ One of the profiles is hidden. Check HoYoLAB privacy settings.")
+
+        # HELPER: Check if stats are nested inside 'stats' or at root
+        def get_stat(data, key):
+            # Try root first, then try 'stats' sub-folder
+            return data.get(key) or data.get('stats', {}).get(key, 0)
 
         msg = f"⚖️ <b>PROFILE BATTLE</b>\n"
-        msg += f"👤 <code>{me['name'][:10]}</code> <b>VS</b> 👤 <code>{them['name'][:10]}</code>\n"
+        msg += f"👤 <code>{me.get('nickname', 'Traveler')[:10]}</code> <b>VS</b> 👤 <code>{them.get('nickname', 'Traveler')[:10]}</code>\n"
         msg += "<code>" + "═" * 25 + "</code>\n\n"
 
-        # Comparison Helper
-        def get_row(label, val1, val2, reverse=False):
-            v1, v2 = int(val1 or 0), int(val2 or 0)
+        # Comparison Rows
+        stats_to_compare = [
+            ("⭐ AR", "level"),
+            ("🌍 WL", "world_level"),
+            ("🏆 Achievements", "achievement_number"), # Check if it's 'achievements' or 'achievement_number'
+            ("📅 Days Active", "active_day_number")
+        ]
+
+        for label, key in stats_to_compare:
+            v1 = int(get_stat(me, key))
+            v2 = int(get_stat(them, key))
             icon = "⬅️" if v1 > v2 else "➡️" if v2 > v1 else "🤝"
-            if reverse: icon = "➡️" if v1 > v2 else "⬅️" if v2 > v1 else "🤝"
-            return f"<b>{label}:</b>\n<code>{v1:>5}</code> {icon} <code>{v2:>5}</code>\n\n"
+            msg += f"<b>{label}:</b>\n<code>{v1:>5}</code> {icon} <code>{v2:>5}</code>\n\n"
 
-        msg += get_row("⭐ Adventure Rank", me.get('level'), them.get('level'))
-        msg += get_row("🌍 World Level", me.get('world_level'), them.get('world_level'))
-        msg += get_row("🏆 Achievements", me.get('achievements'), them.get('achievements'))
-        msg += get_row("📅 Days Active", me.get('days_active'), them.get('days_active'))
-
-        msg += "<code>" + "─" * 25 + "</code>\n"
-        msg += "<b>⚔️ SPIRAL ABYSS</b>\n"
-        msg += f"Floor: <code>{me_abyss}</code> vs <code>{them_abyss}</code>\n\n"
+        # --- ABYSS LOGIC ---
+        # Note: Abyss usually needs a separate fetch
+        me_abyss = await get_abyss_data(my_uid)
+        them_abyss = await get_abyss_data(target_uid)
         
-        # Imaginarium Theater (Stygian) if available in your data
-        me_theater = me.get('theater_act', '0')
-        them_theater = them.get('theater_act', '0')
-        msg += f"🎭 <b>Theater Act:</b>\n<code>{me_theater}</code> vs <code>{them_theater}</code>"
+        msg += "<code>" + "─" * 25 + "</code>\n"
+        msg += f"⚔️ <b>Abyss Max:</b> <code>{me_abyss}</code> vs <code>{them_abyss}</code>\n"
 
         back_btn = InlineKeyboardBuilder()
         back_btn.row(types.InlineKeyboardButton(text="⬅️ Back", callback_data=f"back_comp_{my_uid}_{target_uid}"))
@@ -916,7 +921,7 @@ async def execute_profile_comparison(callback: types.CallbackQuery):
 
     except Exception as e:
         print(f"Profile Error: {e}")
-        await callback.message.edit_text("❌ Profile data hidden or error occurred.")
+        await callback.message.edit_text(f"❌ Error: {str(e)[:50]}...")
 @dp.callback_query(F.data.startswith("comp_expl_")) # Or your exploration prefix
 async def execute_comparison(callback: types.CallbackQuery):
     _, _, my_uid, target_uid = callback.data.split("_")
