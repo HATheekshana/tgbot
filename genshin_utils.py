@@ -11,26 +11,23 @@ import aiohttp
 
 # Cache for character names to avoid hitting the API too much
 async def parse_character_data(data, char_id):
-    """Finds a character in the Enka JSON and extracts combat stats."""
+    """Parses raw JSON into a clean dictionary of stats."""
     if not data or "avatarInfoList" not in data:
         return None
 
-    # Find the specific character
     char = next((c for c in data["avatarInfoList"] if str(c["avatarId"]) == char_id), None)
-    if not char:
-        return None
+    if not char: return None
 
-    # FightPropMap contains the combat stats (HP, ATK, Crit, etc.)
     f_props = char.get("fightPropMap", {})
 
-    # Helper to format stats
     def get_val(prop_id, is_percent=False):
-        val = f_props.get(str(prop_id), 0)
+        val = float(f_props.get(str(prop_id), 0))
         return f"{val * 100:.1f}%" if is_percent else f"{val:.0f}"
 
     return {
         "id": char_id,
-        "level": char.get("propMap", {}).get("4001", {}).get("val", "??"),
+        "name": CHARACTER_MAP.get(str(char_id), f"Hero {char_id}"),
+        "level": char.get("propMap", {}).get("4001", {}).get("val", "0"),
         "hp": get_val(2000),
         "atk": get_val(2001),
         "def": get_val(2002),

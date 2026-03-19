@@ -846,106 +846,91 @@ async def my_profile(message: types.Message):
 
     # 5. Send final text message
     await message.answer(msg, parse_mode="HTML")
+# --- 1. SHOW CHARACTER LIST ---
 @dp.message(Command("characters"))
 async def show_character_list(message: types.Message):
-    # 1. Database Check
-    user_data = await users_col.find_one({"user_id": str(message.from_user.id)})
-    if not user_data:
-        return await message.answer("❌ Please /login <uid> first.")
+    user_id = str(message.from_user.id)
+    uid = await get_user_uid(user_id)
+    
+    if not uid:
+        return await message.answer("❌ You are not logged in. Use <code>/login [UID]</code>", parse_mode="HTML")
 
-    uid = user_data["genshin_uid"]
-    status = await message.answer("🔍 Opening Showcase...")
+    status = await message.answer("⏳ Loading your Showcase...")
+    raw_data = await fetch_enka_data(uid)
 
-    try:
-        async with enka:
-            # 2. API Fetch
-            data = await enka.fetch_user(uid)
-            if not data.characters:
-                return await status.edit_text("❌ Showcase is empty or hidden.")
+    if not raw_data or "avatarInfoList" not in raw_data:
+        return await status.edit_text("❌ Failed to load data. Is your Showcase <b>Public</b>?", parse_mode="HTML")
 
-            builder = InlineKeyboardBuilder()
-            
-            # 3. Build Character Buttons
-            for char in data.characters:
-                char_id_str = str(char.id)
-                
-                # Logic: Check CHARACTER_MAP -> Then check Enka name -> Then fallback to ID
-                display_name = CHARACTER_MAP.get(char_id_str)
-                
-                if not display_name:
-                    display_name = char.name if char.name and not char.name.isdigit() else f"Hero {char_id_str}"
-
-                builder.row(types.InlineKeyboardButton(
-                    text=f"✨ {display_name} (Lvl {char.level})", 
-                    callback_data=f"char_{uid}_{char.id}") # Correct 3-part format
-                )
-
-            # 4. Clean up and Send
-            await status.delete()
-            await message.answer(
-                f"👤 <b>{data.player.nickname}'s Characters</b>\n"
-                f"Select a character to view full stats and splash art:",
-                reply_markup=builder.as_markup(),
-                parse_mode="HTML"
-            )
-            
-    except Exception as e:
-        print(f"List Error: {e}")
-        # Providing more detail to the user helps them fix showcase issues
-        await status.edit_text(
-            "❌ <b>Failed to load characters.</b>\n\n"
-            "Please ensure:\n"
-            "1. Your UID is correct.\n"
-            "2. 'Show Character Details' is <b>ON</b> in-game.\n"
-            "3. Your Showcase is not empty.",
-            parse_mode="HTML"
+    builder = InlineKeyboardBuilder()
+    
+    for char_data in raw_data["avatarInfoList"]:
+        c_id = str(char_data["avatarId"])
+        # Get clean name from your CHARACTER_MAP
+        name = CHARACTER_MAP.get(c_id, f"Hero {c_id}")
+        lvl = char_data.get("propMap", {}).get("4001", {}).get("val", "??")
+        
+        builder.row(types.InlineKeyboardButton(
+            text=f"✨ {name} (Lvl {lvl})", 
+            callback_data=f"view_{uid}_{c_id}") # 3-part callback
         )
-@dp.callback_query(F.data.startswith("char_"))
+
+    await status.delete()
+    await message.answer(
+        f"👤 <b>{raw_data['playerInfo'].get('nickname')}'s Characters</b>\nSelect one to view detailed stats:",
+        reply_markup=builder.as_markup(),
+        parse_mode="HTML"
+    )
+
+# --- 3. CALLBACK HANDLER: View Character Details ---
+
+@dp.callback_query(F.data.startswith("view_"))
 async def character_detail_callback(callback: types.CallbackQuery):
     _, uid, char_id = callback.data.split("_")
-    await callback.answer("Loading Stats...")
+    await callback.answer("Crunching numbers...")
 
+    raw_data = await fetch_enka_data(uid)
+    stats = await parse_character_data(raw_data, char_id)
+
+    if not stats:
+        return await callback.message.answer("❌ Error: Character data missing.")
+
+    # Find the side icon name for the image URL (optional but looks great)
+    char_raw = next(c for c in raw_data["avatarInfoList"] if str(c["avatarId"]) == char_id)
+    # This URL points to the character's splash art on Enka's server
+    image_url = f"https://enka.network/ui/{char_raw.get('SideIconName', '').replace('_Side', '')}.png"
+
+    msg = (
+        f"🎭 <b>{stats['name']}</b> (Lvl {stats['level']})\n"
+        f"<code>━━━━━━━━━━━━━━</code>\n"
+        f"❤️ <b>HP:</b> {stats['hp']}\n"
+        f"⚔️ <b>ATK:</b> {stats['atk']}\n"
+        f"🛡️ <b>DEF:</b> {stats['def']}\n"
+        f"🧪 <b>EM:</b> {stats['em']}\n"
+        f"⚡ <b>ER:</b> {stats['er']}\n"
+        f"🎯 <b>Crit:</b> {stats['cr']} / {stats['cd']}\n"
+        f"<code>━━━━━━━━━━━━━━</code>"
+    )
+
+    back_btn = InlineKeyboardBuilder()
+    back_btn.row(types.InlineKeyboardButton(text="⬅️ Back to List", callback_data="refresh_list"))
+
+    # If the message already has a photo, edit it. Otherwise, send new.
     try:
-        async with enka:
-            data = await enka.fetch_user(int(uid))
-            char = next((c for c in data.characters if str(c.id) == char_id), None)
-            
-            if not char:
-                return await callback.message.answer("Character not found.")
+        await callback.message.edit_media(
+            media=types.InputMediaPhoto(media=image_url, caption=msg, parse_mode="HTML"),
+            reply_markup=back_btn.as_markup()
+        )
+    except Exception:
+        # Fallback if the first message wasn't a photo
+        await callback.message.answer_photo(photo=image_url, caption=msg, reply_markup=back_btn.as_markup(), parse_mode="HTML")
 
-            # Get name from our clean dictionary
-            name = CHARACTER_MAP.get(str(char.id), char.name)
-            s = char.stats
-            
-            msg = (
-                f"🎭 <b>{name}</b> (Lvl {char.level})\n"
-                f"✨ <b>Friendship:</b> {char.friendship}\n"
-                f"<code>" + "═" * 20 + "</code>\n"
-                f"❤️ <b>HP:</b> {s.hp.value:.0f}\n"
-                f"⚔️ <b>ATK:</b> {s.atk.value:.0f}\n"
-                f"🛡️ <b>DEF:</b> {s.defense.value:.0f}\n"
-                f"🧪 <b>EM:</b> {s.elemental_mastery.value:.0f}\n"
-                f"⚡ <b>ER:</b> {s.energy_recharge.value * 100:.1f}%\n"
-                f"🎯 <b>CR:</b> {s.crit_rate.value * 100:.1f}%\n"
-                f"💥 <b>CD:</b> {s.crit_damage.value * 100:.1f}%\n"
-                f"<code>" + "═" * 20 + "</code>\n"
-            )
-            
-            if char.weapon:
-                msg += f"🗡️ <b>{char.weapon.name}</b> (R{char.weapon.refinement})"
+# --- 4. CALLBACK HANDLER: Back to List ---
 
-            # Swaps the message to show Splash Art + Stats
-            await callback.message.edit_media(
-                media=types.InputMediaPhoto(
-                    media=char.image.url, 
-                    caption=msg, 
-                    parse_mode="HTML"
-                ),
-                reply_markup=callback.message.reply_markup
-            )
-
-    except Exception as e:
-        await callback.message.answer("❌ Error loading character.")
+@dp.callback_query(F.data == "refresh_list")
+async def back_handler(callback: types.CallbackQuery):
+    await callback.message.delete()
+    # Simply call the original command function
+    await show_character_list(callback.message)
 # ---------------- Main ----------------
 async def main():
     # 1. Test MongoDB connection first
