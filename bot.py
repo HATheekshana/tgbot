@@ -846,6 +846,46 @@ async def my_profile(message: types.Message):
 
     # 5. Send final text message
     await message.answer(msg, parse_mode="HTML")
+def to_int(val):
+    if val is None or str(val).strip().upper() == "N/A" or str(val).strip() == "":
+        return 0
+    try:
+        # If it's already a number, return it
+        if isinstance(val, (int, float)):
+            return int(val)
+        # Strip letters (e.g., "Level 60" -> "60")
+        digits = "".join(filter(str.isdigit, str(val)))
+        return int(digits) if digits else 0
+    except:
+        return 0
+
+def get_val(data, keys):
+    """The 'Brute Force' grabber. Works for Objects and Dicts."""
+    if not isinstance(keys, list):
+        keys = [keys]
+    
+    for k in keys:
+        # 1. Try Dictionary style: data['level']
+        try:
+            val = data.get(k)
+            if val is not None: return val
+        except: pass
+
+        # 2. Try Object style: data.level
+        try:
+            val = getattr(data, k, None)
+            if val is not None: return val
+        except: pass
+
+        # 3. Try Nested Stats style: data.stats.level
+        try:
+            stats = data.get('stats') or getattr(data, 'stats', None)
+            if stats:
+                # Try stats['level'] or stats.level
+                try: return stats.get(k)
+                except: return getattr(stats, k, 0)
+        except: pass
+    return 0
 @dp.message(Command("compare"))
 async def cmd_compare_reply(message: types.Message):
     if not message.reply_to_message:
@@ -895,13 +935,14 @@ async def execute_profile_comparison(callback: types.CallbackQuery):
         msg += "<code>" + "═" * 25 + "</code>\n\n"
 
         stats_list = [
-            ("⭐ AR", ["level", "player_level"]),
+            ("⭐ AR", ["level", "player_level", "rank"]),
             ("🌍 World Level", ["world_level", "worldlevel", "wl"]),
-            ("🏆 Achievements", ["achievements", "achievement_number"]),
-            ("📅 Days Active", ["days_active", "active_day_number"])
+            ("🏆 Achievements", ["achievements", "achievement", "achievement_number"]),
+            ("📅 Days Active", ["days_active", "active_days", "active_day_number"])
         ]
 
         for label, keys in stats_list:
+            
             v1 = to_int(get_val(me, keys))
             v2 = to_int(get_val(them, keys))
             icon = "⬅️" if v1 > v2 else "➡️" if v2 > v1 else "🤝"
@@ -915,29 +956,7 @@ async def execute_profile_comparison(callback: types.CallbackQuery):
         await callback.message.edit_text(msg, reply_markup=back_btn.as_markup(), parse_mode="HTML")
     except Exception as e:
         await callback.message.edit_text(f"❌ Error: {e}")
-def to_int(val):
-    """Safely converts strings like 'World Level 8' or 'N/A' to integers."""
-    if val is None or str(val).strip().upper() == "N/A" or str(val).strip() == "":
-        return 0
-    try:
-        # Extract only numbers (e.g., "Level 60" -> "60")
-        digits = "".join(filter(str.isdigit, str(val)))
-        return int(digits) if digits else 0
-    except (ValueError, TypeError):
-        return 0
 
-def get_val(data, keys):
-    """Searches multiple keys in root and 'stats' folder to find the data."""
-    if not isinstance(keys, list):
-        keys = [keys]
-    for k in keys:
-        # Check root
-        if k in data and data[k] is not None:
-            return data[k]
-        # Check nested 'stats' folder
-        if "stats" in data and k in data["stats"]:
-            return data["stats"][k]
-    return 0
 @dp.callback_query(F.data.startswith("comp_expl_"))
 async def execute_exploration_comparison(callback: types.CallbackQuery):
     parts = callback.data.split("_")
