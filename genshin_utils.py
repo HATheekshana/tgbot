@@ -1,6 +1,5 @@
 import asyncio
 import genshin
-from data import CHARACTER_MAP
 
 # Your Central Cookie Store
 
@@ -8,35 +7,6 @@ COOKIES = {
     "ltuid_v2": "449108883",
     "ltoken_v2": "v2_CAISDGM5b3FhcTNzM2d1OBokZTFmZTViNmItZDgxOS00MzNlLWJiZDktYWJkMTEzMWY1ZmY0IJOa680GKN2dpW8wk7eT1gFCC2Jic19vdmVyc2VhWGpqAlNH.E826aQAAAAAB.MEYCIQC4613SjXxJLp6Ki55JQ8XdW6aAWrSLn4cr4sdyJdNmuAIhALA28AO3gDgq_iYuFyQgMXmHIZVLmIb6FWQTwtO9jro_"
 }
-import aiohttp
-
-# Cache for character names to avoid hitting the API too much
-async def parse_character_data(data, char_id):
-    """Parses raw JSON into a clean dictionary of stats."""
-    if not data or "avatarInfoList" not in data:
-        return None
-
-    char = next((c for c in data["avatarInfoList"] if str(c["avatarId"]) == char_id), None)
-    if not char: return None
-
-    f_props = char.get("fightPropMap", {})
-
-    def get_val(prop_id, is_percent=False):
-        val = float(f_props.get(str(prop_id), 0))
-        return f"{val * 100:.1f}%" if is_percent else f"{val:.0f}"
-
-    return {
-        "id": char_id,
-        "name": CHARACTER_MAP.get(str(char_id), f"Hero {char_id}"),
-        "level": char.get("propMap", {}).get("4001", {}).get("val", "0"),
-        "hp": get_val(2000),
-        "atk": get_val(2001),
-        "def": get_val(2002),
-        "em": get_val(28),
-        "er": get_val(23, True),
-        "cr": get_val(20, True),
-        "cd": get_val(22, True)
-    }
 async def get_player_full_data(uid: int):
     client = genshin.Client(COOKIES)
     client.region = genshin.Region.OVERSEAS

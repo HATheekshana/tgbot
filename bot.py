@@ -9,7 +9,7 @@ from dotenv import load_dotenv
 import os
 from aiogram import types, F
 from database import users_col, cluster
-from enka_api import fetch_enka_data ,get_user_uid
+from enka_api import fetch_enka_data
 from aiogram.filters import Command
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 import requests
@@ -20,8 +20,8 @@ from aiogram import Bot, Dispatcher, types
 from aiogram.filters import Command
 from pytz import timezone
 from wishing import combine_images
-from genshin_utils import  get_exploration_data,get_abyss_data,get_player_full_data,parse_character_data
-from data import weapons3, characters4, characters5, rare,CHARACTER_MAP
+from genshin_utils import  get_exploration_data,get_abyss_data,get_player_full_data
+from data import weapons3, characters4, characters5, rare
 
 ITEMS_PER_PAGE = 10
 dp = Dispatcher()
@@ -846,91 +846,6 @@ async def my_profile(message: types.Message):
 
     # 5. Send final text message
     await message.answer(msg, parse_mode="HTML")
-# --- 1. SHOW CHARACTER LIST ---
-@dp.message(Command("characters"))
-async def show_character_list(message: types.Message):
-    user_id = str(message.from_user.id)
-    uid = await get_user_uid(user_id)
-    
-    if not uid:
-        return await message.answer("❌ You are not logged in. Use <code>/login [UID]</code>", parse_mode="HTML")
-
-    status = await message.answer("⏳ Loading your Showcase...")
-    raw_data = await fetch_enka_data(uid)
-
-    if not raw_data or "avatarInfoList" not in raw_data:
-        return await status.edit_text("❌ Failed to load data. Is your Showcase <b>Public</b>?", parse_mode="HTML")
-
-    builder = InlineKeyboardBuilder()
-    
-    for char_data in raw_data["avatarInfoList"]:
-        c_id = str(char_data["avatarId"])
-        # Get clean name from your CHARACTER_MAP
-        name = CHARACTER_MAP.get(c_id, f"Hero {c_id}")
-        lvl = char_data.get("propMap", {}).get("4001", {}).get("val", "??")
-        
-        builder.row(types.InlineKeyboardButton(
-            text=f"✨ {name} (Lvl {lvl})", 
-            callback_data=f"view_{uid}_{c_id}") # 3-part callback
-        )
-
-    await status.delete()
-    await message.answer(
-        f"👤 <b>{raw_data['playerInfo'].get('nickname')}'s Characters</b>\nSelect one to view detailed stats:",
-        reply_markup=builder.as_markup(),
-        parse_mode="HTML"
-    )
-
-# --- 3. CALLBACK HANDLER: View Character Details ---
-
-@dp.callback_query(F.data.startswith("view_"))
-async def character_detail_callback(callback: types.CallbackQuery):
-    _, uid, char_id = callback.data.split("_")
-    await callback.answer("Crunching numbers...")
-
-    raw_data = await fetch_enka_data(uid)
-    stats = await parse_character_data(raw_data, char_id)
-
-    if not stats:
-        return await callback.message.answer("❌ Error: Character data missing.")
-
-    # Find the side icon name for the image URL (optional but looks great)
-    char_raw = next(c for c in raw_data["avatarInfoList"] if str(c["avatarId"]) == char_id)
-    # This URL points to the character's splash art on Enka's server
-    image_url = f"https://enka.network/ui/{char_raw.get('SideIconName', '').replace('_Side', '')}.png"
-
-    msg = (
-        f"🎭 <b>{stats['name']}</b> (Lvl {stats['level']})\n"
-        f"<code>━━━━━━━━━━━━━━</code>\n"
-        f"❤️ <b>HP:</b> {stats['hp']}\n"
-        f"⚔️ <b>ATK:</b> {stats['atk']}\n"
-        f"🛡️ <b>DEF:</b> {stats['def']}\n"
-        f"🧪 <b>EM:</b> {stats['em']}\n"
-        f"⚡ <b>ER:</b> {stats['er']}\n"
-        f"🎯 <b>Crit:</b> {stats['cr']} / {stats['cd']}\n"
-        f"<code>━━━━━━━━━━━━━━</code>"
-    )
-
-    back_btn = InlineKeyboardBuilder()
-    back_btn.row(types.InlineKeyboardButton(text="⬅️ Back to List", callback_data="refresh_list"))
-
-    # If the message already has a photo, edit it. Otherwise, send new.
-    try:
-        await callback.message.edit_media(
-            media=types.InputMediaPhoto(media=image_url, caption=msg, parse_mode="HTML"),
-            reply_markup=back_btn.as_markup()
-        )
-    except Exception:
-        # Fallback if the first message wasn't a photo
-        await callback.message.answer_photo(photo=image_url, caption=msg, reply_markup=back_btn.as_markup(), parse_mode="HTML")
-
-# --- 4. CALLBACK HANDLER: Back to List ---
-
-@dp.callback_query(F.data == "refresh_list")
-async def back_handler(callback: types.CallbackQuery):
-    await callback.message.delete()
-    # Simply call the original command function
-    await show_character_list(callback.message)
 # ---------------- Main ----------------
 async def main():
     # 1. Test MongoDB connection first
