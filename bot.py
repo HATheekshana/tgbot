@@ -861,7 +861,7 @@ async def show_character_list(message: types.Message):
     builder = InlineKeyboardBuilder()
     for char in data["avatarInfoList"]:
         char_id = str(char["avatarId"])
-        name = await get_char_name(char_id) # Get real name
+        name = await get_character_name(char_id) # Get real name
         
         builder.add(types.InlineKeyboardButton(
             text=name, 
@@ -876,7 +876,7 @@ async def handle_character_details(callback: types.CallbackQuery):
     _, uid, char_id = callback.data.split("_")
     data = await fetch_enka_data(uid)
     stats = await parse_character_data(data, char_id)
-    name = await get_char_name(char_id)
+    name = await get_character_name(char_id)
 
     if not stats: return await callback.answer("Stats not found.")
 
