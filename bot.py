@@ -19,7 +19,7 @@ from aiogram.filters import Command
 from pytz import timezone
 from card_gen import generate_profile_card
 from wishing import combine_images
-from genshin_utils import get_exploration_data,get_abyss_data,get_player_full_data
+from genshin_utils import get_exploration_data,get_abyss_data,get_player_full_data,parse_character_data
 from data import weapons3, characters4, characters5, rare
 
 ITEMS_PER_PAGE = 10
@@ -845,6 +845,71 @@ async def my_profile(message: types.Message):
 
     # 5. Send final text message
     await message.answer(msg, parse_mode="HTML")
+@dp.callback_query(F.data.startswith("enka_"))
+async def handle_character_details(callback: types.CallbackQuery):
+    # Data format: enka_UID_CHARID
+    _, uid, char_id = callback.data.split("_")
+    
+    await callback.answer("Loading Character Stats...")
+    
+    # 1. Fetch raw data using your existing fetch_enka_data
+    raw_data = await fetch_enka_data(uid)
+    
+    # 2. Parse it using the new utility function
+    stats = await parse_character_data(raw_data, char_id)
+    
+    if not stats:
+        return await callback.message.answer("❌ Character data not found.")
+
+    # 3. Format the message
+    msg = (
+        f"<b>🎭 Character ID: {stats['id']}</b>\n"
+        f"✨ <b>Level:</b> {stats['level']}\n"
+        f"<code>" + "═" * 20 + "</code>\n"
+        f"❤️ <b>HP:</b> {stats['hp']}\n"
+        f"⚔️ <b>ATK:</b> {stats['atk']}\n"
+        f"🛡️ <b>DEF:</b> {stats['def']}\n"
+        f"🧪 <b>EM:</b> {stats['em']}\n"
+        f"🎯 <b>Crit Rate:</b> {stats['cr']}\n"
+        f"💥 <b>Crit Damage:</b> {stats['cd']}\n"
+        f"⚡ <b>Energy:</b> {stats['er']}\n"
+        f"<code>" + "═" * 20 + "</code>"
+    )
+
+    # 4. Edit the message to show the stats
+    await callback.message.edit_text(
+        text=msg, 
+        parse_mode="HTML", 
+        reply_markup=callback.message.reply_markup # Keep buttons so they can switch
+    )
+@dp.message(Command("characters"))
+async def show_character_list(message: types.Message):
+    uid = await get_user_uid(str(message.from_user.id))
+    if not uid:
+        return await message.answer("❌ Please /login <uid> first.")
+
+    status = await message.answer("🔍 Fetching characters from Enka...")
+    data = await fetch_enka_data(uid)
+    await status.delete()
+
+    if not data or "avatarInfoList" not in data:
+        return await message.answer("❌ Showcase is empty or private in-game.")
+
+    builder = InlineKeyboardBuilder()
+    # We loop through the characters in the showcase
+    for char in data["avatarInfoList"]:
+        char_id = char["avatarId"]
+        # Note: You might need a character name map or just use ID for now
+        builder.row(types.InlineKeyboardButton(
+            text=f"Character ID: {char_id}", 
+            callback_data=f"enka_{uid}_{char_id}")
+        )
+
+    await message.answer(
+        "👤 <b>Your Character Showcase</b>\nSelect a character to see stats:",
+        reply_markup=builder.as_markup(),
+        parse_mode="HTML"
+    )
 # ---------------- Main ----------------
 async def main():
     # 1. Test MongoDB connection first
