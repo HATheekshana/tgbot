@@ -863,13 +863,12 @@ async def show_character_list(message: types.Message):
 
             builder = InlineKeyboardBuilder()
             for char in data.characters:
-                # Use char.name (Enka library usually handles the translation)
-                # If it shows an ID, we use this fallback:
                 char_name = char.name if char.name else f"Hero {char.id}"
                 
+                # IMPORTANT: Data must be "char_UID_CHARID" to match the callback split
                 builder.row(types.InlineKeyboardButton(
                     text=f"✨ {char_name} (Lvl {char.level})", 
-                    callback_data=f"char_{char.id}") # Shorter callback to avoid errors
+                    callback_data=f"char_{uid}_{char.id}") 
                 )
 
             await status.delete()
@@ -881,10 +880,15 @@ async def show_character_list(message: types.Message):
     except Exception as e:
         print(f"List Error: {e}")
         await status.edit_text("❌ Failed to load characters.")
+
 @dp.callback_query(F.data.startswith("char_"))
 async def character_detail_callback(callback: types.CallbackQuery):
-    # Parsing the UID and CharID from the button data
-    _, uid, char_id = callback.data.split("_")
+    # This now correctly matches the "char_uid_charid" format
+    parts = callback.data.split("_")
+    if len(parts) != 3:
+        return await callback.answer("❌ Internal Button Error")
+
+    _, uid, char_id = parts
     
     await callback.answer("Loading Stats...")
     
@@ -896,7 +900,6 @@ async def character_detail_callback(callback: types.CallbackQuery):
             if not char:
                 return await callback.message.answer("Character no longer in showcase.")
 
-            # Formatting Stats
             s = char.stats
             msg = (
                 f"<b>🎭 {char.name}</b> (Lvl {char.level})\n"
@@ -915,7 +918,7 @@ async def character_detail_callback(callback: types.CallbackQuery):
             if char.weapon:
                 msg += f"🗡️ <b>{char.weapon.name}</b> (R{char.weapon.refinement})"
 
-            # UPDATE THE IMAGE AND TEXT
+            # Update existing message with character splash art
             await callback.message.edit_media(
                 media=types.InputMediaPhoto(
                     media=char.image.url, 
