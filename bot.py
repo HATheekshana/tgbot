@@ -1058,7 +1058,7 @@ async def clear_old_polls():
 
 # --- QUIZ TRIGGER ---
 @dp.message(F.chat.type.in_({"group", "supergroup"}))
-async def group_quiz_handler(message: types.Message):
+async def group_quiz_handler(message: types.Message, bot: Bot):
     # 10% chance to trigger a quiz on any message
     if random.random() < 0.1:
         try:
