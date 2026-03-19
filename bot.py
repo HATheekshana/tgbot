@@ -1020,7 +1020,7 @@ async def clear_old_polls():
 @dp.message(F.chat.type.in_({"group", "supergroup"}))
 async def group_quiz_handler(message: types.Message):
     # 5% chance to send a quiz
-    if random.random() < 1:
+    if random.random() < 0.1:
         try:
             with open("quizzes.json", "r") as f:
                 quiz_list = json.load(f)
