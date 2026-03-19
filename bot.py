@@ -1006,90 +1006,118 @@ async def back_to_compare_prep(callback: types.CallbackQuery):
     )
     await callback.answer()
 @dp.message(F.chat.type.in_({"group", "supergroup"}))
-async def group_quiz_trigger(message: types.Message):
+async def group_quiz_handler(message: types.Message):
+    # 5% chance to trigger a quiz on any message
     if random.random() < 0.05:
-        with open("quizzes.json", "r") as f:
-            quiz_list = json.load(f)
-        
-        q = random.choice(quiz_list) # Picks a random question from your pool
-        options = random.sample(q["wrong_pool"], 3) + [q["correct"]]
-        random.shuffle(options)
-        
-        correct_id = options.index(q["correct"])
-
-        poll_msg = await message.answer_poll(
-            question=f"🧠 QUIZ ({q['difficulty'].upper()})\n{q['question']}",
-            options=options,
-            type='quiz',
-            correct_option_id=correct_id,
-            is_anonymous=False,
-            open_period=60,
-            explanation="Speed = More Points!"
-        )
-
-        # Store poll info and an empty list for winners
-        poll_id = poll_msg.poll.id
-        active_polls[poll_id] = {
-            "start_time": time.time(),
-            "difficulty": q["difficulty"],
-            "correct_id": correct_id,
-            "chat_id": message.chat.id,
-            "winners": [] # This will store (name, points)
-        }
-
-        # --- WAIT FOR TIMER TO END ---
-        await asyncio.sleep(61) 
-        
-        # --- SEND SUMMARY MESSAGE ---
-        if poll_id in active_polls:
-            data = active_polls[poll_id]
-            if data["winners"]:
-                # Build the list of winners
-                winner_text = "\n".join([f"✨ {name}: <b>+{pts} pts</b>" for name, pts in data["winners"]])
-                await message.answer(f"🏁 <b>Quiz Results:</b>\n\n{winner_text}", parse_mode="HTML")
-            else:
-                await message.answer("⏰ Time's up! No one got it right this time. 🫥")
+        try:
+            with open("quizzes.json", "r") as f:
+                quiz_list = json.load(f)
             
-            del active_polls[poll_id]
-# --- Handler: Scoring Logic ---
+            # Select a random question
+            q = random.choice(quiz_list)
+            
+            # Pick 3 random wrong answers + the correct one
+            options = random.sample(q["wrong_pool"], 3)
+            options.append(q["correct"])
+            random.shuffle(options)
+            
+            correct_id = options.index(q["correct"])
+
+            # Send Native Quiz with 60s Timer
+            poll_msg = await message.answer_poll(
+                question=f"🧠 QUIZ ({q['difficulty'].upper()})\n{q['question']}",
+                options=options,
+                type='quiz',
+                correct_option_id=correct_id,
+                is_anonymous=False,
+                open_period=60,
+                explanation="Be fast for more points!"
+            )
+
+            poll_id = poll_msg.poll.id
+            active_polls[poll_id] = {
+                "start_time": time.time(),
+                "difficulty": q["difficulty"],
+                "correct_id": correct_id,
+                "chat_id": message.chat.id,
+                "winners": [] # List to store (name, points)
+            }
+
+            # Wait for the poll to end
+            await asyncio.sleep(61)
+
+            # Send Summary Message
+            if poll_id in active_polls:
+                data = active_polls[poll_id]
+                if data["winners"]:
+                    winner_list = "\n".join([f"✨ {name}: <b>+{pts} pts</b>" for name, pts in data["winners"]])
+                    await bot.send_message(data["chat_id"], f"🏁 <b>Quiz Results:</b>\n\n{winner_list}", parse_mode="HTML")
+                else:
+                    await bot.send_message(data["chat_id"], "⏰ Time's up! No one got it right. 🫥")
+                
+                del active_polls[poll_id] # Clean memory
+
+        except Exception as e:
+            print(f"Quiz Error: {e}")
+
+# --- POLL ANSWER HANDLER ---
 @dp.poll_answer()
-async def poll_answer_handler(poll_answer: types.PollAnswer):
+async def handle_poll_answer(poll_answer: types.PollAnswer):
     poll_id = poll_answer.poll_id
+    
+    # Check if poll is active and tracked
     if poll_id not in active_polls:
         return
 
     data = active_polls[poll_id]
-    
-    if poll_answer.option_ids[0] == data["correct_id"]:
+    user_choice = poll_answer.option_ids[0]
+
+    # Check if the user is correct
+    if user_choice == data["correct_id"]:
         elapsed = time.time() - data["start_time"]
         points = get_quiz_score(data["difficulty"], elapsed)
         
-        # Save to DB
+        user_id = str(poll_answer.user.id)
+        chat_id = str(data["chat_id"])
+        user_name = poll_answer.user.first_name
+
+        # Save to MongoDB (Group-specific points)
         await users_col.update_one(
-            {"user_id": str(poll_answer.user.id)},
-            {"$inc": {"quiz_points": points}},
+            {"user_id": user_id},
+            {
+                "$inc": {f"group_quiz.{chat_id}": points},
+                "$set": {"last_known_name": user_name}
+            },
             upsert=True
         )
-        
-        # Add to the winner list for the final message
-        data["winners"].append((poll_answer.user.first_name, points))
-# --- Command: Check Leaderboard ---
-@dp.message(Command("topquiz"))
-async def quiz_leaderboard(message: types.Message):
-    # 1. Fetch users who HAVE quiz_points, sorted highest to lowest
-    cursor = users_col.find({"quiz_points": {"$exists": True}}).sort("quiz_points", -1).limit(10)
-    top_players = await cursor.to_list(length=10)
-    
-    if not top_players:
-        return await message.answer("No one has earned quiz points yet! 🧐")
 
-    msg = "🏆 <b>QUIZ LEADERBOARD</b>\n\n"
+        # Add to the winner list for the final summary message
+        data["winners"].append((user_name, points))
+
+# --- LEADERBOARD COMMAND (Group Specific) ---
+@dp.message(Command("topquiz"))
+async def cmd_top_quiz(message: types.Message):
+    if message.chat.type not in ["group", "supergroup"]:
+        return await message.reply("❌ Use this in a group to see the leaderboard!")
+
+    chat_id = str(message.chat.id)
+    
+    # Query for users with points in THIS group
+    cursor = users_col.find({f"group_quiz.{chat_id}": {"$exists": True}}).sort(f"group_quiz.{chat_id}", -1).limit(10)
+    top_players = await cursor.to_list(length=10)
+
+    if not top_players:
+        return await message.answer("🏆 <b>No scores yet!</b> Start playing to be #1.", parse_mode="HTML")
+
+    msg = f"🏆 <b>TOP QUIZ MASTERS</b>\n"
+    msg += f"📍 <i>{message.chat.title}</i>\n"
+    msg += "<code>" + "─" * 22 + "</code>\n\n"
+
     for i, p in enumerate(top_players, 1):
-        # Check all possible name fields you might use
-        name = p.get("nickname") or p.get("full_name") or f"User_{p['user_id'][-4:]}"
-        points = p.get("quiz_points", 0)
-        msg += f"{i}. <b>{name}</b> — <code>{points} pts</code>\n"
-        
+        name = p.get("last_known_name") or f"User_{p['user_id'][-4:]}"
+        pts = p.get("group_quiz", {}).get(chat_id, 0)
+        msg += f"{i}. <b>{name}</b> — <code>{pts} pts</code>\n"
+
     await message.answer(msg, parse_mode="HTML")
 async def clear_old_polls():
     while True:
