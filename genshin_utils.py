@@ -7,6 +7,8 @@ COOKIES = {
     "ltuid_v2": "449108883",
     "ltoken_v2": "v2_CAISDGM5b3FhcTNzM2d1OBokNDcwMGJhYzAtMTAxZi00YjRlLTk2YmItN2M4YjhjMjMxZDAwIPWn780GKOuk4-0HMJO3k9YBQgtiYnNfb3ZlcnNlYVhqagJTRw.9dO7aQAAAAAB.MEUCIA5OHCjpxUDGrSJ8AQVHNuK4nwpW7XdJhtZhYnXcMhiFAiEAn0azB_VtrCvO57QPc72lKVKK_lTyMHAjDM2LrvENUco"
 }
+client = genshin.Client(COOKIES)
+client.region = genshin.Region.OVERSEAS
 # Function to calculate World Level from AR (since API doesn't give it)
 # Helper to calculate World Level
 def calculate_world_level(ar):
@@ -68,10 +70,7 @@ def to_int(val):
         return int(float(val)) if val else 0
     except:
         return 0
-async def get_abyss_data(uid: int):
-    client = genshin.Client(COOKIES)
-    client.region = genshin.Region.OVERSEAS
-    
+async def get_abyss_data(uid: int):  
     try:
         # Fetch CURRENT abyss (use previous=True for the last reset)
         abyss = await client.get_genshin_spiral_abyss(uid)
