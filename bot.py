@@ -1018,7 +1018,7 @@ async def clear_old_polls():
 
 # --- QUIZ TRIGGER ---
 @dp.message(F.chat.type.in_({"group", "supergroup"}))
-async def group_quiz_handler(message: types.Message):
+async def group_quiz_handler(message: types.Message ,bot: Bot):
     # 5% chance to send a quiz
     if random.random() < 0.1:
         try:
@@ -1076,64 +1076,66 @@ async def handle_poll_answer(poll_answer: types.PollAnswer):
         return
 
     data = active_polls[poll_id]
-    user_choice = poll_answer.option_ids[0]
-
-    if user_choice == data["correct_id"]:
+    
+    # Check if correct
+    if poll_answer.option_ids[0] == data["correct_id"]:
         elapsed = time.time() - data["start_time"]
         points = get_quiz_score(data["difficulty"], elapsed)
         
         user_id = str(poll_answer.user.id)
-        chat_id = str(data["chat_id"]) # CRITICAL: Save as string
-        user_name = poll_answer.user.first_name
+        chat_id = str(data["chat_id"]) # CRITICAL: MUST BE STRING
+        user_name = poll_answer.user.full_name
 
-        # Save Group-Specific Points
-        chat_id = str(data["chat_id"]) # Must be string!
+        # Update the Object in DB
         await users_col.update_one(
-            {"user_id": str(poll_answer.user.id)},
-            {"$inc": {f"group_quiz.{chat_id}": points}, "$set": {"last_known_name": poll_answer.user.full_name}},
+            {"user_id": user_id},
+            {
+                "$inc": {f"group_quiz.{chat_id}": points},
+                "$set": {"last_known_name": user_name}
+            },
             upsert=True
         )
-
+        
+        data["winners"].append((user_name, points))
 # --- LEADERBOARD COMMAND ---
 @dp.message(Command("topquiz"))
 async def cmd_top_quiz(message: types.Message):
-    # Check if it's private chat
+    # 1. Block Private Chats
     if message.chat.type == "private":
-        return await message.reply("❌ The leaderboard is specific to each group. Please use this command inside a group!")
+        return await message.reply("❌ Use this in a group!")
 
-    # Safe chat ID conversion
+    # 2. Force the Chat ID to be a String
     chat_id = str(message.chat.id)
     score_field = f"group_quiz.{chat_id}"
 
+    print(f"DEBUG: Searching for scores in {score_field}")
+
     try:
-        # Find only people with points > 0 in this specific group
+        # 3. Find only people who have points in THIS specific group
         query = {score_field: {"$gt": 0}}
         
-        # Sort by the score field descending
+        # Sort by the dynamic field (e.g., group_quiz.-1001234)
         cursor = users_col.find(query).sort(score_field, -1).limit(10)
         top_players = await cursor.to_list(length=10)
 
-        # If nobody has played yet, the bot SHOULD say this:
         if not top_players:
             return await message.answer(
                 f"🏆 <b>Leaderboard</b>\n\n"
-                "No one has earned points in this group yet! Start a quiz to begin. 🧠", 
+                "No scores found for this group yet! 🧐", 
                 parse_mode="HTML"
             )
 
-        # Build list
-        msg = f"🏆 <b>TOP QUIZ MASTERS</b>\n📍 <i>{message.chat.title}</i>\n\n"
+        msg = f"🏆 <b>TOP 10 QUIZ MASTERS</b>\n📍 <i>{message.chat.title}</i>\n\n"
         for i, p in enumerate(top_players, 1):
             name = p.get("last_known_name") or f"Player_{str(p['user_id'])[-4:]}"
+            # Extract score from the Object
             pts = p.get("group_quiz", {}).get(chat_id, 0)
             msg += f"{i}. <b>{name}</b> — <code>{pts} pts</code>\n"
 
         await message.answer(msg, parse_mode="HTML")
 
     except Exception as e:
-        # If there is a bug, this will tell you what it is in the terminal
-        print(f"ERROR IN TOPQUIZ: {e}")
-        await message.answer("⚠️ Bot is having trouble connecting to the database.")
+        print(f"DB ERROR: {e}")
 # ---------------- Main ----------------
 async def main():
     # 1. Test MongoDB connection first
