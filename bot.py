@@ -966,7 +966,11 @@ async def execute_profile_comparison(callback: types.CallbackQuery):
         await callback.message.edit_text(f"❌ Error: {e}")
 @dp.callback_query(F.data.startswith("comp_expl_"))
 async def execute_exploration_comparison(callback: types.CallbackQuery):
+    # Split: [0]comp, [1]expl, [2]myuid, [3]targetuid
     parts = callback.data.split("_")
+    if len(parts) < 4:
+        return await callback.answer("❌ Error: Data truncated.")
+    
     my_uid, target_uid = parts[2], parts[3]
     await callback.answer("⚖️ Comparing Exploration...")
 
@@ -980,8 +984,8 @@ async def execute_exploration_comparison(callback: types.CallbackQuery):
         msg += f"👤 <code>{me_info.get('name', 'User1')[:10]}</code> <b>VS</b> 👤 <code>{them_info.get('name', 'User2')[:10]}</code>\n"
         msg += "<code>" + "═" * 25 + "</code>\n\n"
 
+        # --- 1. CHEST SECTION ---
         msg += "<b>🎁 CHEST COUNTS</b>\n"
-        # Using multiple keys per chest to ensure we find the right one
         chest_map = [
             ("Luxurious", ["luxurious_chest", "luxurious_chest_number"]),
             ("Precious", ["precious_chest", "precious_chest_number"]),
@@ -991,7 +995,7 @@ async def execute_exploration_comparison(callback: types.CallbackQuery):
 
         def get_chest(data, keys):
             for k in keys:
-                if k in data: return data[k]
+                if k in data and data[k] not in [None, 0, "0"]: return data[k]
                 if "stats" in data and k in data["stats"]: return data["stats"][k]
             return 0
 
@@ -1000,6 +1004,34 @@ async def execute_exploration_comparison(callback: types.CallbackQuery):
             c2 = to_int(get_chest(them_info, keys))
             icon = "⬅️" if c1 > c2 else "➡️" if c2 > c1 else "🤝"
             msg += f"📦 {label}: <code>{c1}</code> {icon} <code>{c2}</code>\n"
+
+        msg += "\n<code>" + "─" * 25 + "</code>\n\n"
+
+        # --- 2. REGION EXPLORATION SECTION ---
+        msg += "<b>🌍 REGIONS</b>\n"
+        # Map target's exploration by name for easy lookup
+        them_map = {area['name']: area['percent'] for area in them_expl}
+        
+        for area in me_expl:
+            name = area['name']
+            # Get percentages, default to 0.0 if area not found for the other player
+            p1 = float(area.get('percent', 0))
+            p2 = float(them_map.get(name, 0))
+            
+            icon = "⬅️" if p1 > p2 else "➡️" if p2 > p1 else "🤝"
+            # Format to 1 decimal place for alignment
+            msg += f"❀ <b>{name}</b>\n<code>{p1:>5.1f}%</code> {icon} <code>{p2:>5.1f}%</code>\n\n"
+
+        # --- 3. NAVIGATION ---
+        builder = InlineKeyboardBuilder()
+        # Ensure the back button ID matches your back_comp_ handler
+        builder.row(types.InlineKeyboardButton(text="⬅️ Back", callback_data=f"back_comp_{my_uid}_{target_uid}"))
+        
+        await callback.message.edit_text(msg, reply_markup=builder.as_markup(), parse_mode="HTML")
+
+    except Exception as e:
+        print(f"Exploration Error: {e}")
+        await callback.message.edit_text(f"❌ Error: {str(e)[:50]}...")
 
         # ... (Your region loop remains the same) ...
 
