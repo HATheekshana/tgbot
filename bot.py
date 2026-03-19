@@ -1005,25 +1005,32 @@ async def back_to_compare_prep(callback: types.CallbackQuery):
         parse_mode="HTML"
     )
     await callback.answer()
+async def clear_old_polls():
+    """Removes crashed or forgotten polls from memory every hour"""
+    while True:
+        await asyncio.sleep(3600)
+        current_time = time.time()
+        # Create a static list of keys to avoid 'dictionary size changed' error
+        to_delete = [pid for pid, d in active_polls.items() if current_time - d["start_time"] > 3600]
+        for pid in to_delete:
+            if pid in active_polls:
+                del active_polls[pid]
+
+# --- QUIZ TRIGGER ---
 @dp.message(F.chat.type.in_({"group", "supergroup"}))
 async def group_quiz_handler(message: types.Message):
-    # 5% chance to trigger a quiz on any message
+    # 5% chance to send a quiz
     if random.random() < 0.05:
         try:
             with open("quizzes.json", "r") as f:
                 quiz_list = json.load(f)
             
-            # Select a random question
             q = random.choice(quiz_list)
-            
-            # Pick 3 random wrong answers + the correct one
-            options = random.sample(q["wrong_pool"], 3)
-            options.append(q["correct"])
+            options = random.sample(q["wrong_pool"], 3) + [q["correct"]]
             random.shuffle(options)
             
             correct_id = options.index(q["correct"])
 
-            # Send Native Quiz with 60s Timer
             poll_msg = await message.answer_poll(
                 question=f"🧠 QUIZ ({q['difficulty'].upper()})\n{q['question']}",
                 options=options,
@@ -1031,7 +1038,7 @@ async def group_quiz_handler(message: types.Message):
                 correct_option_id=correct_id,
                 is_anonymous=False,
                 open_period=60,
-                explanation="Be fast for more points!"
+                explanation="Be fast for max points!"
             )
 
             poll_id = poll_msg.poll.id
@@ -1040,22 +1047,23 @@ async def group_quiz_handler(message: types.Message):
                 "difficulty": q["difficulty"],
                 "correct_id": correct_id,
                 "chat_id": message.chat.id,
-                "winners": [] # List to store (name, points)
+                "winners": []
             }
 
-            # Wait for the poll to end
+            # Wait for the 60s timer to finish
             await asyncio.sleep(61)
 
-            # Send Summary Message
             if poll_id in active_polls:
                 data = active_polls[poll_id]
                 if data["winners"]:
-                    winner_list = "\n".join([f"✨ {name}: <b>+{pts} pts</b>" for name, pts in data["winners"]])
+                    # Create the 'RenXZero solved it!' style list
+                    winner_list = "\n".join([f"✨ {name} solved it! (<b>+{pts} pts</b>)" for name, pts in data["winners"]])
                     await bot.send_message(data["chat_id"], f"🏁 <b>Quiz Results:</b>\n\n{winner_list}", parse_mode="HTML")
                 else:
                     await bot.send_message(data["chat_id"], "⏰ Time's up! No one got it right. 🫥")
                 
-                del active_polls[poll_id] # Clean memory
+                # Clean memory immediately after summary
+                del active_polls[poll_id]
 
         except Exception as e:
             print(f"Quiz Error: {e}")
@@ -1064,24 +1072,21 @@ async def group_quiz_handler(message: types.Message):
 @dp.poll_answer()
 async def handle_poll_answer(poll_answer: types.PollAnswer):
     poll_id = poll_answer.poll_id
-    
-    # Check if poll is active and tracked
     if poll_id not in active_polls:
         return
 
     data = active_polls[poll_id]
     user_choice = poll_answer.option_ids[0]
 
-    # Check if the user is correct
     if user_choice == data["correct_id"]:
         elapsed = time.time() - data["start_time"]
         points = get_quiz_score(data["difficulty"], elapsed)
         
         user_id = str(poll_answer.user.id)
-        chat_id = str(data["chat_id"])
+        chat_id = str(data["chat_id"]) # CRITICAL: Save as string
         user_name = poll_answer.user.first_name
 
-        # Save to MongoDB (Group-specific points)
+        # Save Group-Specific Points
         await users_col.update_one(
             {"user_id": user_id},
             {
@@ -1090,28 +1095,21 @@ async def handle_poll_answer(poll_answer: types.PollAnswer):
             },
             upsert=True
         )
-
-        # Add to the winner list for the final summary message
         data["winners"].append((user_name, points))
 
-# --- LEADERBOARD COMMAND (Group Specific) ---
+# --- LEADERBOARD COMMAND ---
 @dp.message(Command("topquiz"))
 async def cmd_top_quiz(message: types.Message):
-    # 1. Force check for Group
     if message.chat.type not in ["group", "supergroup"]:
         return await message.reply("❌ Use this in a group!")
 
-    # 2. Stringify the chat ID safely
     chat_id = str(message.chat.id)
-    
-    # 3. Create the exact field name
     score_field = f"group_quiz.{chat_id}"
 
-    # 4. Filter: Find users where this specific group ID exists and is > 0
+    # Search only for users with points in THIS group
     query = {score_field: {"$exists": True, "$gt": 0}}
     
     try:
-        # Sort by the dynamic field name
         cursor = users_col.find(query).sort(score_field, -1).limit(10)
         top_players = await cursor.to_list(length=10)
 
@@ -1122,28 +1120,13 @@ async def cmd_top_quiz(message: types.Message):
         msg += "<code>" + "─" * 25 + "</code>\n\n"
 
         for i, p in enumerate(top_players, 1):
-            # Check for different name fields
-            name = p.get("last_known_name") or p.get("nickname") or f"Player_{str(p['user_id'])[-4:]}"
-            
-            # Get the score from the nested dictionary
-            group_data = p.get("group_quiz", {})
-            pts = group_data.get(chat_id, 0)
-            
+            name = p.get("last_known_name") or f"Player_{str(p['user_id'])[-4:]}"
+            pts = p.get("group_quiz", {}).get(chat_id, 0)
             msg += f"{i}. <b>{name}</b> — <code>{pts} pts</code>\n"
 
         await message.answer(msg, parse_mode="HTML")
-        
     except Exception as e:
         print(f"Leaderboard Error: {e}")
-        await message.answer("⚠️ Error fetching scores. Make sure the bot has admin rights to read messages.")
-async def clear_old_polls():
-    while True:
-        await asyncio.sleep(3600) # Check every hour
-        current_time = time.time()
-        # Remove polls older than 1 hour
-        to_delete = [pid for pid, d in active_polls.items() if current_time - d["start_time"] > 3600]
-        for pid in to_delete:
-            del active_polls[pid]
 # ---------------- Main ----------------
 async def main():
     # 1. Test MongoDB connection first
@@ -1184,6 +1167,7 @@ async def main():
     print("⏰ Both schedulers started (Interval & Midnight)!")
 
     # 5. Start polling
+    asyncio.create_task(clear_old_polls())
     await dp.start_polling(bot)
 
 if __name__ == "__main__":
