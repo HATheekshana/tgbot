@@ -7,8 +7,12 @@ import io
 import aiohttp
 from dotenv import load_dotenv
 import os
+from aiogram import types, F
 from database import users_col, cluster
 from enka_api import fetch_enka_data
+from aiogram.filters import Command
+from aiogram.utils.keyboard import InlineKeyboardBuilder
+from enkapnetwork import EnkaNetworkAPI
 import requests
 from aioenkanetworkcard import encbanner
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
