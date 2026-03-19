@@ -10,7 +10,7 @@ COOKIES = {
 import aiohttp
 
 # Cache for character names to avoid hitting the API too much
-CHARACTER_CACHE = {}
+CHAR_NAME_CACHE = {}
 
 async def get_char_name(char_id: str):
     char_id_str = str(char_id)
