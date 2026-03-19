@@ -7,6 +7,32 @@ COOKIES = {
     "ltuid_v2": "449108883",
     "ltoken_v2": "v2_CAISDGM5b3FhcTNzM2d1OBokNDcwMGJhYzAtMTAxZi00YjRlLTk2YmItN2M4YjhjMjMxZDAwIPWn780GKOuk4-0HMJO3k9YBQgtiYnNfb3ZlcnNlYVhqagJTRw.9dO7aQAAAAAB.MEUCIA5OHCjpxUDGrSJ8AQVHNuK4nwpW7XdJhtZhYnXcMhiFAiEAn0azB_VtrCvO57QPc72lKVKK_lTyMHAjDM2LrvENUco"
 }
+# Function to calculate World Level from AR (since API doesn't give it)
+def calculate_world_level(ar):
+    ar = int(ar)
+    if ar < 20: return 0
+    if ar < 25: return 1
+    if ar < 30: return 2
+    if ar < 35: return 3
+    if ar < 40: return 4
+    if ar < 45: return 5
+    if ar < 50: return 6
+    if ar < 55: return 7
+    return 8
+
+# Universal getter simplified for your specific JSON structure
+def get_val(data, key, section="stats"):
+    # Check in the specific section (stats or info)
+    if section in data and key in data[section]:
+        return data[section][key]
+    # Fallback to root
+    return data.get(key, 0)
+
+def to_int(val):
+    try:
+        return int(float(val)) if val else 0
+    except:
+        return 0
 async def get_player_full_data(uid: int):
     client = genshin.Client(COOKIES)
     client.region = genshin.Region.OVERSEAS

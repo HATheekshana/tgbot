@@ -20,7 +20,7 @@ from aiogram import Bot, Dispatcher, types
 from aiogram.filters import Command
 from pytz import timezone
 from wishing import combine_images
-from genshin_utils import  get_exploration_data,get_abyss_data,get_player_full_data
+from genshin_utils import  get_exploration_data,get_abyss_data,get_player_full_data,calculate_world_level
 from data import weapons3, characters4, characters5, rare
 
 ITEMS_PER_PAGE = 10
@@ -846,46 +846,8 @@ async def my_profile(message: types.Message):
 
     # 5. Send final text message
     await message.answer(msg, parse_mode="HTML")
-def to_int(val):
-    if val is None or str(val).strip().upper() == "N/A" or str(val).strip() == "":
-        return 0
-    try:
-        # If it's already a number, return it
-        if isinstance(val, (int, float)):
-            return int(val)
-        # Strip letters (e.g., "Level 60" -> "60")
-        digits = "".join(filter(str.isdigit, str(val)))
-        return int(digits) if digits else 0
-    except:
-        return 0
 
-def get_val(data, keys):
-    """The 'Brute Force' grabber. Works for Objects and Dicts."""
-    if not isinstance(keys, list):
-        keys = [keys]
-    
-    for k in keys:
-        # 1. Try Dictionary style: data['level']
-        try:
-            val = data.get(k)
-            if val is not None: return val
-        except: pass
 
-        # 2. Try Object style: data.level
-        try:
-            val = getattr(data, k, None)
-            if val is not None: return val
-        except: pass
-
-        # 3. Try Nested Stats style: data.stats.level
-        try:
-            stats = data.get('stats') or getattr(data, 'stats', None)
-            if stats:
-                # Try stats['level'] or stats.level
-                try: return stats.get(k)
-                except: return getattr(stats, k, 0)
-        except: pass
-    return 0
 @dp.message(Command("compare"))
 async def cmd_compare_reply(message: types.Message):
     if not message.reply_to_message:
@@ -921,7 +883,6 @@ def to_int(val):
 
 @dp.callback_query(F.data.startswith("comp_prof_"))
 async def execute_profile_comparison(callback: types.CallbackQuery):
-    # Split: [0]comp, [1]prof, [2]myuid, [3]targetuid
     parts = callback.data.split("_")
     my_uid, target_uid = parts[2], parts[3]
     await callback.answer("⚖️ Comparing Profiles...")
@@ -929,117 +890,72 @@ async def execute_profile_comparison(callback: types.CallbackQuery):
     try:
         me = await get_player_full_data(my_uid)
         them = await get_player_full_data(target_uid)
-        me_abyss = await get_abyss_data(my_uid)
-        them_abyss = await get_abyss_data(target_uid)
 
-        # UNIVERSAL GETTER: Looks in root and 'stats' folder
-        def get_stat(data, keys):
-            for k in keys:
-                if k in data and data[k] not in [None, 0, "0"]: return data[k]
-                if "stats" in data and k in data["stats"]: return data["stats"][k]
-            return 0
+        # Get AR and Calculate World Level
+        my_ar = to_int(get_val(me, "level", "info"))
+        them_ar = to_int(get_val(them, "level", "info"))
+        
+        my_wl = calculate_world_level(my_ar)
+        them_wl = calculate_world_level(them_ar)
 
         msg = f"⚖️ <b>PROFILE BATTLE</b>\n"
-        msg += f"👤 <code>{me.get('name', 'User1')[:10]}</code> <b>VS</b> 👤 <code>{them.get('name', 'User2')[:10]}</code>\n"
+        msg += f"👤 <code>{me.get('info', {}).get('nickname', 'User1')}</code> <b>VS</b> 👤 <code>{them.get('info', {}).get('nickname', 'User2')}</code>\n"
         msg += "<code>" + "═" * 25 + "</code>\n\n"
 
-        stats_list = [
-            ("⭐ AR", ["level", "player_level"]),
-            ("🌍 World Level", ["world_level", "worldlevel", "wl"]),
-            ("🏆 Achievements", ["achievements", "achievement_number"]),
-            ("📅 Days Active", ["days_active", "active_day_number"])
+        # Define stats to compare using your JSON keys
+        stats_to_compare = [
+            ("⭐ Adventure Rank", my_ar, them_ar),
+            ("🌍 World Level", my_wl, them_wl),
+            ("🏆 Achievements", to_int(get_val(me, "achievements")), to_int(get_val(them, "achievements"))),
+            ("📅 Days Active", to_int(get_val(me, "days_active")), to_int(get_val(them, "days_active")))
         ]
 
-        for label, keys in stats_list:
-            v1 = to_int(get_stat(me, keys))
-            v2 = to_int(get_stat(them, keys))
+        for label, v1, v2 in stats_to_compare:
             icon = "⬅️" if v1 > v2 else "➡️" if v2 > v1 else "🤝"
             msg += f"<b>{label}:</b>\n<code>{v1:>5}</code> {icon} <code>{v2:>5}</code>\n\n"
 
-        msg += "<code>" + "─" * 25 + "</code>\n"
-        msg += f"⚔️ <b>Abyss Max:</b> <code>{me_abyss}</code> vs <code>{them_abyss}</code>\n"
-
         builder = InlineKeyboardBuilder()
         builder.row(types.InlineKeyboardButton(text="⬅️ Back", callback_data=f"back_comp_{my_uid}_{target_uid}"))
         await callback.message.edit_text(msg, reply_markup=builder.as_markup(), parse_mode="HTML")
+
     except Exception as e:
-        await callback.message.edit_text(f"❌ Error: {e}")
+        await callback.message.edit_text(f"❌ Profile Error: {e}")
+
 @dp.callback_query(F.data.startswith("comp_expl_"))
 async def execute_exploration_comparison(callback: types.CallbackQuery):
-    # Split: [0]comp, [1]expl, [2]myuid, [3]targetuid
     parts = callback.data.split("_")
-    if len(parts) < 4:
-        return await callback.answer("❌ Error: Data truncated.")
-    
     my_uid, target_uid = parts[2], parts[3]
-    await callback.answer("⚖️ Comparing Exploration...")
+    await callback.answer("⚖️ Comparing Chests...")
 
     try:
-        me_info = await get_player_full_data(my_uid)
-        them_info = await get_player_full_data(target_uid)
-        me_expl = await get_exploration_data(my_uid)
-        them_expl = await get_exploration_data(target_uid)
+        me = await get_player_full_data(my_uid)
+        them = await get_player_full_data(target_uid)
 
-        msg = f"⚖️ <b>EXPLORATION BATTLE</b>\n"
-        msg += f"👤 <code>{me_info.get('name', 'User1')[:10]}</code> <b>VS</b> 👤 <code>{them_info.get('name', 'User2')[:10]}</code>\n"
+        msg = f"⚖️ <b>CHEST BATTLE</b>\n"
+        msg += f"👤 <code>{me.get('info', {}).get('nickname', 'User1')}</code> <b>VS</b> 👤 <code>{them.get('info', {}).get('nickname', 'User2')}</code>\n"
         msg += "<code>" + "═" * 25 + "</code>\n\n"
 
-        # --- 1. CHEST SECTION ---
-        msg += "<b>🎁 CHEST COUNTS</b>\n"
-        chest_map = [
-            ("Luxurious", ["luxurious_chest", "luxurious_chest_number"]),
-            ("Precious", ["precious_chest", "precious_chest_number"]),
-            ("Exquisite", ["exquisite_chest", "exquisite_chest_number"]),
-            ("Common", ["common_chest", "common_chest_number"])
+        # Correct Chest Names from your genshin_data.json
+        chests = [
+            ("Luxurious", "luxurious_chests"),
+            ("Precious", "precious_chests"),
+            ("Exquisite", "exquisite_chests"),
+            ("Common", "common_chests"),
+            ("Remarkable", "remarkable_chests")
         ]
 
-        def get_chest(data, keys):
-            for k in keys:
-                if k in data and data[k] not in [None, 0, "0"]: return data[k]
-                if "stats" in data and k in data["stats"]: return data["stats"][k]
-            return 0
-
-        for label, keys in chest_map:
-            c1 = to_int(get_chest(me_info, keys))
-            c2 = to_int(get_chest(them_info, keys))
-            icon = "⬅️" if c1 > c2 else "➡️" if c2 > c1 else "🤝"
-            msg += f"📦 {label}: <code>{c1}</code> {icon} <code>{c2}</code>\n"
-
-        msg += "\n<code>" + "─" * 25 + "</code>\n\n"
-
-        # --- 2. REGION EXPLORATION SECTION ---
-        msg += "<b>🌍 REGIONS</b>\n"
-        # Map target's exploration by name for easy lookup
-        them_map = {area['name']: area['percent'] for area in them_expl}
-        
-        for area in me_expl:
-            name = area['name']
-            # Get percentages, default to 0.0 if area not found for the other player
-            p1 = float(area.get('percent', 0))
-            p2 = float(them_map.get(name, 0))
-            
-            icon = "⬅️" if p1 > p2 else "➡️" if p2 > p1 else "🤝"
-            # Format to 1 decimal place for alignment
-            msg += f"❀ <b>{name}</b>\n<code>{p1:>5.1f}%</code> {icon} <code>{p2:>5.1f}%</code>\n\n"
-
-        # --- 3. NAVIGATION ---
-        builder = InlineKeyboardBuilder()
-        # Ensure the back button ID matches your back_comp_ handler
-        builder.row(types.InlineKeyboardButton(text="⬅️ Back", callback_data=f"back_comp_{my_uid}_{target_uid}"))
-        
-        await callback.message.edit_text(msg, reply_markup=builder.as_markup(), parse_mode="HTML")
-
-    except Exception as e:
-        print(f"Exploration Error: {e}")
-        await callback.message.edit_text(f"❌ Error: {str(e)[:50]}...")
-
-        # ... (Your region loop remains the same) ...
+        for label, key in chests:
+            c1 = to_int(get_val(me, key))
+            c2 = to_int(get_val(them, key))
+            icon = "⬅️" if c1 > c2 else "➡️" if v2 > v1 else "🤝"
+            msg += f"<b>{label}:</b>\n<code>{c1:>5}</code> {icon} <code>{c2:>5}</code>\n\n"
 
         builder = InlineKeyboardBuilder()
         builder.row(types.InlineKeyboardButton(text="⬅️ Back", callback_data=f"back_comp_{my_uid}_{target_uid}"))
         await callback.message.edit_text(msg, reply_markup=builder.as_markup(), parse_mode="HTML")
+
     except Exception as e:
-        await callback.message.edit_text(f"❌ Error: {e}")
+        await callback.message.edit_text(f"❌ Chest Error: {e}")
 @dp.callback_query(F.data.startswith("back_comp_"))
 async def back_to_compare_prep(callback: types.CallbackQuery):
     parts = callback.data.split("_")
