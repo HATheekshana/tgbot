@@ -23,7 +23,7 @@ from pytz import timezone
 from card_gen import generate_profile_card
 from wishing import combine_images
 from genshin_utils import get_exploration_data,get_abyss_data,get_player_full_data,parse_character_data
-from data import weapons3, characters4, characters5, rare
+from data import weapons3, characters4, characters5, rare ,CHAR_NAMES
 
 ITEMS_PER_PAGE = 10
 dp = Dispatcher()
@@ -863,10 +863,10 @@ async def handle_character_details(callback: types.CallbackQuery):
     
     if not stats:
         return await callback.message.answer("❌ Character data not found.")
-
+    char_name = CHAR_NAMES.get(stats['id'], f"Hero {stats['id']}")
     # 3. Format the message
     msg = (
-        f"<b>🎭 Character ID: {stats['id']}</b>\n"
+        f"<b>🎭 Character: {char_name}</b>\n"
         f"✨ <b>Level:</b> {stats['level']}\n"
         f"<code>" + "═" * 20 + "</code>\n"
         f"❤️ <b>HP:</b> {stats['hp']}\n"
@@ -891,22 +891,30 @@ async def show_character_list(message: types.Message):
     if not uid:
         return await message.answer("❌ Please /login <uid> first.")
 
-    status = await message.answer("🔍 Fetching characters from Enka...")
+    status = await message.answer("🔍 Fetching characters...")
     data = await fetch_enka_data(uid)
     await status.delete()
 
     if not data or "avatarInfoList" not in data:
         return await message.answer("❌ Showcase is empty or private in-game.")
 
+    # --- START OF THE PART YOU ASKED ABOUT ---
     builder = InlineKeyboardBuilder()
-    # We loop through the characters in the showcase
+    
     for char in data["avatarInfoList"]:
-        char_id = char["avatarId"]
-        # Note: You might need a character name map or just use ID for now
-        builder.row(types.InlineKeyboardButton(
-            text=f"Character ID: {char_id}", 
+        char_id = str(char["avatarId"])
+        # Look up name from your CHAR_NAMES dictionary
+        char_name = CHAR_NAMES.get(char_id, f"Hero {char_id}")
+        
+        # Use .add() instead of .row() to allow the grid layout
+        builder.add(types.InlineKeyboardButton(
+            text=char_name, 
             callback_data=f"enka_{uid}_{char_id}")
         )
+
+    # This line tells the builder to group them into rows of 3
+    builder.adjust(3)
+    # --- END OF THE PART YOU ASKED ABOUT ---
 
     await message.answer(
         "👤 <b>Your Character Showcase</b>\nSelect a character to see stats:",
