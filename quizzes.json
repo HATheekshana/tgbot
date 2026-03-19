@@ -10,5 +10,65 @@
         "correct": "20",
         "wrong_pool": ["16", "10", "12", "15", "25", "30", "90"],
         "difficulty": "easy"
+    },
+    {
+        "question": "Which element does Venti control?",
+        "correct": "Anemo",
+        "wrong_pool": ["Geo", "Electro", "Hydro", "Pyro", "Cryo", "Dendro"],
+        "difficulty": "easy"
+    },
+    {
+        "question": "What is the name of the Traveler’s sibling?",
+        "correct": "Aether/Lumine",
+        "wrong_pool": ["Diluc", "Kaeya", "Xiao", "Scaramouche", "Dainsleif"],
+        "difficulty": "medium"
+    },
+    {
+        "question": "Which region is inspired by Japan?",
+        "correct": "Inazuma",
+        "wrong_pool": ["Mondstadt", "Liyue", "Sumeru", "Fontaine", "Natlan"],
+        "difficulty": "easy"
+    },
+    {
+        "question": "What is the resin cap in Genshin Impact?",
+        "correct": "160",
+        "wrong_pool": ["120", "180", "200", "100", "240", "300"],
+        "difficulty": "easy"
+    },
+    {
+        "question": "Which weapon type does Diluc use?",
+        "correct": "Claymore",
+        "wrong_pool": ["Sword", "Polearm", "Bow", "Catalyst"],
+        "difficulty": "easy"
+    },
+    {
+        "question": "What boss drops 'Everflame Seed'?",
+        "correct": "Pyro Regisvine",
+        "wrong_pool": ["Cryo Regisvine", "Electro Hypostasis", "Oceanid", "Maguu Kenki"],
+        "difficulty": "medium"
+    },
+    {
+        "question": "Which character uses a puppet body created by Ei?",
+        "correct": "Scaramouche",
+        "wrong_pool": ["Kazuha", "Thoma", "Itto", "Ayato", "Gorou"],
+        "difficulty": "medium"
+    },
+    {
+        "question": "What is the name of the main currency used for wishes?",
+        "correct": "Primogems",
+        "wrong_pool": ["Mora", "Genesis Crystals", "Stardust", "Starglitter"],
+        "difficulty": "easy"
+    },
+    {
+        "question": "Which element is strong against Hydro shields?",
+        "correct": "Electro",
+        "wrong_pool": ["Pyro", "Cryo", "Geo", "Anemo", "Dendro"],
+        "difficulty": "medium"
+    },
+    {
+        "question": "What is the highest Adventure Rank?",
+        "correct": "60",
+        "wrong_pool": ["50", "55", "70", "80", "90"],
+        "difficulty": "easy"
     }
 ]
