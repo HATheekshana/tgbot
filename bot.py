@@ -1058,8 +1058,8 @@ async def clear_old_polls():
 
 # --- QUIZ TRIGGER ---
 @dp.message(F.chat.type.in_({"group", "supergroup"}))
-async def group_quiz_handler(message: types.Message ,bot: Bot):
-    # 5% chance to send a quiz
+async def group_quiz_handler(message: types.Message):
+    # 10% chance to trigger a quiz on any message
     if random.random() < 0.1:
         try:
             with open("quizzes.json", "r") as f:
@@ -1071,6 +1071,7 @@ async def group_quiz_handler(message: types.Message ,bot: Bot):
             
             correct_id = options.index(q["correct"])
 
+            # Send Native Quiz
             poll_msg = await message.answer_poll(
                 question=f"🧠 QUIZ ({q['difficulty'].upper()})\n{q['question']}",
                 options=options,
@@ -1087,22 +1088,30 @@ async def group_quiz_handler(message: types.Message ,bot: Bot):
                 "difficulty": q["difficulty"],
                 "correct_id": correct_id,
                 "chat_id": message.chat.id,
+                "message_id": poll_msg.message_id, # Saved for replying
                 "winners": []
             }
 
-            # Wait for the 60s timer to finish
+            # Wait for 60s timer + 1s buffer
             await asyncio.sleep(61)
 
             if poll_id in active_polls:
                 data = active_polls[poll_id]
-                if data["winners"]:
-                    # Create the 'RenXZero solved it!' style list
-                    winner_list = "\n".join([f"✨ {name} solved it! (<b>+{pts} pts</b>)" for name, pts in data["winners"]])
-                    await bot.send_message(data["chat_id"], f"🏁 <b>Quiz Results:</b>\n\n{winner_list}", parse_mode="HTML")
-                else:
-                    await bot.send_message(data["chat_id"], "⏰ Time's up! No one got it right. 🫥")
                 
-                # Clean memory immediately after summary
+                if data["winners"]:
+                    winner_list = "\n".join([f"✨ {name} solved it! (<b>+{pts} pts</b>)" for name, pts in data["winners"]])
+                    result_text = f"🏁 <b>Quiz Results:</b>\n\n{winner_list}"
+                else:
+                    result_text = "⏰ Time's up! No one got it right. 🫥"
+
+                # Reply to the specific Quiz Message
+                await bot.send_message(
+                    chat_id=data["chat_id"],
+                    text=result_text,
+                    reply_to_message_id=data["message_id"],
+                    parse_mode="HTML"
+                )
+                
                 del active_polls[poll_id]
 
         except Exception as e:
