@@ -10,32 +10,6 @@ COOKIES = {
 import aiohttp
 
 # Cache for character names to avoid hitting the API too much
-CHARACTER_CACHE = {}
-
-async def get_character_name(char_id: str):
-    """Automatically finds the character name from Enka's official metadata."""
-    global CHARACTER_CACHE
-    
-    # If we already have it in memory, return it
-    if char_id in CHARACTER_CACHE:
-        return CHARACTER_CACHE[char_id]
-    
-    # Otherwise, fetch the latest names from Enka's asset store
-    try:
-        url = "https://raw.githubusercontent.com/EnkaNetwork/EnkaData/master/dictionary/en.json"
-        async with aiohttp.ClientSession() as session:
-            async with session.get(url) as response:
-                if response.status == 200:
-                    names_dict = await response.json()
-                    # Enka uses the ID as the key in their hash map
-                    # We save it to our cache
-                    name = names_dict.get(char_id, f"Hero {char_id}")
-                    CHARACTER_CACHE[char_id] = name
-                    return name
-    except Exception:
-        pass
-    
-    return f"Hero {char_id}"
 async def parse_character_data(data, char_id):
     """Finds a character in the Enka JSON and extracts combat stats."""
     if not data or "avatarInfoList" not in data:

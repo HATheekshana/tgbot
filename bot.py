@@ -20,7 +20,7 @@ from aiogram import Bot, Dispatcher, types
 from aiogram.filters import Command
 from pytz import timezone
 from wishing import combine_images
-from genshin_utils import get_character_name ,get_exploration_data,get_abyss_data,get_player_full_data,parse_character_data
+from genshin_utils import  get_exploration_data,get_abyss_data,get_player_full_data,parse_character_data
 from data import weapons3, characters4, characters5, rare,CHARACTER_MAP
 
 ITEMS_PER_PAGE = 10
@@ -848,6 +848,7 @@ async def my_profile(message: types.Message):
     await message.answer(msg, parse_mode="HTML")
 @dp.message(Command("characters"))
 async def show_character_list(message: types.Message):
+    # 1. Database Check
     user_data = await users_col.find_one({"user_id": str(message.from_user.id)})
     if not user_data:
         return await message.answer("❌ Please /login <uid> first.")
@@ -857,59 +858,94 @@ async def show_character_list(message: types.Message):
 
     try:
         async with enka:
+            # 2. API Fetch
             data = await enka.fetch_user(uid)
             if not data.characters:
                 return await status.edit_text("❌ Showcase is empty or hidden.")
 
             builder = InlineKeyboardBuilder()
+            
+            # 3. Build Character Buttons
             for char in data.characters:
                 char_id_str = str(char.id)
                 
-                # Use our dictionary, fallback to library name, then to ID
-                name = CHARACTER_MAP.get(char_id_str, char.name)
-                if not name or name.isdigit():
-                    name = f"Hero {char_id_str}"
+                # Logic: Check CHARACTER_MAP -> Then check Enka name -> Then fallback to ID
+                display_name = CHARACTER_MAP.get(char_id_str)
+                
+                if not display_name:
+                    display_name = char.name if char.name and not char.name.isdigit() else f"Hero {char_id_str}"
 
                 builder.row(types.InlineKeyboardButton(
-                    text=f"✨ {name} (Lvl {char.level})", 
-                    callback_data=f"char_{uid}_{char.id}")
+                    text=f"✨ {display_name} (Lvl {char.level})", 
+                    callback_data=f"char_{uid}_{char.id}") # Correct 3-part format
                 )
 
+            # 4. Clean up and Send
             await status.delete()
             await message.answer(
-                f"👤 <b>{data.player.nickname}'s Characters</b>\nSelect one for full stats:",
+                f"👤 <b>{data.player.nickname}'s Characters</b>\n"
+                f"Select a character to view full stats and splash art:",
                 reply_markup=builder.as_markup(),
                 parse_mode="HTML"
             )
+            
     except Exception as e:
         print(f"List Error: {e}")
-        await status.edit_text("❌ Error: Is your Showcase 'Public' in-game?")
-        
-@dp.callback_query(F.data.startswith("enka_"))
-async def handle_character_details(callback: types.CallbackQuery):
+        # Providing more detail to the user helps them fix showcase issues
+        await status.edit_text(
+            "❌ <b>Failed to load characters.</b>\n\n"
+            "Please ensure:\n"
+            "1. Your UID is correct.\n"
+            "2. 'Show Character Details' is <b>ON</b> in-game.\n"
+            "3. Your Showcase is not empty.",
+            parse_mode="HTML"
+        )
+@dp.callback_query(F.data.startswith("char_"))
+async def character_detail_callback(callback: types.CallbackQuery):
     _, uid, char_id = callback.data.split("_")
-    data = await fetch_enka_data(uid)
-    stats = await parse_character_data(data, char_id)
-    name = await get_character_name(char_id)
+    await callback.answer("Loading Stats...")
 
-    if not stats: return await callback.answer("Stats not found.")
+    try:
+        async with enka:
+            data = await enka.fetch_user(int(uid))
+            char = next((c for c in data.characters if str(c.id) == char_id), None)
+            
+            if not char:
+                return await callback.message.answer("Character not found.")
 
-    msg = (
-        f"<b>🎭 Character: {name}</b>\n"
-        f"✨ <b>Level:</b> {stats['level']}\n"
-        "<code>" + "═" * 20 + "</code>\n"
-        f"❤️ <b>HP:</b> {stats['hp']}\n"
-        f"⚔️ <b>ATK:</b> {stats['atk']}\n"
-        f"🛡️ <b>DEF:</b> {stats['def']}\n"
-        f"🧪 <b>EM:</b> {stats['em']}\n"
-        f"🎯 <b>Crit Rate:</b> {stats['cr']}\n"
-        f"💥 <b>Crit Damage:</b> {stats['cd']}\n"
-        f"⚡ <b>Energy:</b> {stats['er']}\n"
-        "<code>" + "═" * 20 + "</code>"
-    )
+            # Get name from our clean dictionary
+            name = CHARACTER_MAP.get(str(char.id), char.name)
+            s = char.stats
+            
+            msg = (
+                f"🎭 <b>{name}</b> (Lvl {char.level})\n"
+                f"✨ <b>Friendship:</b> {char.friendship}\n"
+                f"<code>" + "═" * 20 + "</code>\n"
+                f"❤️ <b>HP:</b> {s.hp.value:.0f}\n"
+                f"⚔️ <b>ATK:</b> {s.atk.value:.0f}\n"
+                f"🛡️ <b>DEF:</b> {s.defense.value:.0f}\n"
+                f"🧪 <b>EM:</b> {s.elemental_mastery.value:.0f}\n"
+                f"⚡ <b>ER:</b> {s.energy_recharge.value * 100:.1f}%\n"
+                f"🎯 <b>CR:</b> {s.crit_rate.value * 100:.1f}%\n"
+                f"💥 <b>CD:</b> {s.crit_damage.value * 100:.1f}%\n"
+                f"<code>" + "═" * 20 + "</code>\n"
+            )
+            
+            if char.weapon:
+                msg += f"🗡️ <b>{char.weapon.name}</b> (R{char.weapon.refinement})"
 
-    await callback.message.edit_text(msg, parse_mode="HTML", reply_markup=callback.message.reply_markup)
-    await callback.answer()
+            # Swaps the message to show Splash Art + Stats
+            await callback.message.edit_media(
+                media=types.InputMediaPhoto(
+                    media=char.image.url, 
+                    caption=msg, 
+                    parse_mode="HTML"
+                ),
+                reply_markup=callback.message.reply_markup
+            )
+
+    except Exception as e:
+        await callback.message.answer("❌ Error loading character.")
 # ---------------- Main ----------------
 async def main():
     # 1. Test MongoDB connection first
