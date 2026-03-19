@@ -1100,33 +1100,53 @@ async def handle_poll_answer(poll_answer: types.PollAnswer):
 # --- LEADERBOARD COMMAND ---
 @dp.message(Command("topquiz"))
 async def cmd_top_quiz(message: types.Message):
+    # DEBUG: Check your terminal/logs to see these values
+    print(f"DEBUG: Chat ID: {message.chat.id} | Type: {message.chat.type}")
+
+    # 1. More flexible check for group types
     if message.chat.type not in ["group", "supergroup"]:
-        return await message.reply("❌ Use this in a group!")
+        # If it's a private chat, we stop here
+        return await message.reply("❌ This leaderboard is specific to groups. Please use this command inside a group!")
 
     chat_id = str(message.chat.id)
     score_field = f"group_quiz.{chat_id}"
 
-    # Search only for users with points in THIS group
-    query = {score_field: {"$exists": True, "$gt": 0}}
-    
     try:
+        # 2. Find users who have points in THIS specific group
+        # We use $gt: 0 to make sure we don't show people with 0 points
+        query = {score_field: {"$exists": True, "$gt": 0}}
+        
+        # 3. Sort descending (-1) to get the highest scores first
         cursor = users_col.find(query).sort(score_field, -1).limit(10)
         top_players = await cursor.to_list(length=10)
 
         if not top_players:
-            return await message.answer("🏆 <b>No scores yet!</b> Correct answers in this group will appear here.", parse_mode="HTML")
+            return await message.answer(
+                f"🏆 <b>{message.chat.title}</b>\n\n"
+                "No one has earned quiz points in this group yet! 🧐", 
+                parse_mode="HTML"
+            )
 
-        msg = f"🏆 <b>{message.chat.title} Leaderboard</b>\n"
-        msg += "<code>" + "─" * 25 + "</code>\n\n"
+        # 4. Build the message
+        msg = f"🏆 <b>TOP 10 QUIZ MASTERS</b>\n"
+        msg += f"📍 <i>{message.chat.title}</i>\n"
+        msg += "<code>" + "─" * 22 + "</code>\n\n"
 
         for i, p in enumerate(top_players, 1):
-            name = p.get("last_known_name") or f"Player_{str(p['user_id'])[-4:]}"
-            pts = p.get("group_quiz", {}).get(chat_id, 0)
+            # Try to find a name, fallback to a masked User ID
+            name = p.get("last_known_name") or p.get("nickname") or f"Player_{str(p['user_id'])[-4:]}"
+            
+            # Extract the specific score for this group
+            group_data = p.get("group_quiz", {})
+            pts = group_data.get(chat_id, 0)
+            
             msg += f"{i}. <b>{name}</b> — <code>{pts} pts</code>\n"
 
         await message.answer(msg, parse_mode="HTML")
+
     except Exception as e:
-        print(f"Leaderboard Error: {e}")
+        print(f"CRITICAL ERROR in topquiz: {e}")
+        await message.answer("⚠️ An error occurred while fetching the leaderboard.")
 # ---------------- Main ----------------
 async def main():
     # 1. Test MongoDB connection first
