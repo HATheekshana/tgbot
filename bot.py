@@ -9,7 +9,7 @@ from dotenv import load_dotenv
 import os
 from aiogram import types, F
 from database import users_col, cluster
-from enka_api import fetch_enka_data
+from enka_api import fetch_enka_data ,get_user_uid
 from aiogram.filters import Command
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 import requests
