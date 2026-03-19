@@ -882,40 +882,82 @@ async def cmd_compare_reply(message: types.Message):
 @dp.callback_query(F.data.startswith("comp_"))
 async def execute_comparison(callback: types.CallbackQuery):
     _, my_uid, target_uid = callback.data.split("_")
-    await callback.answer("⚖️ Comparing Explorations...")
+    await callback.answer("⚖️ Comparing Stats...")
 
     try:
-        # Fetch data for both users
+        # 1. Fetch data for both players
         me_expl = await get_exploration_data(my_uid)
         them_expl = await get_exploration_data(target_uid)
         
         me_info = await get_player_full_data(my_uid)
         them_info = await get_player_full_data(target_uid)
 
-        # Map target user's percentages for easy matching
-        them_map = {area['name']: area['percent'] for area in them_expl}
-
-        msg = f"⚖️ <b>EXPLORATION BATTLE</b>\n"
+        # 2. Header
+        msg = f"⚖️ <b>BATTLE OF THE TRAVELERS</b>\n"
         msg += f"👤 <code>{me_info['name'][:10]}</code> <b>VS</b> 👤 <code>{them_info['name'][:10]}</code>\n"
         msg += "<code>" + "═" * 25 + "</code>\n\n"
+
+        # 3. Chest Comparison Section
+        msg += "<b>🎁 CHEST COUNTS</b>\n"
+        # Mapping standard chest keys from your user_info object
+        chest_types = [
+            ("Luxurious", "luxurious_chest"),
+            ("Precious", "precious_chest"),
+            ("Exquisite", "exquisite_chest"),
+            ("Common", "common_chest")
+        ]
+
+        for label, key in chest_types:
+            c1 = int(me_info.get(key, 0))
+            c2 = int(them_info.get(key, 0))
+            icon = "⬅️" if c1 > c2 else "➡️" if c2 > c1 else "🤝"
+            msg += f"📦 {label}: <code>{c1}</code> {icon} <code>{c2}</code>\n"
+
+        msg += "\n<code>" + "─" * 25 + "</code>\n\n"
+
+        # 4. Exploration Comparison Section
+        msg += "<b>🌍 EXPLORATION</b>\n"
+        them_map = {area['name']: area['percent'] for area in them_expl}
 
         for area in me_expl:
             name = area['name']
             p1 = float(area['percent'])
             p2 = float(them_map.get(name, 0))
-
-            # Visual indicator: Arrow points to whoever has the higher %
             icon = "⬅️" if p1 > p2 else "➡️" if p2 > p1 else "🤝"
             
             msg += f"<b>{name}</b>\n"
             msg += f"<code>{p1:>5.1f}%</code> {icon} <code>{p2:>5.1f}%</code>\n\n"
 
-        # Edit the previous "Comparison Ready" message into the actual report
-        await callback.message.edit_text(msg, parse_mode="HTML")
+        # 5. The BACK Button
+        back_builder = InlineKeyboardBuilder()
+        back_builder.row(types.InlineKeyboardButton(
+            text="⬅️ Back to Menu", 
+            callback_data=f"back_comp_{my_uid}_{target_uid}")
+        )
+
+        await callback.message.edit_text(msg, reply_markup=back_builder.as_markup(), parse_mode="HTML")
 
     except Exception as e:
         print(f"Comparison Error: {e}")
-        await callback.message.edit_text("❌ Comparison failed. Ensure both users have 'Public' Battle Chronicles.")
+        await callback.message.edit_text("❌ Error: Could not compare chests. Ensure Battle Chronicle is Public.")
+
+@dp.callback_query(F.data.startswith("back_comp_"))
+async def back_to_compare_prep(callback: types.CallbackQuery):
+    _, _, my_uid, target_uid = callback.data.split("_")
+    
+    # Rebuild the original "Comparison Ready" button
+    builder = InlineKeyboardBuilder()
+    builder.row(types.InlineKeyboardButton(
+        text="📊 Compare Exploration", 
+        callback_data=f"comp_{my_uid}_{target_uid}")
+    )
+
+    await callback.message.edit_text(
+        "⚔️ <b>Comparison Menu</b>\nClick below to run the comparison again.",
+        reply_markup=builder.as_markup(),
+        parse_mode="HTML"
+    )
+    await callback.answer()
 # ---------------- Main ----------------
 async def main():
     # 1. Test MongoDB connection first
