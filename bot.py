@@ -941,7 +941,18 @@ async def main():
         print(f"❌ MongoDB Connection Error: {e}")
         return 
 
-    # 2. Create the Bot object FIRST
+    # --- NEW: UPDATE ENKA ASSETS HERE ---
+    print("⏳ Updating Enka assets (Character names & Images)...")
+    try:
+        # We use a context manager to ensure the connection closes after update
+        async with enka:
+            await enka.update_assets()
+        print("✅ Enka assets updated successfully!")
+    except Exception as e:
+        print(f"⚠️ Warning: Enka assets update failed (ID names might show): {e}")
+    # ------------------------------------
+
+    # 2. Create the Bot object
     bot = Bot(token=TOKEN)
 
     # Use your local Sri Lanka timezone
