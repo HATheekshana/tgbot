@@ -1,3 +1,28 @@
+import requests
+import aiohttp
+CHARACTER_MAP = {
+}
+
+async def sync_character_names():
+    """Downloads the latest metadata and fills in missing names in CHARACTER_MAP."""
+    global CHARACTER_MAP
+    url = "https://raw.githubusercontent.com/EnkaNetwork/API-docs/master/store/characters.json"
+    
+    try:
+        async with aiohttp.ClientSession() as session:
+            async with session.get(url) as response:
+                if response.status == 200:
+                    data = await response.json()
+                    for char_id, info in data.items():
+                        # Only add if it's NOT already in our manual CHARACTER_MAP
+                        if char_id not in CHARACTER_MAP:
+                            raw_name = info.get("SideIconName", "")
+                            clean_name = raw_name.replace("UI_AvatarIcon_Side_", "")
+                            if clean_name:
+                                CHARACTER_MAP[char_id] = clean_name
+                    print(f"✅ Character Map Synced: {len(CHARACTER_MAP)} characters loaded.")
+    except Exception as e:
+        print(f"⚠️ Metadata Sync Warning: {e}")
 weapons3 = {
     "magicguide":"Magic Guide", "blacktassel":"Black Tassel", "bloodtainted":"Bloodtainted Greatsword",
     "coolsteel":"Coolsteel", "debate":"Debate Club", "emerald":"Emerald", "ferrousshadow":"Ferrous Shadow",

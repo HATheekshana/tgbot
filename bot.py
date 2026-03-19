@@ -21,7 +21,7 @@ from aiogram.filters import Command
 from pytz import timezone
 from wishing import combine_images
 from genshin_utils import get_character_name ,get_exploration_data,get_abyss_data,get_player_full_data,parse_character_data
-from data import weapons3, characters4, characters5, rare 
+from data import weapons3, characters4, characters5, rare,CHARACTER_MAP
 
 ITEMS_PER_PAGE = 10
 dp = Dispatcher()
@@ -848,29 +848,43 @@ async def my_profile(message: types.Message):
     await message.answer(msg, parse_mode="HTML")
 @dp.message(Command("characters"))
 async def show_character_list(message: types.Message):
-    uid = await get_user_uid(str(message.from_user.id))
-    if not uid: return await message.answer("❌ Please /login <uid> first.")
+    user_data = await users_col.find_one({"user_id": str(message.from_user.id)})
+    if not user_data:
+        return await message.answer("❌ Please /login <uid> first.")
 
-    status = await message.answer("🔍 Loading Showcase...")
-    data = await fetch_enka_data(uid)
-    await status.delete()
+    uid = user_data["genshin_uid"]
+    status = await message.answer("🔍 Opening Showcase...")
 
-    if not data or "avatarInfoList" not in data:
-        return await message.answer("❌ Showcase is private or empty.")
+    try:
+        async with enka:
+            data = await enka.fetch_user(uid)
+            if not data.characters:
+                return await status.edit_text("❌ Showcase is empty or hidden.")
 
-    builder = InlineKeyboardBuilder()
-    for char in data["avatarInfoList"]:
-        char_id = str(char["avatarId"])
-        name = await get_character_name(char_id) # Get real name
+            builder = InlineKeyboardBuilder()
+            for char in data.characters:
+                char_id_str = str(char.id)
+                
+                # Use our dictionary, fallback to library name, then to ID
+                name = CHARACTER_MAP.get(char_id_str, char.name)
+                if not name or name.isdigit():
+                    name = f"Hero {char_id_str}"
+
+                builder.row(types.InlineKeyboardButton(
+                    text=f"✨ {name} (Lvl {char.level})", 
+                    callback_data=f"char_{uid}_{char.id}")
+                )
+
+            await status.delete()
+            await message.answer(
+                f"👤 <b>{data.player.nickname}'s Characters</b>\nSelect one for full stats:",
+                reply_markup=builder.as_markup(),
+                parse_mode="HTML"
+            )
+    except Exception as e:
+        print(f"List Error: {e}")
+        await status.edit_text("❌ Error: Is your Showcase 'Public' in-game?")
         
-        builder.add(types.InlineKeyboardButton(
-            text=name, 
-            callback_data=f"enka_{uid}_{char_id}")
-        )
-    
-    builder.adjust(3) # 3 buttons per row
-    await message.answer("👤 <b>Select a Character:</b>", reply_markup=builder.as_markup(), parse_mode="HTML")
-
 @dp.callback_query(F.data.startswith("enka_"))
 async def handle_character_details(callback: types.CallbackQuery):
     _, uid, char_id = callback.data.split("_")
