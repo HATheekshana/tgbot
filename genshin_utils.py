@@ -2,7 +2,16 @@ import asyncio
 import genshin
 
 # Your Central Cookie Store
-
+def calculate_quiz_score(difficulty, elapsed_time):
+    # Difficulty Base
+    diff_map = {"easy": 1, "medium": 3, "hard": 5}
+    base = diff_map.get(difficulty.lower(), 1)
+    # Time Bonus
+    if elapsed_time < 5: bonus = 10
+    elif elapsed_time < 10: bonus = 5
+    elif elapsed_time < 30: bonus = 1
+    else: bonus = 0
+    return base + bonus
 COOKIES = {
     "ltuid_v2": "449108883",
     "ltoken_v2": "v2_CAISDGM5b3FhcTNzM2d1OBokNDcwMGJhYzAtMTAxZi00YjRlLTk2YmItN2M4YjhjMjMxZDAwIPWn780GKOuk4-0HMJO3k9YBQgtiYnNfb3ZlcnNlYVhqagJTRw.9dO7aQAAAAAB.MEUCIA5OHCjpxUDGrSJ8AQVHNuK4nwpW7XdJhtZhYnXcMhiFAiEAn0azB_VtrCvO57QPc72lKVKK_lTyMHAjDM2LrvENUco"

@@ -1,0 +1,14 @@
+[
+    {
+        "question": "Who is the Archon of Geo?",
+        "correct": "Zhongli",
+        "wrong_pool": ["Venti", "Raiden Shogun", "Nahida", "Furina", "Mavuika", "Xingqiu", "Diluc"],
+        "difficulty": "easy"
+    },
+    {
+        "question": "What is the max level for a 5-star Artifact?",
+        "correct": "20",
+        "wrong_pool": ["16", "10", "12", "15", "25", "30", "90"],
+        "difficulty": "easy"
+    }
+]

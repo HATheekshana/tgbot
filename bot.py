@@ -7,12 +7,13 @@ import io
 import aiohttp
 from dotenv import load_dotenv
 import os
+import json
+import time
 from aiogram import types, F
 from database import users_col, cluster
 from enka_api import fetch_enka_data
 from aiogram.filters import Command
 from aiogram.utils.keyboard import InlineKeyboardBuilder
-import requests
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from datetime import datetime, timedelta
 from aiogram.types import FSInputFile, BufferedInputFile, InlineKeyboardMarkup, InlineKeyboardButton
@@ -20,8 +21,10 @@ from aiogram import Bot, Dispatcher, types
 from aiogram.filters import Command
 from pytz import timezone
 from wishing import combine_images
-from genshin_utils import  to_int,get_val,get_exploration_data,get_abyss_data,get_player_full_data,calculate_world_level
+from genshin_utils import  calculate_quiz_score,to_int,get_val,get_exploration_data,get_abyss_data,get_player_full_data,calculate_world_level
 from data import weapons3, characters4, characters5, rare
+
+quiz_track = {}
 
 ITEMS_PER_PAGE = 10
 dp = Dispatcher()
@@ -1001,6 +1004,54 @@ async def back_to_compare_prep(callback: types.CallbackQuery):
         parse_mode="HTML"
     )
     await callback.answer()
+@dp.message(F.chat.type.in_({"group", "supergroup"}))
+async def random_quiz_handler(message: types.Message):
+    if random.random() < 0.05: # 5% chance per message
+        with open("quizzes.json", "r") as f:
+            q = random.choice(json.load(f))
+        
+        # Build 4 options (1 correct, 3 random from pool)
+        options = random.sample(q["wrong_pool"], 3) + [q["correct"]]
+        random.shuffle(options)
+
+        builder = InlineKeyboardBuilder()
+        for opt in options:
+            is_cor = "1" if opt == q["correct"] else "0"
+            builder.row(types.InlineKeyboardButton(text=opt, callback_data=f"q_{is_cor}_{q['difficulty']}"))
+
+        sent = await message.answer(f"🧠 <b>QUIZ: {q['difficulty'].upper()}</b>\n\n{q['question']}", 
+                                    reply_markup=builder.as_markup(), parse_mode="HTML")
+        
+        await asyncio.sleep(60) # Active for 1 minute
+        if sent.message_id in quiz_track: del quiz_track[sent.message_id]
+        try: await sent.delete()
+        except: pass
+
+@dp.callback_query(F.data.startswith("q_"))
+async def handle_quiz_click(callback: types.CallbackQuery):
+    _, is_correct, diff = callback.data.split("_")
+    mid, uid = callback.message.message_id, callback.from_user.id
+
+    if mid not in quiz_track: quiz_track[mid] = []
+    if uid in quiz_track[mid]: return await callback.answer("🚫 Already tried!", show_alert=True)
+
+    quiz_track[mid].append(uid)
+    if is_correct == "0": return await callback.answer("❌ Wrong answer!", show_alert=True)
+
+    elapsed = time.time() - callback.message.date.timestamp()
+    pts = calculate_quiz_score(diff, elapsed)
+    
+    await users_col.update_one({"user_id": str(uid)}, {"$inc": {"quiz_points": pts}}, upsert=True)
+    await callback.answer(f"✅ Correct! +{pts} points!", show_alert=True)
+    await callback.message.answer(f"🎉 <b>{callback.from_user.first_name}</b> solved it! (+{pts} pts)")
+@dp.message(Command("topquiz"))
+async def quiz_top(message: types.Message):
+    cursor = users_col.find().sort("quiz_points", -1).limit(10)
+    players = await cursor.to_list(length=10)
+    msg = "🏆 <b>QUIZ KINGS</b>\n\n"
+    for i, p in enumerate(players, 1):
+        msg += f"{i}. ID:<code>{p['user_id'][-4:]}</code> — <b>{p.get('quiz_points', 0)} pts</b>\n"
+    await message.answer(msg, parse_mode="HTML")
 # ---------------- Main ----------------
 async def main():
     # 1. Test MongoDB connection first
