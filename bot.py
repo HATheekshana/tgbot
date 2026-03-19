@@ -875,41 +875,47 @@ async def execute_profile_comparison(callback: types.CallbackQuery):
     _, _, my_uid, target_uid = callback.data.split("_")
     await callback.answer("⚖️ Comparing Profiles...")
 
+    # --- 1. SAFE CONVERSION HELPER ---
+    def to_int(val):
+        """Converts N/A, None, or strings to 0 safely."""
+        if val is None or str(val).strip().upper() == "N/A" or str(val).strip() == "":
+            return 0
+        try:
+            return int(float(val)) # float handles cases like "60.0"
+        except (ValueError, TypeError):
+            return 0
+
     try:
         me = await get_player_full_data(my_uid)
         them = await get_player_full_data(target_uid)
         
-        # Check if the data actually returned something
         if not me or not them:
-            return await callback.message.edit_text("❌ One of the profiles is hidden. Check HoYoLAB privacy settings.")
-
-        # HELPER: Check if stats are nested inside 'stats' or at root
-        def get_stat(data, key):
-            # Try root first, then try 'stats' sub-folder
-            return data.get(key) or data.get('stats', {}).get(key, 0)
+            return await callback.message.edit_text("❌ Data hidden. Check HoYoLAB Privacy.")
 
         msg = f"⚖️ <b>PROFILE BATTLE</b>\n"
-        msg += f"👤 <code>{me.get('nickname', 'Traveler')[:10]}</code> <b>VS</b> 👤 <code>{them.get('nickname', 'Traveler')[:10]}</code>\n"
+        msg += f"👤 <code>{me.get('nickname', 'User1')[:10]}</code> <b>VS</b> 👤 <code>{them.get('nickname', 'User2')[:10]}</code>\n"
         msg += "<code>" + "═" * 25 + "</code>\n\n"
 
-        # Comparison Rows
-        stats_to_compare = [
+        # --- 2. COMPARE STATS SAFELY ---
+        # Update these keys based on your "DEBUG DATA" logs
+        stats_map = [
             ("⭐ AR", "level"),
             ("🌍 WL", "world_level"),
-            ("🏆 Achievements", "achievement_number"), # Check if it's 'achievements' or 'achievement_number'
+            ("🏆 Achievements", "achievement_number"),
             ("📅 Days Active", "active_day_number")
         ]
 
-        for label, key in stats_to_compare:
-            v1 = int(get_stat(me, key))
-            v2 = int(get_stat(them, key))
+        for label, key in stats_map:
+            # Use to_int to prevent the 'N/A' error
+            v1 = to_int(me.get(key) or me.get('stats', {}).get(key, 0))
+            v2 = to_int(them.get(key) or them.get('stats', {}).get(key, 0))
+            
             icon = "⬅️" if v1 > v2 else "➡️" if v2 > v1 else "🤝"
             msg += f"<b>{label}:</b>\n<code>{v1:>5}</code> {icon} <code>{v2:>5}</code>\n\n"
 
-        # --- ABYSS LOGIC ---
-        # Note: Abyss usually needs a separate fetch
-        me_abyss = await get_abyss_data(my_uid)
-        them_abyss = await get_abyss_data(target_uid)
+        # --- 3. ABYSS & THEATER (Strings, no int comparison) ---
+        me_abyss = await get_abyss_data(my_uid) or "N/A"
+        them_abyss = await get_abyss_data(target_uid) or "N/A"
         
         msg += "<code>" + "─" * 25 + "</code>\n"
         msg += f"⚔️ <b>Abyss Max:</b> <code>{me_abyss}</code> vs <code>{them_abyss}</code>\n"
@@ -921,7 +927,7 @@ async def execute_profile_comparison(callback: types.CallbackQuery):
 
     except Exception as e:
         print(f"Profile Error: {e}")
-        await callback.message.edit_text(f"❌ Error: {str(e)[:50]}...")
+        await callback.message.edit_text(f"❌ Error: {e}")
 @dp.callback_query(F.data.startswith("comp_expl_")) # Or your exploration prefix
 async def execute_comparison(callback: types.CallbackQuery):
     _, _, my_uid, target_uid = callback.data.split("_")
