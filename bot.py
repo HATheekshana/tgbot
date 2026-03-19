@@ -21,7 +21,7 @@ from aiogram import Bot, Dispatcher, types
 from aiogram.filters import Command
 from pytz import timezone
 from wishing import combine_images
-from genshin_utils import  calculate_quiz_score,to_int,get_val,get_exploration_data,get_abyss_data,get_player_full_data,calculate_world_level
+from genshin_utils import  get_quiz_score,to_int,get_val,get_exploration_data,get_abyss_data,get_player_full_data,calculate_world_level
 from data import weapons3, characters4, characters5, rare
 
 quiz_track = {}
@@ -1005,53 +1005,97 @@ async def back_to_compare_prep(callback: types.CallbackQuery):
     )
     await callback.answer()
 @dp.message(F.chat.type.in_({"group", "supergroup"}))
-async def random_quiz_handler(message: types.Message):
-    if random.random() < 0.05: # 5% chance per message
+async def group_quiz_trigger(message: types.Message):
+    # 5% chance to trigger on any message
+    if random.random() < 0.05:
         with open("quizzes.json", "r") as f:
-            q = random.choice(json.load(f))
+            quiz_list = json.load(f)
         
-        # Build 4 options (1 correct, 3 random from pool)
-        options = random.sample(q["wrong_pool"], 3) + [q["correct"]]
+        q = random.choice(quiz_list)
+        
+        # Select 3 random wrong answers from the pool + 1 correct
+        options = random.sample(q["wrong_pool"], 3)
+        options.append(q["correct"])
         random.shuffle(options)
-
-        builder = InlineKeyboardBuilder()
-        for opt in options:
-            is_cor = "1" if opt == q["correct"] else "0"
-            builder.row(types.InlineKeyboardButton(text=opt, callback_data=f"q_{is_cor}_{q['difficulty']}"))
-
-        sent = await message.answer(f"🧠 <b>QUIZ: {q['difficulty'].upper()}</b>\n\n{q['question']}", 
-                                    reply_markup=builder.as_markup(), parse_mode="HTML")
         
-        await asyncio.sleep(60) # Active for 1 minute
-        if sent.message_id in quiz_track: del quiz_track[sent.message_id]
-        try: await sent.delete()
-        except: pass
+        correct_id = options.index(q["correct"])
 
-@dp.callback_query(F.data.startswith("q_"))
-async def handle_quiz_click(callback: types.CallbackQuery):
-    _, is_correct, diff = callback.data.split("_")
-    mid, uid = callback.message.message_id, callback.from_user.id
+        # Send Native Telegram Quiz
+        poll_msg = await message.answer_poll(
+            question=f"🧠 QUIZ ({q['difficulty'].upper()})\n{q['question']}",
+            options=options,
+            type='quiz',
+            correct_option_id=correct_id,
+            is_anonymous=False, # Required to see WHO voted
+            explanation="Speed = More Points!"
+        )
 
-    if mid not in quiz_track: quiz_track[mid] = []
-    if uid in quiz_track[mid]: return await callback.answer("🚫 Already tried!", show_alert=True)
+        # Store poll info for the scoring handler
+        active_polls[poll_msg.poll.id] = {
+            "start_time": time.time(),
+            "difficulty": q["difficulty"],
+            "correct_id": correct_id
+        }
 
-    quiz_track[mid].append(uid)
-    if is_correct == "0": return await callback.answer("❌ Wrong answer!", show_alert=True)
-
-    elapsed = time.time() - callback.message.date.timestamp()
-    pts = calculate_quiz_score(diff, elapsed)
+# --- Handler: Scoring Logic ---
+@dp.poll_answer()
+async def poll_answer_handler(poll_answer: types.PollAnswer):
+    poll_id = poll_answer.poll_id
     
-    await users_col.update_one({"user_id": str(uid)}, {"$inc": {"quiz_points": pts}}, upsert=True)
-    await callback.answer(f"✅ Correct! +{pts} points!", show_alert=True)
-    await callback.message.answer(f"🎉 <b>{callback.from_user.first_name}</b> solved it! (+{pts} pts)")
+    # 1. Check if the poll is one we are tracking
+    if poll_id not in active_polls:
+        return
+
+    data = active_polls[poll_id]
+    
+    # 2. Check if the user's choice is correct
+    # poll_answer.option_ids is a list of selected indices
+    user_choice = poll_answer.option_ids[0]
+    
+    if user_choice == data["correct_id"]:
+        # 3. Calculate time taken
+        elapsed = time.time() - data["start_time"]
+        points = get_quiz_score(data["difficulty"], elapsed)
+        
+        # 4. Save to MongoDB
+        user_id = str(poll_answer.user.id)
+        await users_col.update_one(
+            {"user_id": user_id},
+            {"$inc": {"quiz_points": points}},
+            upsert=True
+        )
+        
+        # Optional: Send a success alert (Only works if user has DM'd the bot before)
+        try:
+            await bot.send_message(
+                poll_answer.user.id, 
+                f"✅ Correct! You earned <b>{points}</b> points in <code>{elapsed:.1f}s</code>!",
+                parse_mode="HTML"
+            )
+        except:
+            pass 
+
+# --- Command: Check Leaderboard ---
 @dp.message(Command("topquiz"))
-async def quiz_top(message: types.Message):
+async def quiz_leaderboard(message: types.Message):
     cursor = users_col.find().sort("quiz_points", -1).limit(10)
-    players = await cursor.to_list(length=10)
-    msg = "🏆 <b>QUIZ KINGS</b>\n\n"
-    for i, p in enumerate(players, 1):
-        msg += f"{i}. ID:<code>{p['user_id'][-4:]}</code> — <b>{p.get('quiz_points', 0)} pts</b>\n"
+    top_players = await cursor.to_list(length=10)
+    
+    msg = "🏆 <b>QUIZ HALL OF FAME</b>\n\n"
+    for i, p in enumerate(top_players, 1):
+        # Fallback to User ID if nickname isn't saved
+        name = p.get("nickname") or p.get("name") or f"User_{p['user_id'][-4:]}"
+        msg += f"{i}. <b>{name}</b> — <code>{p.get('quiz_points', 0)} pts</code>\n"
+        
     await message.answer(msg, parse_mode="HTML")
+async def clear_old_polls():
+    while True:
+        await asyncio.sleep(3600) # Check every hour
+        current_time = time.time()
+        # Remove polls older than 1 hour
+        to_delete = [pid for pid, d in active_polls.items() if current_time - d["start_time"] > 3600]
+        for pid in to_delete:
+            del active_polls[pid]
 # ---------------- Main ----------------
 async def main():
     # 1. Test MongoDB connection first
