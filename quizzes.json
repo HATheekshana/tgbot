@@ -32,7 +32,7 @@
     {
         "question": "What is the resin cap in Genshin Impact?",
         "correct": "200",
-        "wrong_pool": ["120", "180", "200", "100", "240", "300"],
+        "wrong_pool": ["120", "180", "100", "240", "300"],
         "difficulty": "easy"
     },
     {
