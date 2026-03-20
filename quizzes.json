@@ -31,7 +31,7 @@
     },
     {
         "question": "What is the resin cap in Genshin Impact?",
-        "correct": "160",
+        "correct": "200",
         "wrong_pool": ["120", "180", "200", "100", "240", "300"],
         "difficulty": "easy"
     },
@@ -58,12 +58,6 @@
         "correct": "Primogems",
         "wrong_pool": ["Mora", "Genesis Crystals", "Stardust", "Starglitter"],
         "difficulty": "easy"
-    },
-    {
-        "question": "Which element is strong against Hydro shields?",
-        "correct": "Electro",
-        "wrong_pool": ["Pyro", "Cryo", "Geo", "Anemo", "Dendro"],
-        "difficulty": "medium"
     },
     {
         "question": "What is the highest Adventure Rank?",
