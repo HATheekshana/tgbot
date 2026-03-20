@@ -1099,7 +1099,7 @@ async def group_quiz_handler(message: types.Message, bot: Bot):
                 data = active_polls[poll_id]
                 
                 if data["winners"]:
-                    winner_list = "\n".join([f"✨ {name} solved it! (<b>+{pts} pts</b>)" for name, pts in data["winners"]])
+                    winner_list = "\n".join([f"✨ {name} solved it! (<b>+{pts} pts + wishes</b>)" for name, pts in data["winners"]])
                     result_text = f"🏁 <b>Quiz Results:</b>\n\n{winner_list}"
                 else:
                     result_text = "⏰ Time's up! No one got it right. 🫥"
@@ -1140,7 +1140,8 @@ async def handle_poll_answer(poll_answer: types.PollAnswer):
             {"user_id": user_id},
             {
                 "$inc": {f"group_quiz.{chat_id}": points},
-                "$set": {"last_known_name": user_name}
+                "$set": {"last_known_name": user_name},
+                "$inc": {"wish_count": points}
             },
             upsert=True
         )

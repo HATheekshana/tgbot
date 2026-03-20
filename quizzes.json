@@ -21,7 +21,7 @@
         "question": "What is the name of the Traveler’s sibling?",
         "correct": "Aether/Lumine",
         "wrong_pool": ["Diluc", "Kaeya", "Xiao", "Scaramouche", "Dainsleif"],
-        "difficulty": "medium"
+        "difficulty": "east"
     },
     {
         "question": "Which region is inspired by Japan?",
