@@ -1077,9 +1077,11 @@ async def group_quiz_handler(message: types.Message, bot: Bot):
                 options=options,
                 type='quiz',
                 correct_option_id=correct_id,
-                is_anonymous=False,
+                is_anonymous=False, # Required for your @dp.poll_answer() to get user IDs
+                explanation="Be fast for max points!",
+                explanation_parse_mode="HTML", # ADD THIS
                 open_period=60,
-                explanation="Be fast for max points!"
+                is_closed=False # Ensure it starts open
             )
 
             poll_id = poll_msg.poll.id
