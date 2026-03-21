@@ -21,17 +21,7 @@ client = genshin.Client(COOKIES)
 client.region = genshin.Region.OVERSEAS
 # Function to calculate World Level from AR (since API doesn't give it)
 # Helper to calculate World Level
-def calculate_world_level(ar):
-    ar = int(ar)
-    if ar < 20: return 0
-    if ar < 25: return 1
-    if ar < 30: return 2
-    if ar < 35: return 3
-    if ar < 40: return 4
-    if ar < 45: return 5
-    if ar < 50: return 6
-    if ar < 55: return 7
-    return 8
+
 
 async def get_player_full_data(uid):
     # This calls the genshin.py client
@@ -52,7 +42,17 @@ async def get_player_full_data(uid):
         "common": data.get("stats", {}).get("common_chests", 0),
         "signature": "Akasha Terminal Active" # HoYoLAB doesn't provide the in-game signature
     }
-
+def calculate_world_level(ar):
+    ar = int(ar)
+    if ar < 20: return 0
+    if ar < 25: return 1
+    if ar < 30: return 2
+    if ar < 35: return 3
+    if ar < 40: return 4
+    if ar < 45: return 5
+    if ar < 50: return 6
+    if ar < 55: return 7
+    return 8
 async def get_exploration_data(uid):
     raw_data = await client.get_genshin_user(uid)
     data = raw_data.dict()

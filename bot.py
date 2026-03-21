@@ -21,6 +21,7 @@ from aiogram import Bot, Dispatcher, types
 from aiogram.filters import Command
 from pytz import timezone
 from wishing import combine_images
+from create_profile import create_genshin_profile
 from genshin_utils import  get_quiz_score,to_int,get_val,get_exploration_data,get_abyss_data,get_player_full_data,calculate_world_level
 from data import weapons3, characters4, characters5, rare
 
@@ -860,6 +861,7 @@ async def my_profile(message: types.Message):
     
     # 3. Fetch Data (Exploration and Abyss functions assumed to be defined elsewhere)
     user_info = await get_player_full_data(db_uid)
+    image_buffer = await create_genshin_profile(db_uid)    
     exploration_data = await get_exploration_data(db_uid)
     abyss_data = await get_abyss_data(db_uid)
     
@@ -887,9 +889,21 @@ async def my_profile(message: types.Message):
     # Abyss Section
     if abyss_data:
         msg += f"\n<b>⚔︎ SPIRAL ABYSS</b>\n{abyss_data}"
-
+    if image_buffer:
+        # Create the file object from buffer
+        photo = BufferedInputFile(image_buffer.getvalue(), filename=f"{db_uid}.png")
     # 5. Send final text message
-    await message.answer(msg, parse_mode="HTML")
+        await message.answer_photo(
+            photo=photo,
+            caption=msg,
+            parse_mode="HTML"
+        )
+        
+        # 6. CRITICAL: Close the buffer to free RAM
+        image_buffer.close()
+    else:
+        # Fallback if image generation fails
+        await message.answer(msg, parse_mode="HTML")
 
 
 @dp.message(Command("compare"))
