@@ -154,7 +154,7 @@ async def handle_card_generation(callback: types.CallbackQuery):
                         target = callback.message.reply_to_message or callback.message
                         await target.reply_photo(
                             photo=URLInputFile(card_url),
-                            caption=f"Build card for UID {uid}",
+                            caption=f"Card generated for character index {char_index}!",
                             reply_markup=back_builder.as_markup()
                         )
                         await callback.message.delete()
