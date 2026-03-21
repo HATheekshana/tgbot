@@ -16,7 +16,7 @@ from aiogram.filters import Command
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from datetime import datetime, timedelta
-from aiogram.types import URLInputFile,FSInputFile, BufferedInputFile, InlineKeyboardMarkup, InlineKeyboardButton,InputMediaPhoto, FSInputFile
+from aiogram.types import URLInputFile,FSInputFile, BufferedInputFile, InlineKeyboardMarkup, InlineKeyboardButton
 from aiogram import Bot, Dispatcher, types
 from aiogram.filters import Command
 from pytz import timezone
@@ -115,30 +115,19 @@ async def cmd_characters(message: types.Message):
     )
 @dp.callback_query(F.data.startswith("gen_"))
 async def handle_card_generation(callback: types.CallbackQuery):
-    # Split data: gen_UID_INDEX
     parts = callback.data.split("_")
     uid = parts[1]
     char_index = int(parts[2])
 
-    await callback.answer("⏳ Generation Started")
-
-    # 1. SWAP TO LOCAL LOADING IMAGE
-    # FSInputFile reads from your bot's folder
+    await callback.answer("⏳ Generating Build Card...")
+    
     try:
-        loading_photo = FSInputFile("Loading_Screen_Startup.webp") 
-        await callback.message.edit_media(
-            media=InputMediaPhoto(
-                media=loading_photo, 
-                caption="<b>🎨 Creating your card...</b>\nThis usually takes 20-40 seconds.",
-                parse_mode="HTML"
-            )
-        )
-    except Exception as e:
-        print(f"Loading image error: {e}")
+        await callback.message.edit_caption(caption="🎨 Creating your card... this may take 20-40 seconds.")
+    except Exception:
+        await callback.message.answer("🎨 Creating your card...")
 
-    # 2. API REQUEST
-    # Hardcoded URL to prevent 404 errors from string formatting
-    api_url = "https://gi-card-api.onrender.com/generate_card"
+    CARD_API_BASE = "https://gi-card-api.onrender.com"
+
     payload = {
         "uid": uid,
         "character_index": char_index,
@@ -147,34 +136,25 @@ async def handle_card_generation(callback: types.CallbackQuery):
     }
 
     async with aiohttp.ClientSession() as session:
-        try:
-            # Added a 60-second timeout for slow Render servers
-            timeout = aiohttp.ClientTimeout(total=60)
-            async with session.post(api_url, json=payload, timeout=timeout) as resp:
+        # Step 1: Request the card generation
+        async with session.post(f"{CARD_API_BASE}/generate_card", json=payload) as resp:
+            if resp.status == 200:
+                data = await resp.json()
+                card_url = data.get("response") or data.get("url")
                 
-                if resp.status == 200:
-                    data = await resp.json()
-                    card_url = data.get("response") or data.get("url")
-                    
-                    if card_url:
-                        # Success: Send final card and delete loading message
-                        await callback.message.answer_photo(
-                            photo=URLInputFile(card_url),
-                            caption=f"✅ Build card for UID {uid}"
-                        )
-                        await callback.message.delete()
-                    else:
-                        await callback.message.edit_caption(caption="❌ Error: API didn't return a card link.")
-                
-                elif resp.status == 404:
-                    await callback.message.edit_caption(caption="❌ API Error 404: Endpoint not found.")
+                if card_url:
+                    # Step 2: Send the image directly using the URL
+                    # No need to download to PC first, Telegram can handle URLs
+                    photo = URLInputFile(card_url)
+                    await callback.message.answer_photo(
+                        photo=photo,
+                        caption=f"Build card for UID {uid}"
+                    )
+                    await callback.message.delete() # Clean up the "Creating..." message
                 else:
-                    await callback.message.edit_caption(caption=f"❌ API Error: {resp.status}")
-        
-        except asyncio.TimeoutError:
-            await callback.message.edit_caption(caption="❌ Error: API timed out (server is slow). Try again.")
-        except Exception as e:
-            await callback.message.edit_caption(caption=f"❌ Connection Error: {str(e)}")
+                    await callback.message.edit_text("❌ API failed to return an image URL.")
+            else:
+                await callback.message.edit_text(f"❌ API Error: {resp.status}. (Server might be asleep)")
 @dp.message(Command("topquiz"))
 async def cmd_top_quiz(message: types.Message):
     if message.chat.type == "private":
