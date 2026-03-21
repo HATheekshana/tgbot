@@ -53,6 +53,62 @@ active_polls = {}
 
 CURRENT_RATE_UP_KEY = "chasca" 
 CURRENT_RATE_UP_NAME = characters5.get(CURRENT_RATE_UP_KEY, "Chasca")
+
+try:
+    with open('char.json', 'r') as file:
+        CHARACTER_MAP = json.load(file)
+except Exception as e:
+    print(f"Error loading char.json: {e}")
+    CHARACTER_MAP = {}
+
+@dp.message(Command("characters"))
+async def cmd_characters(message: types.Message):
+    user_data = await users_col.find_one({"user_id": str(message.from_user.id)})
+    if not user_data or "genshin_uid" not in user_data:
+        return await message.answer("❌ Please /login <uid> first.")
+
+    db_uid = str(user_data["genshin_uid"]).strip()
+    
+    msg = await message.answer("🔍 Fetching your showcase...")
+    
+    user_info_enka = await get_enkadata(db_uid)
+    # Enka uses 'avatarInfoList' for the character data
+    showcase_items = user_info_enka.get("avatarInfoList", [])
+
+    if not showcase_items:
+        await msg.edit_text("❌ No characters found! Make sure 'Show Character Details' is ON in-game.")
+        return
+
+    builder = InlineKeyboardBuilder()
+
+    for index, char in enumerate(showcase_items):
+        char_id = str(char.get("avatarId"))
+        
+        # 2. LOOK UP THE ID AND EXTRACT THE 'name' FIELD
+        char_entry = CHARACTER_MAP.get(char_id)
+        
+        if char_entry:
+            # Use the "name" field we added to the JSON
+            display_name = char_entry.get("name", "Unknown")
+        else:
+            display_name = f"ID: {char_id}"
+
+        # Add button
+        builder.button(
+            text=display_name, 
+            callback_data=f"select_char_{db_uid}_{index}" # Added UID to callback for safety
+        )
+
+    # 3x4 grid layout
+    builder.adjust(3)
+
+    await msg.delete() # Remove the "Fetching..." message
+    await message.answer(
+        f"✨ **Showcase for UID {db_uid}**\nSelect a character to view details:",
+        reply_markup=builder.as_markup(),
+        parse_mode="Markdown"
+    )
+
 @dp.message(Command("topquiz"))
 async def cmd_top_quiz(message: types.Message):
     if message.chat.type == "private":
