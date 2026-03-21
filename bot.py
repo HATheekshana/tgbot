@@ -8,7 +8,6 @@ import aiohttp
 from dotenv import load_dotenv
 import os
 import json
-import logging
 import time
 from aiogram import types, F
 from database import users_col, cluster
@@ -25,7 +24,7 @@ from wishing import combine_images
 from create_profile import create_genshin_profile
 from genshin_utils import  get_enkadata,get_quiz_score,to_int,get_val,get_exploration_data,get_abyss_data,get_player_full_data,calculate_world_level
 from data import weapons3, characters4, characters5, rare
-logging.basicConfig(level=logging.INFO)
+
 quiz_track = {}
 group_message_counts = {}
 QUIZ_THRESHOLD = 50
@@ -1260,7 +1259,6 @@ async def clear_old_polls():
 # --- QUIZ TRIGGER ---
 @dp.message(F.chat.type.in_({"group", "supergroup"}))
 async def group_quiz_handler(message: types.Message, bot: Bot):
-    logging.info(f"Group Activity: {message.chat.title} | ID: {message.chat.id}")
     chat_id = message.chat.id
 
     # 2. Increment counter for this specific chat
