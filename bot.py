@@ -28,7 +28,7 @@ from data import weapons3, characters4, characters5, rare
 
 quiz_track = {}
 group_message_counts = {}
-QUIZ_THRESHOLD = 50
+QUIZ_THRESHOLD = 40
 
 ITEMS_PER_PAGE = 10
 dp = Dispatcher()
