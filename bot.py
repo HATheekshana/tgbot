@@ -845,7 +845,23 @@ async def login_uid(message: types.Message):
         upsert=True
     )
     await status_msg.edit_text(f"✅ <b>Login Successful! <code>{uid}</code></b>\n👤 <b>Player:</b> {player.get('nickname')} (AR {player.get('level')})", parse_mode="HTML")
+@dp.message(Command("logout"))
+async def logout_uid(message: types.Message):
+    # 1. Check if the user even has a UID linked
+    user_id = str(message.from_user.id)
+    user_data = await users_col.find_one({"user_id": user_id})
 
+    if not user_data or "genshin_uid" not in user_data:
+        return await message.answer("ℹ️ You are not logged in yet.")
+
+    # 2. Remove only the UID field using $unset
+    # This keeps other data (like registration date) but removes the Genshin link
+    await users_col.update_one(
+        {"user_id": user_id},
+        {"$unset": {"genshin_uid": ""}} 
+    )
+
+    await message.answer("✅ <b>Logout Successful!</b>\nYour UID has been unlinked from this account.", parse_mode="HTML")
 # --- MyProfile Command ---
 @dp.message(Command("myprofile"))
 async def my_profile(message: types.Message):
