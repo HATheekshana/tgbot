@@ -895,7 +895,7 @@ async def my_profile(message: types.Message):
     if user_info_enka['signature']:
         msg += f"<i>\"{user_info_enka['signature']}\"</i>\n"
         
-    msg += "──────── ⋆⋅𖤓⋅⋆ ────────\n\n"
+    msg += "───────────────────\n\n"
 
     # Exploration Section
     msg += "<b> EXPLORATION</b>\n"
