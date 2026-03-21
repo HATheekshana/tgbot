@@ -11,7 +11,7 @@ import os
 import json
 import time
 from aiogram import types, F
-from database import users_col, cluster
+from database import users_col, cluster, groups_col
 from enka_api import fetch_enka_data
 from aiogram.filters import Command
 from aiogram.utils.keyboard import InlineKeyboardBuilder
