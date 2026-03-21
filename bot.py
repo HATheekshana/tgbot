@@ -70,9 +70,6 @@ async def cmd_characters(message: types.Message):
     db_uid = str(user_data["genshin_uid"]).strip()
     
     msg = await message.answer("🔍 Fetching your showcase...")
-    image_buffer = await create_genshin_profile(db_uid)
-    if image_buffer:
-        photo = BufferedInputFile(image_buffer.getvalue(), filename=f"{db_uid}.png")
     
     user_info_enka = await get_enkadata(db_uid)
     # Enka uses 'avatarInfoList' for the character data
@@ -97,19 +94,22 @@ async def cmd_characters(message: types.Message):
             display_name = f"ID: {char_id}"
 
         # Add button
-        await message.answer_photo(
-        photo=photo,
-        caption=f"✨ **Showcase for UID {db_uid}**\nSelect a character:",
-        reply_markup=builder.as_markup(),
-        parse_mode="Markdown"
+        builder.button(
+            text=display_name, 
+            callback_data=f"select_char_{db_uid}_{index}" # Added UID to callback for safety
         )
+    image_buffer = await create_genshin_profile(db_uid) 
+    if image_buffer:
+        # Create the file object from buffer
+        photo = BufferedInputFile(image_buffer.getvalue(), filename=f"{db_uid}.png")
 
     # 3x4 grid layout
     builder.adjust(3)
 
     await msg.delete() # Remove the "Fetching..." message
-    await message.answer(
-        f"✨ **Showcase for UID {db_uid}**\nSelect a character to view details:",
+    await message.answer_photo(
+        photo=photo,
+        caption=f"✨ **Showcase for UID {db_uid}**\nSelect a character:",
         reply_markup=builder.as_markup(),
         parse_mode="Markdown"
     )
