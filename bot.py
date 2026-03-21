@@ -16,7 +16,7 @@ from aiogram.filters import Command
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from datetime import datetime, timedelta
-from aiogram.types import URLInputFile,FSInputFile, BufferedInputFile, InlineKeyboardMarkup, InlineKeyboardButton
+from aiogram.types import FSInputFile, URLInputFile, InputMediaPhoto,FSInputFile, BufferedInputFile, InlineKeyboardMarkup, InlineKeyboardButton
 from aiogram import Bot, Dispatcher, types
 from aiogram.filters import Command
 from pytz import timezone
@@ -115,19 +115,30 @@ async def cmd_characters(message: types.Message):
     )
 @dp.callback_query(F.data.startswith("gen_"))
 async def handle_card_generation(callback: types.CallbackQuery):
+    # Split data: gen_UID_INDEX
     parts = callback.data.split("_")
     uid = parts[1]
     char_index = int(parts[2])
 
-    await callback.answer("⏳ Generating Build Card...")
-    
-    # 1. Update the caption to show progress
-    try:
-        await callback.message.edit_caption(caption="🎨 Creating your card... this may take 20-40 seconds.")
-    except Exception:
-        await callback.message.answer("🎨 Creating your card...")
+    await callback.answer("Generation Started")
 
-    CARD_API_BASE = "https://gi-card-api.onrender.com"
+    # 1. SWAP TO LOCAL LOADING IMAGE
+    # FSInputFile reads from your bot's folder
+    try:
+        loading_photo = FSInputFile("Loading_Screen_Startup.webp") 
+        await callback.message.edit_media(
+            media=InputMediaPhoto(
+                media=loading_photo, 
+                caption="<b>Creating your card...</b>\nThis usually takes 20-40 seconds.",
+                parse_mode="HTML"
+            )
+        )
+    except Exception as e:
+        print(f"Loading image error: {e}")
+
+    # 2. API REQUEST
+    # Hardcoded URL to prevent 404 errors from string formatting
+    api_url = "https://gi-card-api.onrender.com/character_card"
     payload = {
         "uid": uid,
         "character_index": char_index,
@@ -136,24 +147,34 @@ async def handle_card_generation(callback: types.CallbackQuery):
     }
 
     async with aiohttp.ClientSession() as session:
-        async with session.post(f"{CARD_API_BASE}/generate_card", json=payload) as resp:
-            if resp.status == 200:
-                data = await resp.json()
-                card_url = data.get("response") or data.get("url")
+        try:
+            # Added a 60-second timeout for slow Render servers
+            timeout = aiohttp.ClientTimeout(total=60)
+            async with session.post(api_url, json=payload, timeout=timeout) as resp:
                 
-                if card_url:
-                    photo = URLInputFile(card_url)
-                    await callback.message.answer_photo(
-                        photo=photo,
-                        caption=f"✅ Build card for UID {uid}"
-                    )
-                    await callback.message.delete() 
+                if resp.status == 200:
+                    data = await resp.json()
+                    card_url = data.get("response") or data.get("url")
+                    
+                    if card_url:
+                        # Success: Send final card and delete loading message
+                        await callback.message.answer_photo(
+                            photo=URLInputFile(card_url),
+                            caption=f"✅ Build card for UID {uid}"
+                        )
+                        await callback.message.delete()
+                    else:
+                        await callback.message.edit_caption(caption="❌ Error: API didn't return a card link.")
+                
+                elif resp.status == 404:
+                    await callback.message.edit_caption(caption="❌ API Error 404: Endpoint not found.")
                 else:
-                    # FIX: Changed from edit_text to edit_caption
-                    await callback.message.edit_caption(caption="❌ API failed to return an image URL.")
-            else:
-                # FIX: Changed from edit_text to edit_caption
-                await callback.message.edit_caption(caption=f"❌ API Error: {resp.status}. (Server might be asleep)")
+                    await callback.message.edit_caption(caption=f"❌ API Error: {resp.status}")
+        
+        except asyncio.TimeoutError:
+            await callback.message.edit_caption(caption="❌ Error: API timed out (server is slow). Try again.")
+        except Exception as e:
+            await callback.message.edit_caption(caption=f"❌ Connection Error: {str(e)}")
 @dp.message(Command("topquiz"))
 async def cmd_top_quiz(message: types.Message):
     if message.chat.type == "private":
