@@ -940,11 +940,11 @@ async def cmd_compare_reply(message: types.Message):
     uids = f"{sender_data['genshin_uid']}_{target_data['genshin_uid']}"
     
     builder = InlineKeyboardBuilder()
-    builder.row(types.InlineKeyboardButton(text="🌍 Compare Exploration", callback_data=f"comp_expl_{uids}"))
-    builder.row(types.InlineKeyboardButton(text="👤 Compare Profile Stats", callback_data=f"comp_prof_{uids}"))
+    builder.row(types.InlineKeyboardButton(text="𓊝 Compare Exploration", callback_data=f"comp_expl_{uids}"))
+    builder.row(types.InlineKeyboardButton(text="𖨆 Compare Profile Stats", callback_data=f"comp_prof_{uids}"))
 
     await message.answer(
-        f"⚔️ <b>Comparison Menu</b>\nComparing with <b>{message.reply_to_message.from_user.first_name}</b>",
+        f"⚔ <b>Comparison Menu</b>\nComparing with <b>{message.reply_to_message.from_user.first_name}</b>",
         reply_markup=builder.as_markup(),
         parse_mode="HTML"
     )
@@ -961,7 +961,7 @@ def to_int(val):
 async def execute_profile_comparison(callback: types.CallbackQuery):
     parts = callback.data.split("_")
     my_uid, target_uid = parts[2], parts[3]
-    await callback.answer("⚖️ Comparing Profiles...")
+    await callback.answer("⚔ Comparing Profiles...")
 
     try:
         me = await get_player_full_data(my_uid)
@@ -974,24 +974,24 @@ async def execute_profile_comparison(callback: types.CallbackQuery):
         my_wl = calculate_world_level(my_ar)
         them_wl = calculate_world_level(them_ar)
 
-        msg = f"⚖️ <b>PROFILE BATTLE</b>\n"
-        msg += f"👤 <code>{me.get('info', {}).get('nickname', 'User1')}</code> <b>VS</b> 👤 <code>{them.get('info', {}).get('nickname', 'User2')}</code>\n"
+        msg = f"⚔ <b>PROFILE BATTLE</b>\n"
+        msg += f"𖨆 <code>{me['nickname']}</code> <b>VS</b> 𖨆 <code>{them['nickname']}</code>\n"
         msg += "<code>" + "═" * 25 + "</code>\n\n"
 
         # Define stats to compare using your JSON keys
         stats_to_compare = [
-            ("⭐ Adventure Rank", my_ar, them_ar),
-            ("🌍 World Level", my_wl, them_wl),
-            ("🏆 Achievements", to_int(get_val(me, "achievements")), to_int(get_val(them, "achievements"))),
-            ("📅 Days Active", to_int(get_val(me, "days_active")), to_int(get_val(them, "days_active")))
+            ("ᯓ Adventure Rank", my_ar, them_ar),
+            ("ᯓ World Level", my_wl, them_wl),
+            ("ᯓ Achievements", to_int(get_val(me, "achievements")), to_int(get_val(them, "achievements"))),
+            ("ᯓ Days Active", to_int(get_val(me, "days_active")), to_int(get_val(them, "days_active")))
         ]
 
         for label, v1, v2 in stats_to_compare:
-            icon = "⬅️" if v1 > v2 else "➡️" if v2 > v1 else "🤝"
+            icon = "←--" if v1 > v2 else "--→" if v2 > v1 else "-𔓘-"
             msg += f"<b>{label}:</b>\n<code>{v1:>5}</code> {icon} <code>{v2:>5}</code>\n\n"
 
         builder = InlineKeyboardBuilder()
-        builder.row(types.InlineKeyboardButton(text="⬅️ Back", callback_data=f"back_comp_{my_uid}_{target_uid}"))
+        builder.row(types.InlineKeyboardButton(text="◀ Back", callback_data=f"back_comp_{my_uid}_{target_uid}"))
         await callback.message.edit_text(msg, reply_markup=builder.as_markup(), parse_mode="HTML")
 
     except Exception as e:
@@ -1002,7 +1002,7 @@ async def execute_exploration_comparison(callback: types.CallbackQuery):
     # 1. Extract UIDs from callback data
     parts = callback.data.split("_")
     my_uid, target_uid = parts[2], parts[3]
-    await callback.answer("⚖️ Comparing World Progress...")
+    await callback.answer("⚔ Comparing World Progress...")
 
     try:
         # 2. Fetch data for both players
@@ -1014,12 +1014,12 @@ async def execute_exploration_comparison(callback: types.CallbackQuery):
         them_expl = await get_exploration_data(target_uid)
 
         # 3. Header
-        msg = f"⚖️ <b>EXPLORATION BATTLE</b>\n"
-        msg += f"👤 <code>{me['nickname']}</code> <b>VS</b> 👤 <code>{them['nickname']}</code>\n"
+        msg = f"⚔ <b>EXPLORATION BATTLE</b>\n"
+        msg += f"𖨆 <code>{me['nickname']}</code> <b>VS</b> 𖨆 <code>{them['nickname']}</code>\n"
         msg += "<code>" + "═" * 25 + "</code>\n\n"
 
         # 4. Chest Section (Using the keys from your JSON)
-        msg += "<b>🎁 CHEST COUNTS</b>\n"
+        msg += "<b>⌗ CHEST COUNTS</b>\n"
         chest_types = [
             ("Luxurious", "luxurious"),
             ("Precious", "precious"),
@@ -1030,13 +1030,13 @@ async def execute_exploration_comparison(callback: types.CallbackQuery):
         for label, key in chest_types:
             v1 = me[key]
             v2 = them[key]
-            icon = "⬅️" if v1 > v2 else "➡️" if v2 > v1 else "🤝"
+            icon = "←--" if v1 > v2 else "--→" if v2 > v1 else "-𔓘-"
             msg += f"{label}: <code>{v1}</code> {icon} <code>{v2}</code>\n"
 
         msg += "\n<code>" + "─" * 25 + "</code>\n"
 
         # 5. Regional Exploration Section
-        msg += "<b>🌍 REGIONS</b>\n"
+        msg += "<b>☀︎ REGIONS</b>\n"
         
         them_map = {area['name']: area['percent'] for area in them_expl}
 
@@ -1045,14 +1045,14 @@ async def execute_exploration_comparison(callback: types.CallbackQuery):
             p1 = area['percent']
             p2 = them_map.get(name, 0.0)
             
-            icon = "⬅️" if p1 > p2 else "➡️" if p2 > p1 else "🤝"
+            icon = "←--" if p1 > p2 else "--→" if p2 > p1 else "-𔓘-"
             
             msg += f"❀ <b>{name}</b>\n"
             msg += f"<code>{p1:>5.1f}%</code> {icon} <code>{p2:>5.1f}%</code>\n\n"
 
         # 6. Navigation
         builder = InlineKeyboardBuilder()
-        builder.row(types.InlineKeyboardButton(text="⬅️ Back", callback_data=f"back_comp_{my_uid}_{target_uid}"))
+        builder.row(types.InlineKeyboardButton(text="◀ Back", callback_data=f"back_comp_{my_uid}_{target_uid}"))
         
         await callback.message.edit_text(msg, reply_markup=builder.as_markup(), parse_mode="HTML")
 
@@ -1066,8 +1066,8 @@ async def back_to_compare_prep(callback: types.CallbackQuery):
     # Rebuild the menu with BOTH buttons, just like the original command
     builder = InlineKeyboardBuilder()
     uids = f"{my_uid}_{target_uid}"
-    builder.row(types.InlineKeyboardButton(text="🌍 Compare Exploration", callback_data=f"comp_expl_{uids}"))
-    builder.row(types.InlineKeyboardButton(text="👤 Compare Profile Stats", callback_data=f"comp_prof_{uids}"))
+    builder.row(types.InlineKeyboardButton(text="𓊝 Compare Exploration", callback_data=f"comp_expl_{uids}"))
+    builder.row(types.InlineKeyboardButton(text="𖨆 Compare Profile Stats", callback_data=f"comp_prof_{uids}"))
 
     await callback.message.edit_text(
         "⚔️ <b>Comparison Menu</b>\nChoose what to compare:",
