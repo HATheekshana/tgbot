@@ -138,7 +138,14 @@ async def handle_card_generation(callback: types.CallbackQuery):
     
     # Identify the character being generated
     current_char = showcase[char_index]
-    char_id = str(current_char.get("avatarId")) # e.g., "10000089"
+    char_id = str(current_char.get("avatarId"))
+    char_entry = CHARACTER_MAP.get(char_id)
+        
+    if char_entry:
+            # Use the "name" field we added to the JSON
+        display_name = char_entry.get("name", "Unknown")
+    else:
+        display_name = f"ID: {char_id}" # e.g., "10000089"
 
     card_api = "https://gi-card-api.onrender.com/character_card"
     ranking_api = f"https://test-xehj.onrender.com/get/ranking/{uid}"
@@ -163,9 +170,9 @@ async def handle_card_generation(callback: types.CallbackQuery):
                             rank = char_rank_data.get("ranking")
                             out_of = char_rank_data.get("outOf")
                             percent = char_rank_data.get("percent")
-                            ranking_text = f"\n\n<b>Global Rank:</b> `#{rank}` / {out_of}\n <b>Top:</b> `{percent}%`"
+                            ranking_text = f"\n\n<b>ʚଓ Global Rank :</b> {rank} / {out_of}\n<b>ʚଓ Top :</b> {percent}%"
                         else:
-                            ranking_text = "\n\n*No ranking found for this character.*"
+                            ranking_text = ""
 
                 if card_url:
                     # Final Step: Send Result
@@ -175,7 +182,7 @@ async def handle_card_generation(callback: types.CallbackQuery):
                     target = callback.message.reply_to_message or callback.message
                     await target.reply_photo(
                         photo=URLInputFile(card_url),
-                        caption=f"Character card builded {ranking_text}",
+                        caption=f"ʚଓ {display_name} {ranking_text}",
                         reply_markup=back_builder.as_markup(),
                         parse_mode="HTML"
                     )
