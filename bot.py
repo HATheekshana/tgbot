@@ -115,24 +115,31 @@ async def cmd_characters(message: types.Message):
     )
 @dp.callback_query(F.data.startswith("gen_"))
 async def handle_card_generation(callback: types.CallbackQuery):
+    # 1. Extract data
     parts = callback.data.split("_")
     uid = parts[1]
     char_index = int(parts[2])
 
-    await callback.answer("Generation Started")
+    await callback.answer("⏳ Generation Started")
 
-    # 1. SWAP TO LOCAL LOADING IMAGE
+    # 2. Define API URL outside the async session to be safe
+    # Ensure there is NO trailing slash here
+    api_url = "https://gi-card-api.onrender.com/generate_card"
+
+    # 3. Swap to Loading Image
     loading_photo = FSInputFile("Loading_Screen_Startup.webp") 
-    
-    await callback.message.edit_media(
-        media=InputMediaPhoto(
-            media=loading_photo, 
-            caption="<b>Creating your card...</b>\nPlease wait a moment.",
-            parse_mode="HTML"
+    try:
+        await callback.message.edit_media(
+            media=InputMediaPhoto(
+                media=loading_photo, 
+                caption="<b>🎨 Creating your card...</b>\nPlease wait a moment.",
+                parse_mode="HTML"
+            )
         )
-    )
+    except Exception as e:
+        print(f"Edit media failed: {e}")
 
-    CARD_API_BASE = "https://gi-card-api.onrender.com"
+    # 4. Prepare Payload
     payload = {
         "uid": uid,
         "character_index": char_index,
@@ -140,30 +147,30 @@ async def handle_card_generation(callback: types.CallbackQuery):
         "img": None
     }
 
+    # 5. The Request
     async with aiohttp.ClientSession() as session:
-        async with session.post(f"{CARD_API_BASE}/generate_card", json=payload) as resp:
+        async with session.post(api_url, json=payload) as resp:
+            # Add a debug print to your console to see what's happening
+            print(f"Sending to {api_url} | Status: {resp.status}")
+            
             if resp.status == 200:
                 data = await resp.json()
                 card_url = data.get("response") or data.get("url")
                 
                 if card_url:
-                    # Send the final card as a NEW message
-                    photo = URLInputFile(card_url)
+                    # Send final card and delete loading
                     await callback.message.answer_photo(
-                        photo=photo,
-                        caption=f"Build card for UID {uid}"
+                        photo=URLInputFile(card_url),
+                        caption=f"✅ Build card for UID {uid}"
                     )
-                    # Delete the loading message
-                    try:
-                        await callback.message.delete()
-                    except:
-                        pass
+                    await callback.message.delete()
                 else:
-                    # FIX: Use edit_caption because this is a photo message
-                    await callback.message.edit_caption(caption="❌ API failed to return an image URL.")
+                    await callback.message.edit_caption(caption="❌ API didn't return a link.")
+            elif resp.status == 404:
+                # If you get 404 here, the 'api_url' string is definitely wrong
+                await callback.message.edit_caption(caption="❌ Error 404: API endpoint not found.")
             else:
-                # FIX: Use edit_caption because this is a photo message
-                await callback.message.edit_caption(caption=f"❌ API Error: {resp.status}. (Server might be asleep)")
+                await callback.message.edit_caption(caption=f"❌ API Error: {resp.status}")
 @dp.message(Command("topquiz"))
 async def cmd_top_quiz(message: types.Message):
     if message.chat.type == "private":
