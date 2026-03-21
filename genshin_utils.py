@@ -110,7 +110,7 @@ async def get_abyss_data(uid: int):
             if floor.floor < 11:
                 continue
                 
-            msg += f"︵【FLOOR {floor.floor}】\n"
+            msg += f"ꫂ❁【FLOOR {floor.floor}】\n"
             
             # Loop through chambers (usually 1, 2, 3)
             for chamber in floor.chambers:
@@ -118,7 +118,7 @@ async def get_abyss_data(uid: int):
                 empty = "☆" * (3 - chamber.stars)
                 msg += f"⧽ Chamber {chamber.chamber} - {stars}{empty} 𐙚\n"
             
-            msg += "┈┈┈┈┈┈┈┈┈┈┈┈┈\n\n"
+            msg += "── ⋆⋅☆⋅⋆ ──\n\n"
             
         return msg if msg else "You haven't reached Floor 11 yet this cycle!"
 

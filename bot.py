@@ -876,7 +876,7 @@ async def my_profile(message: types.Message):
     
     # 3. Fetch Data (Exploration and Abyss functions assumed to be defined elsewhere)
     user_info = await get_player_full_data(db_uid)
-    user_info_enka = await get_enkadata(db)
+    user_info_enka = await get_enkadata(db_uid)
     image_buffer = await create_genshin_profile(db_uid)    
     exploration_data = await get_exploration_data(db_uid)
     abyss_data = await get_abyss_data(db_uid)
@@ -887,18 +887,19 @@ async def my_profile(message: types.Message):
         return await message.reply("❌ Data hidden. Is your 'Battle Chronicle' public in HoYoLAB?")
 
     msg = "<b>PLAYER INFO</b>\n"
-    msg += "────────୨ৎ────────\n"
+    msg += "─────────୨ৎ─────────\n"
     msg += f"𖹭 <b>{user_info['nickname']}</b> | UID: <code>{db_uid}</code>\n"
     msg += f"𖹭 <b>AR {user_info['level']}</b> | WL : {user_info_enka['worldLevel']}\n"
     msg += f"𖹭 <b>Achievements:</b> {user_info['achievements']}\n"
     msg+=f"𖹭 <b>Days:</b> {user_info['days_active']}\n"
     if user_info_enka['signature']:
-        msg += f"<i>\"{user_info['signature']}\"</i>\n"
+        msg += f"<i>\"{user_info['signature']}\"</i>\n\n"
         
-    msg += "<code>" + "═" * 25 + "</code>\n\n"
+    msg += "─────── ⋆⋅𖤓⋅⋆ ───────\n\n"
 
     # Exploration Section
-    msg += "<b> EXPLORATION</b>\n"
+    msg += "<b> EXPLORATION</b>\n\n"
+    msg += "⊹ ࣪ ﹏﹏𓊝﹏𓂁﹏﹏⊹ ࣪ ˖\n\n"
     for area in exploration_data:
         # :15 ensures the percentages stay aligned in a column
         msg += f"❀ <code>{area['name']:15}</code>: {area['percent']}%\n"
