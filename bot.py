@@ -65,18 +65,18 @@ except Exception as e:
 async def cmd_characters(message: types.Message):
     user_data = await users_col.find_one({"user_id": str(message.from_user.id)})
     if not user_data or "genshin_uid" not in user_data:
-        return await message.answer("❌ Please /login <uid> first.")
+        return await message.reply("Please /login <uid> first.")
 
     db_uid = str(user_data["genshin_uid"]).strip()
     
-    msg = await message.answer("🔍 Fetching your showcase...")
+    msg = await message.reply("Fetching your showcase...")
     
     user_info_enka = await get_enkadata(db_uid)
     # Enka uses 'avatarInfoList' for the character data
     showcase_items = user_info_enka.get("showAvatarInfoList", [])
 
     if not showcase_items:
-        await msg.edit_text("❌ No characters found! Make sure 'Show Character Details' is ON in-game.")
+        await msg.edit_text("No characters found! Make sure 'Show Character Details' is ON in-game.")
         return
 
     builder = InlineKeyboardBuilder()
@@ -154,7 +154,7 @@ async def handle_card_generation(callback: types.CallbackQuery):
                         target = callback.message.reply_to_message or callback.message
                         await target.reply_photo(
                             photo=URLInputFile(card_url),
-                            caption=f"Card generated for character index {char_index}!",
+                            caption=f"Card generated for character!",
                             reply_markup=back_builder.as_markup()
                         )
                         await callback.message.delete()
@@ -190,7 +190,7 @@ async def handle_back_button(callback: types.CallbackQuery):
 
     # EDIT the final build card BACK into the character selection menu
     await callback.message.edit_media(
-        media=InputMediaPhoto(media=photo, caption="✨ **Character Showcase**\nSelect a character:"),
+        media=InputMediaPhoto(media=photo, caption="<b>Character Showcase</b>\nSelect a character:", parse_mode="HTML"),
         reply_markup=builder.as_markup()
     )
 @dp.message(Command("topquiz"))
