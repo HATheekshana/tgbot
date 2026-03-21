@@ -102,7 +102,7 @@ async def get_namecard_image_url(card_id):
     card_info = namecard_data.get(str(card_id))
     
     if card_info:
-        asset_name = card_info["icon"]
+        asset_name = card_info["Icon"]
         # 3. Build the URL for Enka.Network
         return f"https://enka.network/ui/{asset_name}.png"
     else:
@@ -217,7 +217,7 @@ async def create_genshin_profile(uid):
 
     draw.text((1010, 140), "SPIRAL ABYSS", font= font_xsmall, fill=(135, 110, 95))
     draw.text((1050, 175), abyss, font=font_big, fill=(135, 110, 95))
-    
+
     buffer = BytesIO()
 
 # 2. Save the image into the buffer instead of a file
