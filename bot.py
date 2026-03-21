@@ -119,22 +119,20 @@ async def handle_card_generation(callback: types.CallbackQuery):
     uid = parts[1]
     char_index = int(parts[2])
 
-    await callback.answer(" Generation Started")
+    await callback.answer("Generation Started")
 
-    # 1. LOAD THE LOCAL IMAGE FROM STORAGE
-    # Replace 'loading.png' with your actual filename
+    # 1. SWAP TO LOCAL LOADING IMAGE
     loading_photo = FSInputFile("Loading_Screen_Startup.webp") 
     
-    # 2. SWAP THE PROFILE IMAGE WITH YOUR LOCAL LOADING IMAGE
     await callback.message.edit_media(
         media=InputMediaPhoto(
             media=loading_photo, 
-            caption="<b>Creating your card...</b>\nPlease wait a moment.",parse_mode="HTML"
+            caption="<b>Creating your card...</b>\nPlease wait a moment.",
+            parse_mode="HTML"
         )
     )
 
     CARD_API_BASE = "https://gi-card-api.onrender.com"
-
     payload = {
         "uid": uid,
         "character_index": char_index,
@@ -143,25 +141,29 @@ async def handle_card_generation(callback: types.CallbackQuery):
     }
 
     async with aiohttp.ClientSession() as session:
-        # Step 1: Request the card generation
         async with session.post(f"{CARD_API_BASE}/generate_card", json=payload) as resp:
             if resp.status == 200:
                 data = await resp.json()
                 card_url = data.get("response") or data.get("url")
                 
                 if card_url:
-                    # Step 2: Send the image directly using the URL
-                    # No need to download to PC first, Telegram can handle URLs
+                    # Send the final card as a NEW message
                     photo = URLInputFile(card_url)
                     await callback.message.answer_photo(
                         photo=photo,
                         caption=f"Build card for UID {uid}"
                     )
-                    await callback.message.delete() # Clean up the "Creating..." message
+                    # Delete the loading message
+                    try:
+                        await callback.message.delete()
+                    except:
+                        pass
                 else:
-                    await callback.message.edit_text("❌ API failed to return an image URL.")
+                    # FIX: Use edit_caption because this is a photo message
+                    await callback.message.edit_caption(caption="❌ API failed to return an image URL.")
             else:
-                await callback.message.edit_text(f"❌ API Error: {resp.status}. (Server might be asleep)")
+                # FIX: Use edit_caption because this is a photo message
+                await callback.message.edit_caption(caption=f"❌ API Error: {resp.status}. (Server might be asleep)")
 @dp.message(Command("topquiz"))
 async def cmd_top_quiz(message: types.Message):
     if message.chat.type == "private":
