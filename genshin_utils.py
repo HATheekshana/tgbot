@@ -118,7 +118,7 @@ async def get_abyss_data(uid: int):
                 empty = "☆" * (3 - chamber.stars)
                 msg += f"⧽ Chamber {chamber.chamber} - {stars}{empty} \n"
             
-            msg += "\n╰➤─── ⋆⋅☆⋅⋆ ──────\n\n"
+            msg += "╰➤─── ⋆⋅☆⋅⋆ ──────\n\n"
             
         return msg if msg else "You haven't reached Floor 11 yet this cycle!"
 
