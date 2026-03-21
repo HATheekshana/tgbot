@@ -164,7 +164,7 @@ async def create_genshin_profile(uid):
     final_list = await get_character_data(uid)
     print(final_list)
     async with aiohttp.ClientSession() as session:
-        for i, char in enumerate(final_list[:8]):
+        for i, char in enumerate(final_list):
             print(char['icon'])
             async with session.get(char["icon"]) as response:
                 if response.status == 200:
@@ -180,7 +180,7 @@ async def create_genshin_profile(uid):
                     col = i % 4
                     row = i // 4
                     x = 615 + (col * 150)
-                    y = 350 + (row * 150)
+                    y = 290 + (row * 150)
                     if char['rarity'] == 5:
                         char_bg = Image.open("CHARTER_5.png").convert("RGBA")
                     else:

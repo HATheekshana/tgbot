@@ -873,7 +873,7 @@ async def my_profile(message: types.Message):
     db_uid = str(user_data["genshin_uid"]).strip()
     
     # 2. Loading State
-    status = await message.answer("🔄 <b>Accessing Akasha Terminal...</b>", parse_mode="HTML")
+    status = await message.answer("🔄 <b>Creating Profile...</b>", parse_mode="HTML")
     
     # 3. Fetch Data (Exploration and Abyss functions assumed to be defined elsewhere)
     user_info = await get_player_full_data(db_uid)
@@ -881,7 +881,7 @@ async def my_profile(message: types.Message):
     exploration_data = await get_exploration_data(db_uid)
     abyss_data = await get_abyss_data(db_uid)
     
-    await status.delete()
+    
 
     if not user_info:
         return await message.reply("❌ Data hidden. Is your 'Battle Chronicle' public in HoYoLAB?")
@@ -901,7 +901,7 @@ async def my_profile(message: types.Message):
     for area in exploration_data:
         # :15 ensures the percentages stay aligned in a column
         msg += f"❀ <code>{area['name']:15}</code>: {area['percent']}%\n"
-
+    await status.delete()
     # Abyss Section
     if abyss_data:
         msg += f"\n<b>⚔︎ SPIRAL ABYSS</b>\n{abyss_data}"
