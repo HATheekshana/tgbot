@@ -8,6 +8,7 @@ import aiohttp
 from dotenv import load_dotenv
 import os
 import json
+import logging
 import time
 from aiogram import types, F
 from database import users_col, cluster
@@ -1259,6 +1260,7 @@ async def clear_old_polls():
 # --- QUIZ TRIGGER ---
 @dp.message(F.chat.type.in_({"group", "supergroup"}))
 async def group_quiz_handler(message: types.Message, bot: Bot):
+    logging.info(f"Group Activity: {message.chat.title} | ID: {message.chat.id}")
     chat_id = message.chat.id
 
     # 2. Increment counter for this specific chat
