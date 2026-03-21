@@ -121,18 +121,13 @@ async def handle_card_generation(callback: types.CallbackQuery):
 
     await callback.answer("⏳ Generating Build Card...")
     
-    # FIX: Use edit_caption because the original message is a photo
+    # 1. Update the caption to show progress
     try:
         await callback.message.edit_caption(caption="🎨 Creating your card... this may take 20-40 seconds.")
     except Exception:
-        # Fallback in case the original message wasn't a photo for some reason
         await callback.message.answer("🎨 Creating your card...")
 
-    # ... rest of your payload and aiohttp logic ...
     CARD_API_BASE = "https://gi-card-api.onrender.com"
-    # Show a "loading" alert on the user's screen
-
-
     payload = {
         "uid": uid,
         "character_index": char_index,
@@ -141,25 +136,24 @@ async def handle_card_generation(callback: types.CallbackQuery):
     }
 
     async with aiohttp.ClientSession() as session:
-        # Step 1: Request the card generation
         async with session.post(f"{CARD_API_BASE}/generate_card", json=payload) as resp:
             if resp.status == 200:
                 data = await resp.json()
                 card_url = data.get("response") or data.get("url")
                 
                 if card_url:
-                    # Step 2: Send the image directly using the URL
-                    # No need to download to PC first, Telegram can handle URLs
                     photo = URLInputFile(card_url)
                     await callback.message.answer_photo(
                         photo=photo,
-                        caption=f"Build card for UID {uid}"
+                        caption=f"✅ Build card for UID {uid}"
                     )
-                    await callback.message.delete() # Clean up the "Creating..." message
+                    await callback.message.delete() 
                 else:
-                    await callback.message.edit_text("❌ API failed to return an image URL.")
+                    # FIX: Changed from edit_text to edit_caption
+                    await callback.message.edit_caption(caption="❌ API failed to return an image URL.")
             else:
-                await callback.message.edit_text(f"❌ API Error: {resp.status}. (Server might be asleep)")
+                # FIX: Changed from edit_text to edit_caption
+                await callback.message.edit_caption(caption=f"❌ API Error: {resp.status}. (Server might be asleep)")
 @dp.message(Command("topquiz"))
 async def cmd_top_quiz(message: types.Message):
     if message.chat.type == "private":
