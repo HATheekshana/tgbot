@@ -64,5 +64,66 @@
         "correct": "60",
         "wrong_pool": ["50", "55", "70", "80", "90"],
         "difficulty": "easy"
+    },
+    {
+        "question": "Which boss is a dragon in Mondstadt?",
+        "correct": "Stormterror (Dvalin)",
+        "wrong_pool": ["Azhdaha", "Andrius", "Signora", "Boreas", "Dvalin's Shadow"],
+        "difficulty": "easy"
+    },
+    {
+        "question": "Which of these weapons is exclusively available via limited-time event or wish banners?",
+        "correct": "Skyward Blade",
+        "wrong_pool": ["Prototype Crescent", "Favonius Lance", "Blackcliff Pole", "Iron Sting", "Whiteblind"],
+        "difficulty": "medium"
+    },
+    {
+        "question": "Which Archon is also referred to as the 'God of Eternity'?",
+        "correct": "Raiden Shogun",
+        "wrong_pool": ["Venti", "Zhongli", "Kusanali", "Murata", "Focalors"],
+        "difficulty": "easy"
+    },
+    {
+        "question": "Who ruled the world in the earliest era?",
+        "correct": "Dragons (Vishaps)",
+        "wrong_pool": ["Humans", "Archons", "Adepti", "The Fatui", "Seelie"],
+        "difficulty": "medium"
+    },
+    {
+        "question": "What did the Heavenly Principles create after winning?",
+        "correct": "A false sky",
+        "wrong_pool": ["A new element", "The Abyss", "New Sovereigns", "The Ley Lines", "Celestia"],
+        "difficulty": "hard"
+    },
+    {
+        "question": "The current world exists under whose rule?",
+        "correct": "The Heavenly Principles",
+        "wrong_pool": ["The Sovereigns", "The Vishaps", "Humans", "The Abyss Order", "The Seven Archons"],
+        "difficulty": "medium"
+    },
+    {
+        "question": "What was the original world of Teyvat called?",
+        "correct": "Light Realm",
+        "wrong_pool": ["Abyss Realm", "Human Realm", "Sky Realm", "Void Realm", "Celestial Realm"],
+        "difficulty": "hard"
+    },
+    {
+        "question": "Which element reacts with Pyro to create Vaporize?",
+        "correct": "Hydro",
+        "wrong_pool": ["Electro", "Cryo", "Anemo", "Dendro", "Geo"],
+        "difficulty": "easy"
+    },
+    {
+        "question": "What major event caused dragons to regress into smaller, weaker forms?",
+        "correct": "Destruction of Holy Soil by human agriculture",
+        "wrong_pool": ["The Cataclysm", "War with the Abyss Order", "Loss of ley line energy", "The Archon War", "The fall of Khaenri'ah"],
+        "difficulty": "hard"
+    },
+    {
+        "question": "Which ancient dragon leader encountered Seutervoinen before the Heavenly Principles arrived?",
+        "correct": "Nibelung",
+        "wrong_pool": ["Morax", "Orobashi", "Xiuhcoatl", "Apep", "Dvalin"],
+        "difficulty": "hard"
     }
+
 ]
