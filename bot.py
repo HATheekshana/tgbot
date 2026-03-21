@@ -705,7 +705,7 @@ async def give_wishes(message: types.Message):
     else:
         await message.answer("❌ User not found in database.")
 
-@dp.message(Command("gamble"), F.chat.type == "private")
+@dp.message(Command("gamble"))
 async def gamble_wishes(message: types.Message):
     if message.chat.type != "private":
         await message.reply("⚠️ <b>Gambling is restricted to Private DMs only!</b>\nPlease message me directly to play.", parse_mode="HTML")
