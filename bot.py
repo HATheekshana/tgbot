@@ -107,7 +107,7 @@ async def cmd_characters(message: types.Message):
     builder.adjust(3)
 
     await msg.delete() # Remove the "Fetching..." message
-    await message.answer_photo(
+    await message.reply_photo(
         photo=photo,
         caption="Select a character:",
         reply_markup=builder.as_markup(),
@@ -158,9 +158,9 @@ async def handle_card_generation(callback: types.CallbackQuery):
                     
                     if card_url:
                         # Success: Send final card and delete loading message
-                        await callback.message.answer_photo(
+                        await callback.message.reply_photo(
                             photo=URLInputFile(card_url),
-                            caption=f"✅ Build card for UID {uid}"
+                            caption=f"Build card for UID {uid}"
                         )
                         await callback.message.delete()
                     else:
