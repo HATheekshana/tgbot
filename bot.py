@@ -16,7 +16,7 @@ from aiogram.filters import Command
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from datetime import datetime, timedelta
-from aiogram.types import URLInputFile,FSInputFile, BufferedInputFile, InlineKeyboardMarkup, InlineKeyboardButton
+from aiogram.types import URLInputFile,FSInputFile, BufferedInputFile, InlineKeyboardMarkup, InlineKeyboardButton,InputMediaPhoto, FSInputFile
 from aiogram import Bot, Dispatcher, types
 from aiogram.filters import Command
 from pytz import timezone
@@ -119,12 +119,19 @@ async def handle_card_generation(callback: types.CallbackQuery):
     uid = parts[1]
     char_index = int(parts[2])
 
-    await callback.answer("⏳ Generating Build Card...")
+    await callback.answer(" Generation Started")
+
+    # 1. LOAD THE LOCAL IMAGE FROM STORAGE
+    # Replace 'loading.png' with your actual filename
+    loading_photo = FSInputFile("Loading_Screen_Startup.webp") 
     
-    try:
-        await callback.message.edit_caption(caption="🎨 Creating your card... this may take 20-40 seconds.")
-    except Exception:
-        await callback.message.answer("🎨 Creating your card...")
+    # 2. SWAP THE PROFILE IMAGE WITH YOUR LOCAL LOADING IMAGE
+    await callback.message.edit_media(
+        media=InputMediaPhoto(
+            media=loading_photo, 
+            caption="<b>Creating your card...</b>\nPlease wait a moment.",parse_mode="HTML"
+        )
+    )
 
     CARD_API_BASE = "https://gi-card-api.onrender.com"
 
