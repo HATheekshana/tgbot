@@ -115,66 +115,84 @@ async def cmd_characters(message: types.Message):
     )
 @dp.callback_query(F.data.startswith("gen_"))
 async def handle_card_generation(callback: types.CallbackQuery):
-    # Split data: gen_UID_INDEX
     parts = callback.data.split("_")
-    uid = parts[1]
-    char_index = int(parts[2])
-
+    uid, char_index = parts[1], int(parts[2])
+    CARD_API_BASE = "https://gi-card-api.onrender.com"
     await callback.answer("Generation Started")
 
-    # 1. SWAP TO LOCAL LOADING IMAGE
-    # FSInputFile reads from your bot's folder
+    # 1. SHOW LOADING IMAGE (Local Storage)
     try:
-        loading_photo = FSInputFile("Loading_Screen_Startup.webp") 
+        loading_img = FSInputFile("Loading_Screen_Startup.webp")
         await callback.message.edit_media(
             media=InputMediaPhoto(
-                media=loading_photo, 
-                caption="<b>Creating your card...</b>\nThis usually takes 20-40 seconds.",
+                media=loading_img,
+                caption="<b>Creating your card...</b>",
                 parse_mode="HTML"
             )
         )
     except Exception as e:
-        print(f"Loading image error: {e}")
+        print(f"Loading image swap failed: {e}")
 
-    # 2. API REQUEST
-    # Hardcoded URL to prevent 404 errors from string formatting
-    api_url = "https://gi-card-api.onrender.com/character_card"
-    payload = {
-        "uid": uid,
-        "character_index": char_index,
-        "template": 1,
-        "img": None
-    }
+    # 2. API CALL
+    api_url = f"{CARD_API_BASE}/character_card"
+    payload = {"uid": uid, "character_index": char_index, "template": 1, "img": None}
 
     async with aiohttp.ClientSession() as session:
         try:
-            # Added a 60-second timeout for slow Render servers
             timeout = aiohttp.ClientTimeout(total=60)
             async with session.post(api_url, json=payload, timeout=timeout) as resp:
-                
                 if resp.status == 200:
                     data = await resp.json()
                     card_url = data.get("response") or data.get("url")
                     
                     if card_url:
-                        # Success: Send final card and delete loading message
-                        await callback.message.reply_photo(
+                        # 3. SUCCESS: Add Back Button & Send as Reply
+                        back_builder = InlineKeyboardBuilder()
+                        back_builder.button(text="⬅Back to List", callback_data=f"refresh_{uid}")
+                        
+                        # Reply to original user command
+                        target = callback.message.reply_to_message or callback.message
+                        await target.reply_photo(
                             photo=URLInputFile(card_url),
-                            caption=f"Build card for UID {uid}"
+                            caption=f"Build card for UID {uid}",
+                            reply_markup=back_builder.as_markup()
                         )
                         await callback.message.delete()
                     else:
-                        await callback.message.edit_caption(caption="❌ Error: API didn't return a card link.")
-                
+                        await callback.message.edit_caption(caption="API didn't return a link.")
                 elif resp.status == 404:
-                    await callback.message.edit_caption(caption="❌ API Error 404: Endpoint not found.")
+                    await callback.message.edit_caption(caption="Error 404: API endpoint not found.")
                 else:
-                    await callback.message.edit_caption(caption=f"❌ API Error: {resp.status}")
-        
+                    await callback.message.edit_caption(caption=f"API Error: {resp.status}")
         except asyncio.TimeoutError:
-            await callback.message.edit_caption(caption="❌ Error: API timed out (server is slow). Try again.")
+            await callback.message.edit_caption(caption="Error: API timed out. Try again.")
         except Exception as e:
-            await callback.message.edit_caption(caption=f"❌ Connection Error: {str(e)}")
+            await callback.message.edit_caption(caption=f"Connection Error: {str(e)}")
+@dp.callback_query(F.data.startswith("refresh_"))
+async def handle_back_button(callback: types.CallbackQuery):
+    uid = callback.data.split("_")[1]
+    await callback.answer("Refreshing list...")
+
+    # Re-fetch data for the list
+    user_info = await get_enkadata(uid)
+    showcase = user_info.get("showAvatarInfoList", [])
+
+    builder = InlineKeyboardBuilder()
+    for index, char in enumerate(showcase):
+        char_id = str(char.get("avatarId"))
+        name = CHARACTER_MAP.get(char_id, {}).get("name", f"ID: {char_id}")
+        builder.button(text=name, callback_data=f"gen_{uid}_{index}")
+    builder.adjust(3)
+
+    # Re-generate profile photo
+    image_buffer = await create_genshin_profile(uid)
+    photo = BufferedInputFile(image_buffer.getvalue(), filename=f"{uid}.png")
+
+    # EDIT the final build card BACK into the character selection menu
+    await callback.message.edit_media(
+        media=InputMediaPhoto(media=photo, caption="✨ **Character Showcase**\nSelect a character:"),
+        reply_markup=builder.as_markup()
+    )
 @dp.message(Command("topquiz"))
 async def cmd_top_quiz(message: types.Message):
     if message.chat.type == "private":
