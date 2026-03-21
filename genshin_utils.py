@@ -1,6 +1,6 @@
 import asyncio
 import genshin
-
+import aiohttp
 # Your Central Cookie Store
 def get_quiz_score(difficulty, elapsed):
     # Base points
@@ -30,18 +30,34 @@ async def get_player_full_data(uid):
     
     # We create a simple dictionary that your /myprofile command expects
     return {
-        "name": data.get("info", {}).get("nickname", "Unknown"),
+        "nickname": data.get("info", {}).get("nickname", "Unknown"),
         "level": data.get("info", {}).get("level", 0),
         "world_level": calculate_world_level(data.get("info", {}).get("level", 0)),
         "achievements": data.get("stats", {}).get("achievements", 0),
         "days_active": data.get("stats", {}).get("days_active", 0),
-        # ADD CHESTS HERE SO THEY AREN'T 0
         "luxurious": data.get("stats", {}).get("luxurious_chests", 0),
         "precious": data.get("stats", {}).get("precious_chests", 0),
         "exquisite": data.get("stats", {}).get("exquisite_chests", 0),
         "common": data.get("stats", {}).get("common_chests", 0),
-        "signature": "Akasha Terminal Active" # HoYoLAB doesn't provide the in-game signature
+        "in_game_avatar": data.get("info", {}).get("in_game_avatar", "Unknown"),
+        "spiral_abyss": data.get("stats", {}).get("spiral_abyss", "Unknown"),
+        "characters": data.get("characters", [])
     }
+async def get_enkadata(uid):
+    url = f"https://enka.network/api/uid/{uid}"
+    async with aiohttp.ClientSession() as session:
+        async with session.get(url) as response:
+            if response.status == 200:
+                data = await response.json()
+                player_info = data.get("playerInfo", {})
+                showcase = player_info.get("showAvatarInfoList", [])
+                return {
+                    "worldLevel": player_info.get("worldLevel", 0),
+                    "signature": player_info.get("signature", ""),
+                    "nameCardId": player_info.get("nameCardId", ""),
+                    "showAvatarInfoList": showcase
+                }
+            return {"worldLevel": 0, "signature": "", "nameCardId": "" ,"showAvatarInfoList": []}
 def calculate_world_level(ar):
     ar = int(ar)
     if ar < 20: return 0
@@ -102,7 +118,7 @@ async def get_abyss_data(uid: int):
                 empty = "☆" * (3 - chamber.stars)
                 msg += f"⧽ Chamber {chamber.chamber} - {stars}{empty} 𐙚\n"
             
-            msg += "◡̈▬▬ι═══════ﺤ\n\n"
+            msg += "┈┈┈┈┈┈┈┈┈┈┈┈┈\n\n"
             
         return msg if msg else "You haven't reached Floor 11 yet this cycle!"
 

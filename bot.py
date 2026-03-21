@@ -22,7 +22,7 @@ from aiogram.filters import Command
 from pytz import timezone
 from wishing import combine_images
 from create_profile import create_genshin_profile
-from genshin_utils import  get_quiz_score,to_int,get_val,get_exploration_data,get_abyss_data,get_player_full_data,calculate_world_level
+from genshin_utils import  get_enkadata,get_quiz_score,to_int,get_val,get_exploration_data,get_abyss_data,get_player_full_data,calculate_world_level
 from data import weapons3, characters4, characters5, rare
 
 quiz_track = {}
@@ -80,13 +80,13 @@ async def cmd_top_quiz(message: types.Message):
         msg += "<code>" + "─" * 22 + "</code>\n\n"
 
         for i, p in enumerate(top_players, 1):
-            name = p.get("last_known_name") or f"Player_{str(p['user_id'])[-4:]}"
+            nickname = p.get("last_known_name") or f"Player_{str(p['user_id'])[-4:]}"
             
             # 2. Extract the points safely from the nested dictionary
             all_groups = p.get("group_quiz", {})
             pts = all_groups.get(chat_id, 0)
             
-            msg += f"{i}. <b>{name}</b> — <code>{pts} pts</code>\n"
+            msg += f"{i}. <b>{nickname}</b> — <code>{pts} pts</code>\n"
 
         await message.answer(msg, parse_mode="HTML")
 
@@ -94,9 +94,9 @@ async def cmd_top_quiz(message: types.Message):
         print(f"CRITICAL DB ERROR: {e}")
         await message.answer("⚠️ Error accessing the leaderboard database.")
 
-def get_rarity(name):
-    # Ensure name is stripped of extra spaces for matching
-    clean_name = name.strip()
+def get_rarity(nickname):
+    # Ensure nickname is stripped of extra spaces for matching
+    clean_name = nickname.strip()
     if clean_name in characters5.values():
         return 5
     elif clean_name in characters4.values():
@@ -113,15 +113,15 @@ def build_collection_page(sorted_chars, page, first_name):
     response = f"📜 {first_name}'s Characters\n"
     response += "⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯\n\n"
 
-    for name, count in items:
+    for nickname, count in items:
 
         num = count - 1
         constellation = "C6+" if num > 6 else f"C{num}"
 
-        rarity = get_rarity(name)
+        rarity = get_rarity(nickname)
         stars = "★" * rarity
 
-        response += f"{stars} {name} — {constellation}\n"
+        response += f"{stars} {nickname} — {constellation}\n"
 
     total_pages = (len(sorted_chars) - 1) // ITEMS_PER_PAGE
 
@@ -435,10 +435,10 @@ async def send_single(message: types.Message):
         
         if current_collection.get(display_name, 0) >= 7:
             wish_count += 2
-            name = f"꩜ {display_name} (Duplicate C6 -> +2 Wish) ★★★★★"
+            nickname = f"꩜ {display_name} (Duplicate C6 -> +2 Wish) ★★★★★"
         else:
             pulled_chars.append(display_name)
-            name = f"꩜ {display_name} ★★★★★"
+            nickname = f"꩜ {display_name} ★★★★★"
 
     elif is_4star:
         count4 = 0
@@ -451,10 +451,10 @@ async def send_single(message: types.Message):
         
         if current_collection.get(display_name, 0) >= 7:
             wish_count += 1
-            name = f"꩜ {display_name} (Duplicate C6 -> +1 Wish) ★★★★"
+            nickname = f"꩜ {display_name} (Duplicate C6 -> +1 Wish) ★★★★"
         else:
             pulled_chars.append(display_name)
-            name = f"꩜ {display_name} ★★★★"
+            nickname = f"꩜ {display_name} ★★★★"
     else:
         pity += 1
         count4 += 1
@@ -462,7 +462,7 @@ async def send_single(message: types.Message):
         display_name = weapons3[file_key]
         splash_name = display_name
         splash_rarity = 3
-        name = f"꩜ {display_name} ★★★"
+        nickname = f"꩜ {display_name} ★★★"
         file_path = f"https://raw.githubusercontent.com/FrenzyYum/GenshinWishingBot/master/assets/images/{file_key}.webp"
 
     wish_count -= 1
@@ -489,7 +489,7 @@ async def send_single(message: types.Message):
     except:
         pass # In case user deleted it manually
         
-    await message.answer_photo(photo=photo_file, caption=result_msg + name)
+    await message.answer_photo(photo=photo_file, caption=result_msg + nickname)
 @dp.message(Command("give"))
 async def give_wishes(message: types.Message):
     # 1. Admin Security Check
@@ -877,6 +877,7 @@ async def my_profile(message: types.Message):
     
     # 3. Fetch Data (Exploration and Abyss functions assumed to be defined elsewhere)
     user_info = await get_player_full_data(db_uid)
+    user_info_enka = await get_enkadata(db)
     image_buffer = await create_genshin_profile(db_uid)    
     exploration_data = await get_exploration_data(db_uid)
     abyss_data = await get_abyss_data(db_uid)
@@ -886,12 +887,13 @@ async def my_profile(message: types.Message):
     if not user_info:
         return await message.reply("❌ Data hidden. Is your 'Battle Chronicle' public in HoYoLAB?")
 
-    # 4. Build the Text Message
-    msg = f"👤 <b>{user_info['name']}</b> | UID: <code>{db_uid}</code>\n"
-    msg += f"⭐ <b>AR {user_info['level']}</b> | WL {user_info['world_level']}\n"
-    msg += f"🏆 <b>Achievements:</b> {user_info['achievements']}\n"
-    msg+=f"📅 <b>Days:</b> {user_info['days_active']}\n"
-    if user_info['signature']:
+    msg = "<b>PLAYER INFO</b>\n"
+    msg += "────────୨ৎ────────\n"
+    msg += f"𖹭 <b>{user_info['nickname']}</b> | UID: <code>{db_uid}</code>\n"
+    msg += f"𖹭 <b>AR {user_info['level']}</b> | WL : {user_info_enka['worldLevel']}\n"
+    msg += f"𖹭 <b>Achievements:</b> {user_info['achievements']}\n"
+    msg+=f"𖹭 <b>Days:</b> {user_info['days_active']}\n"
+    if user_info_enka['signature']:
         msg += f"<i>\"{user_info['signature']}\"</i>\n"
         
     msg += "<code>" + "═" * 25 + "</code>\n\n"
@@ -900,7 +902,7 @@ async def my_profile(message: types.Message):
     msg += "<b> EXPLORATION</b>\n"
     for area in exploration_data:
         # :15 ensures the percentages stay aligned in a column
-        msg += f"❀ <code>{area['name']:15}</code>: {area['percent']}%\n"
+        msg += f"❀ <code>{area['nickname']:15}</code>: {area['percent']}%\n"
     await status.delete()
     # Abyss Section
     if abyss_data:
@@ -1013,7 +1015,7 @@ async def execute_exploration_comparison(callback: types.CallbackQuery):
 
         # 3. Header
         msg = f"⚖️ <b>EXPLORATION BATTLE</b>\n"
-        msg += f"👤 <code>{me['name']}</code> <b>VS</b> 👤 <code>{them['name']}</code>\n"
+        msg += f"👤 <code>{me['nickname']}</code> <b>VS</b> 👤 <code>{them['nickname']}</code>\n"
         msg += "<code>" + "═" * 25 + "</code>\n\n"
 
         # 4. Chest Section (Using the keys from your JSON)
@@ -1036,18 +1038,18 @@ async def execute_exploration_comparison(callback: types.CallbackQuery):
         # 5. Regional Exploration Section
         msg += "<b>🌍 REGIONS</b>\n"
         
-        # Create a dictionary for the target player to look up by name
-        them_map = {area['name']: area['percent'] for area in them_expl}
+        # Create a dictionary for the target player to look up by nickname
+        them_map = {area['nickname']: area['percent'] for area in them_expl}
 
         for area in me_expl:
-            name = area['name']
+            nickname = area['nickname']
             p1 = area['percent']
-            p2 = them_map.get(name, 0.0)
+            p2 = them_map.get(nickname, 0.0)
             
             icon = "⬅️" if p1 > p2 else "➡️" if p2 > p1 else "🤝"
             
-            # Format: Region Name \n 100.0% [Icon] 85.0%
-            msg += f"❀ <b>{name}</b>\n"
+            # Format: Region nickname \n 100.0% [Icon] 85.0%
+            msg += f"❀ <b>{nickname}</b>\n"
             msg += f"<code>{p1:>5.1f}%</code> {icon} <code>{p2:>5.1f}%</code>\n\n"
 
         # 6. Navigation
@@ -1129,7 +1131,7 @@ async def group_quiz_handler(message: types.Message, bot: Bot):
                 data = active_polls[poll_id]
                 
                 if data["winners"]:
-                    winner_list = "\n".join([f"✨ {name} solved it! (<b>+{pts} pts + wishes</b>)" for name, pts in data["winners"]])
+                    winner_list = "\n".join([f"✨ {nickname} solved it! (<b>+{pts} pts + wishes</b>)" for nickname, pts in data["winners"]])
                     result_text = f"🏁 <b>Quiz Results:</b>\n\n{winner_list}"
                 else:
                     result_text = "⏰ Time's up! No one got it right. 🫥"

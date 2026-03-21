@@ -4,7 +4,7 @@ import aiohttp
 import genshin
 import json
 from io import BytesIO
-
+from genshin_utils import get_player_full_data, get_enkadata
 COOKIES = {
     "ltuid_v2": "471000302",
     "ltoken_v2": "v2_CAISDGM5b3FhcTNzM2d1OBokZTFmZTViNmItZDgxOS00MzNlLWJiZDktYWJkMTEzMWY1ZmY0ILaq780GKNa-zZEGMO7Jy-ABQgtiYnNfb3ZlcnNlYVhqagJTRw.NtW7aQAAAAAB.MEUCIGXUWYTB1bk4uUPg-Mwv8mZ6fXGUPvhKlkks9aizJCKVAiEA5ukOrLn7OhrY4JKtlMzZEXWCY-f-lCsBnIESDT_xbpY"
@@ -12,33 +12,6 @@ COOKIES = {
 client = genshin.Client(COOKIES)
 client.region = genshin.Region.OVERSEAS
 
-async def get_enkadata(uid):
-    url = f"https://enka.network/api/uid/{uid}"
-    async with aiohttp.ClientSession() as session:
-        async with session.get(url) as response:
-            if response.status == 200:
-                data = await response.json()
-                player_info = data.get("playerInfo", {})
-                showcase = player_info.get("showAvatarInfoList", [])
-                return {
-                    "worldLevel": player_info.get("worldLevel", 0),
-                    "signature": player_info.get("signature", ""),
-                    "nameCardId": player_info.get("nameCardId", ""),
-                    "showAvatarInfoList": showcase
-                }
-            return {"worldLevel": 0, "signature": "", "nameCardId": "" ,"showAvatarInfoList": []}
-
-async def get_player_full_data(uid):
-    raw_data = await client.get_genshin_user(uid)
-    data = raw_data.dict()
-    return {
-        "nickname": data.get("info", {}).get("nickname", "Unknown"),
-        "level": data.get("info", {}).get("level", 0),
-        "achievements": data.get("stats", {}).get("achievements", 0),
-        "in_game_avatar": data.get("info", {}).get("in_game_avatar", "Unknown"),
-        "spiral_abyss": data.get("stats", {}).get("spiral_abyss", "Unknown"),
-        "characters": data.get("characters", [])
-    }
 with open('char.json', 'r') as f:
     CHARACTER_MAP = json.load(f)
 
