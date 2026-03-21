@@ -26,6 +26,8 @@ from genshin_utils import  get_enkadata,get_quiz_score,to_int,get_val,get_explor
 from data import weapons3, characters4, characters5, rare
 
 quiz_track = {}
+group_message_counts = {}
+QUIZ_THRESHOLD = 50
 
 ITEMS_PER_PAGE = 10
 dp = Dispatcher()
@@ -533,6 +535,9 @@ async def send_image_10(message: types.Message):
     )
 @dp.message(Command("wish"))
 async def send_single(message: types.Message):
+    if message.chat.type != "private":
+        await message.reply("⚠️ <b>Single wishing is restricted to Private DMs only!</b>\nPlease message me directly to play.", parse_mode="HTML")
+        return
     loading_photo = FSInputFile("Loading_Screen_Startup.webp")
     loading_msg = await message.answer_photo(
         photo=loading_photo, 
@@ -1254,9 +1259,19 @@ async def clear_old_polls():
 # --- QUIZ TRIGGER ---
 @dp.message(F.chat.type.in_({"group", "supergroup"}))
 async def group_quiz_handler(message: types.Message, bot: Bot):
-    # 10% chance to trigger a quiz on any message
-    if random.random() < 0.1:
+    chat_id = message.chat.id
+
+    # 2. Increment counter for this specific chat
+    current_count = group_message_counts.get(chat_id, 0) + 1
+    group_message_counts[chat_id] = current_count
+
+    # 3. Check if we reached the threshold
+    if current_count >= QUIZ_THRESHOLD:
+        # Reset counter immediately to prevent double-triggers
+        group_message_counts[chat_id] = 0
+        
         try:
+            # --- YOUR EXISTING QUIZ LOGIC STARTS HERE ---
             with open("quizzes.json", "r") as f:
                 quiz_list = json.load(f)
             
@@ -1266,15 +1281,14 @@ async def group_quiz_handler(message: types.Message, bot: Bot):
             
             correct_id = options.index(q["correct"])
 
-            # Send Native Quiz
             poll_msg = await message.answer_poll(
-                question=f"🧠 QUIZ ({q['difficulty'].upper()})\n{q['question']}",
+                question=f"𑣿 QUIZ ({q['difficulty'].upper()})\n{q['question']}",
                 options=options,
                 type='quiz',
                 correct_option_id=correct_id,
-                is_anonymous=False, # Required for your @dp.poll_answer() to get user IDs
+                is_anonymous=False,
                 open_period=60,
-                is_closed=False # Ensure it starts open
+                is_closed=False
             )
 
             poll_id = poll_msg.poll.id
@@ -1282,32 +1296,30 @@ async def group_quiz_handler(message: types.Message, bot: Bot):
                 "start_time": time.time(),
                 "difficulty": q["difficulty"],
                 "correct_id": correct_id,
-                "chat_id": message.chat.id,
-                "message_id": poll_msg.message_id, # Saved for replying
+                "chat_id": chat_id,
+                "message_id": poll_msg.message_id,
                 "winners": []
             }
 
-            # Wait for 60s timer + 1s buffer
             await asyncio.sleep(61)
 
             if poll_id in active_polls:
                 data = active_polls[poll_id]
-                
                 if data["winners"]:
-                    winner_list = "\n".join([f"✨ {name} solved it! (<b>+{pts} pts + wishes</b>)" for name, pts in data["winners"]])
-                    result_text = f"🏁 <b>Quiz Results:</b>\n\n{winner_list}"
+                    # Create winner list...
+                    winner_list = "\n".join([f"⛧ {name} solved it! (<b>+{pts} pts</b>)" for name, pts in data["winners"]])
+                    result_text = f"၄၃ <b>Quiz Results:</b>\n\n{winner_list}"
                 else:
-                    result_text = "⏰ Time's up! No one got it right. 🫥"
+                    result_text = "၄၃ Time's up! No one got it right. ၄၃"
 
-                # Reply to the specific Quiz Message
                 await bot.send_message(
                     chat_id=data["chat_id"],
                     text=result_text,
                     reply_to_message_id=data["message_id"],
                     parse_mode="HTML"
                 )
-                
                 del active_polls[poll_id]
+            # --- END OF QUIZ LOGIC ---
 
         except Exception as e:
             print(f"Quiz Error: {e}")
