@@ -73,7 +73,7 @@ async def cmd_characters(message: types.Message):
     
     user_info_enka = await get_enkadata(db_uid)
     # Enka uses 'avatarInfoList' for the character data
-    showcase_items = user_info_enka.get("avatarInfoList", [])
+    showcase_items = user_info_enka.get("showAvatarInfoList", [])
 
     if not showcase_items:
         await msg.edit_text("❌ No characters found! Make sure 'Show Character Details' is ON in-game.")
