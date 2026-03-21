@@ -893,7 +893,7 @@ async def my_profile(message: types.Message):
     msg += f"𖹭 <b>Achievements:</b> {user_info['achievements']}\n"
     msg+=f"𖹭 <b>Days:</b> {user_info['days_active']}\n"
     if user_info_enka['signature']:
-        msg += f"<i>\"{user_info['signature']}\"</i>\n\n"
+        msg += f"<i>\"{user_info_enka['signature']}\"</i>\n\n"
         
     msg += "─────── ⋆⋅𖤓⋅⋆ ───────\n\n"
 
