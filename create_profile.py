@@ -102,7 +102,7 @@ async def get_namecard_image_url(card_id):
     card_info = namecard_data.get(str(card_id))
     
     if card_info:
-        asset_name = card_info["Icon"]
+        asset_name = card_info["icon"]
         # 3. Build the URL for Enka.Network
         return f"https://enka.network/ui/{asset_name}.png"
     else:
