@@ -115,31 +115,30 @@ async def cmd_characters(message: types.Message):
     )
 @dp.callback_query(F.data.startswith("gen_"))
 async def handle_card_generation(callback: types.CallbackQuery):
-    # 1. Extract data
+    # Split data: gen_UID_INDEX
     parts = callback.data.split("_")
     uid = parts[1]
     char_index = int(parts[2])
 
     await callback.answer("⏳ Generation Started")
 
-    # 2. Define API URL outside the async session to be safe
-    # Ensure there is NO trailing slash here
-    api_url = "https://gi-card-api.onrender.com/generate_card"
-
-    # 3. Swap to Loading Image
-    loading_photo = FSInputFile("Loading_Screen_Startup.webp") 
+    # 1. SWAP TO LOCAL LOADING IMAGE
+    # FSInputFile reads from your bot's folder
     try:
+        loading_photo = FSInputFile("Loading_Screen_Startup.webp") 
         await callback.message.edit_media(
             media=InputMediaPhoto(
                 media=loading_photo, 
-                caption="<b>🎨 Creating your card...</b>\nPlease wait a moment.",
+                caption="<b>🎨 Creating your card...</b>\nThis usually takes 20-40 seconds.",
                 parse_mode="HTML"
             )
         )
     except Exception as e:
-        print(f"Edit media failed: {e}")
+        print(f"Loading image error: {e}")
 
-    # 4. Prepare Payload
+    # 2. API REQUEST
+    # Hardcoded URL to prevent 404 errors from string formatting
+    api_url = "https://gi-card-api.onrender.com/generate_card"
     payload = {
         "uid": uid,
         "character_index": char_index,
@@ -147,30 +146,35 @@ async def handle_card_generation(callback: types.CallbackQuery):
         "img": None
     }
 
-    # 5. The Request
     async with aiohttp.ClientSession() as session:
-        async with session.post(api_url, json=payload) as resp:
-            # Add a debug print to your console to see what's happening
-            print(f"Sending to {api_url} | Status: {resp.status}")
-            
-            if resp.status == 200:
-                data = await resp.json()
-                card_url = data.get("response") or data.get("url")
+        try:
+            # Added a 60-second timeout for slow Render servers
+            timeout = aiohttp.ClientTimeout(total=60)
+            async with session.post(api_url, json=payload, timeout=timeout) as resp:
                 
-                if card_url:
-                    # Send final card and delete loading
-                    await callback.message.answer_photo(
-                        photo=URLInputFile(card_url),
-                        caption=f"✅ Build card for UID {uid}"
-                    )
-                    await callback.message.delete()
+                if resp.status == 200:
+                    data = await resp.json()
+                    card_url = data.get("response") or data.get("url")
+                    
+                    if card_url:
+                        # Success: Send final card and delete loading message
+                        await callback.message.answer_photo(
+                            photo=URLInputFile(card_url),
+                            caption=f"✅ Build card for UID {uid}"
+                        )
+                        await callback.message.delete()
+                    else:
+                        await callback.message.edit_caption(caption="❌ Error: API didn't return a card link.")
+                
+                elif resp.status == 404:
+                    await callback.message.edit_caption(caption="❌ API Error 404: Endpoint not found.")
                 else:
-                    await callback.message.edit_caption(caption="❌ API didn't return a link.")
-            elif resp.status == 404:
-                # If you get 404 here, the 'api_url' string is definitely wrong
-                await callback.message.edit_caption(caption="❌ Error 404: API endpoint not found.")
-            else:
-                await callback.message.edit_caption(caption=f"❌ API Error: {resp.status}")
+                    await callback.message.edit_caption(caption=f"❌ API Error: {resp.status}")
+        
+        except asyncio.TimeoutError:
+            await callback.message.edit_caption(caption="❌ Error: API timed out (server is slow). Try again.")
+        except Exception as e:
+            await callback.message.edit_caption(caption=f"❌ Connection Error: {str(e)}")
 @dp.message(Command("topquiz"))
 async def cmd_top_quiz(message: types.Message):
     if message.chat.type == "private":
