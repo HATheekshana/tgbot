@@ -16,7 +16,7 @@ from aiogram.filters import Command
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from datetime import datetime, timedelta
-from aiogram.types import FSInputFile, BufferedInputFile, InlineKeyboardMarkup, InlineKeyboardButton
+from aiogram.types import URLInputFile,FSInputFile, BufferedInputFile, InlineKeyboardMarkup, InlineKeyboardButton
 from aiogram import Bot, Dispatcher, types
 from aiogram.filters import Command
 from pytz import timezone
@@ -96,7 +96,7 @@ async def cmd_characters(message: types.Message):
         # Add button
         builder.button(
             text=display_name, 
-            callback_data=f"select_char_{db_uid}_{index}" # Added UID to callback for safety
+            callback_data=f"gen_{db_uid}_{index}" # Added UID to callback for safety
         )
     image_buffer = await create_genshin_profile(db_uid) 
     if image_buffer:
@@ -109,11 +109,50 @@ async def cmd_characters(message: types.Message):
     await msg.delete() # Remove the "Fetching..." message
     await message.answer_photo(
         photo=photo,
-        caption=f"✨ **Showcase for UID {db_uid}**\nSelect a character:",
+        caption="Select a character:",
         reply_markup=builder.as_markup(),
         parse_mode="Markdown"
     )
+@dp.callback_query(F.data.startswith("gen_"))
+async def handle_card_generation(callback: types.CallbackQuery):
+    # Split the callback_data (e.g., gen_855170541_0)
+    parts = callback.data.split("_")
+    uid = parts[1]
+    char_index = int(parts[2])
+    CARD_API_BASE = "https://gi-card-api.onrender.com"
+    # Show a "loading" alert on the user's screen
+    await callback.answer("Generating Build Card...", show_alert=False)
+    
+    # Edit message to show progress
+    await callback.message.edit_text("Creating your card... this may take 20-40 seconds.")
 
+    payload = {
+        "uid": uid,
+        "character_index": char_index,
+        "template": 1,
+        "img": None
+    }
+
+    async with aiohttp.ClientSession() as session:
+        # Step 1: Request the card generation
+        async with session.post(f"{CARD_API_BASE}/generate_card", json=payload) as resp:
+            if resp.status == 200:
+                data = await resp.json()
+                card_url = data.get("response") or data.get("url")
+                
+                if card_url:
+                    # Step 2: Send the image directly using the URL
+                    # No need to download to PC first, Telegram can handle URLs
+                    photo = URLInputFile(card_url)
+                    await callback.message.answer_photo(
+                        photo=photo,
+                        caption=f"Build card for UID {uid}"
+                    )
+                    await callback.message.delete() # Clean up the "Creating..." message
+                else:
+                    await callback.message.edit_text("❌ API failed to return an image URL.")
+            else:
+                await callback.message.edit_text(f"❌ API Error: {resp.status}. (Server might be asleep)")
 @dp.message(Command("topquiz"))
 async def cmd_top_quiz(message: types.Message):
     if message.chat.type == "private":
