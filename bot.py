@@ -897,7 +897,7 @@ async def my_profile(message: types.Message):
     msg += "<code>" + "═" * 25 + "</code>\n\n"
 
     # Exploration Section
-    msg += "<b>🌍 EXPLORATION</b>\n"
+    msg += "<b> EXPLORATION</b>\n"
     for area in exploration_data:
         # :15 ensures the percentages stay aligned in a column
         msg += f"❀ <code>{area['name']:15}</code>: {area['percent']}%\n"
