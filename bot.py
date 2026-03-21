@@ -895,11 +895,11 @@ async def my_profile(message: types.Message):
     if user_info_enka['signature']:
         msg += f"<i>\"{user_info_enka['signature']}\"</i>\n"
         
-    msg += "─────── ⋆⋅𖤓⋅⋆ ───────\n\n"
+    msg += "──────── ⋆⋅𖤓⋅⋆ ────────\n\n"
 
     # Exploration Section
     msg += "<b> EXPLORATION</b>\n"
-    msg += "⊹ ࣪ ﹏﹏𓊝﹏𓂁﹏﹏⊹ ࣪ ˖\n\n"
+    msg += "⊹ ࣪ ﹏﹏﹏﹏𓊝﹏𓂁﹏﹏﹏﹏⊹ ࣪ ˖\n\n"
     for area in exploration_data:
         # :15 ensures the percentages stay aligned in a column
         msg += f"❀ <code>{area['name']:15}</code>: {area['percent']}%\n"
