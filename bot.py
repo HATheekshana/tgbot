@@ -5,6 +5,7 @@ import sys
 import random
 import io
 import aiohttp
+from pymongo import ReturnDocument
 from dotenv import load_dotenv
 import os
 import json
@@ -1261,14 +1262,23 @@ async def clear_old_polls():
 async def group_quiz_handler(message: types.Message, bot: Bot):
     chat_id = message.chat.id
 
-    # 2. Increment counter for this specific chat
-    current_count = group_message_counts.get(chat_id, 0) + 1
-    group_message_counts[chat_id] = current_count
+    # 2. Increment counter for this specific chat in MongoDB
+    # This replaces your local 'group_message_counts' dictionary
+    res = await groups_col.find_one_and_update(
+        {"chat_id": chat_id},
+        {"$inc": {"message_count": 1}},
+        upsert=True,
+        return_document=ReturnDocument.AFTER
+    )
+    current_count = res.get("message_count", 0)
 
     # 3. Check if we reached the threshold
     if current_count >= QUIZ_THRESHOLD:
-        # Reset counter immediately to prevent double-triggers
-        group_message_counts[chat_id] = 0
+        # Reset counter in MongoDB immediately to prevent double-triggers
+        await groups_col.update_one(
+            {"chat_id": chat_id}, 
+            {"$set": {"message_count": 0}}
+        )
         
         try:
             # --- YOUR EXISTING QUIZ LOGIC STARTS HERE ---
@@ -1306,8 +1316,7 @@ async def group_quiz_handler(message: types.Message, bot: Bot):
             if poll_id in active_polls:
                 data = active_polls[poll_id]
                 if data["winners"]:
-                    # Create winner list...
-                    winner_list = "\n".join([f"⛧ {name} solved it! (<b>+{pts} pts</b>)" for name, pts in data["winners"]])
+                    winner_list = "\n".join([f"⛧ {name} solved it! (<b>+{pts} pts + wishes </b>)" for name, pts in data["winners"]])
                     result_text = f"၄၃ <b>Quiz Results:</b>\n\n{winner_list}"
                 else:
                     result_text = "၄၃ Time's up! No one got it right. ၄၃"
