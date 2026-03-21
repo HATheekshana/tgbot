@@ -117,57 +117,72 @@ async def cmd_characters(message: types.Message):
 async def handle_card_generation(callback: types.CallbackQuery):
     parts = callback.data.split("_")
     uid, char_index = parts[1], int(parts[2])
-    CARD_API_BASE = "https://gi-card-api.onrender.com"
-    await callback.answer("Generation Started")
 
-    # 1. SHOW LOADING IMAGE (Local Storage)
+    await callback.answer("Fetching Build & Rank...")
+
+    # 1. Loading state (Swap to your local image)
     try:
         loading_img = FSInputFile("Loading_Screen_Startup.webp")
         await callback.message.edit_media(
             media=InputMediaPhoto(
                 media=loading_img,
-                caption="<b>Creating your card...</b>",
+                caption="<b>Creating card and calculating rank...</b>",
                 parse_mode="HTML"
             )
         )
-    except Exception as e:
-        print(f"Loading image swap failed: {e}")
+    except Exception: pass
 
-    # 2. API CALL
-    api_url = f"{CARD_API_BASE}/character_card"
-    payload = {"uid": uid, "character_index": char_index, "template": 1, "img": None}
+    # 2. Get the specific Character ID for the ranking lookup
+    user_info = await get_enkadata(uid)
+    showcase = user_info.get("showAvatarInfoList", [])
+    
+    # Identify the character being generated
+    current_char = showcase[char_index]
+    char_id = str(current_char.get("avatarId")) # e.g., "10000089"
+
+    card_api = "https://gi-card-api.onrender.com/character_card"
+    ranking_api = f"https://test-xehj.onrender.com/get/ranking/{uid}"
 
     async with aiohttp.ClientSession() as session:
         try:
-            timeout = aiohttp.ClientTimeout(total=60)
-            async with session.post(api_url, json=payload, timeout=timeout) as resp:
-                if resp.status == 200:
-                    data = await resp.json()
-                    card_url = data.get("response") or data.get("url")
-                    
-                    if card_url:
-                        # 3. SUCCESS: Add Back Button & Send as Reply
-                        back_builder = InlineKeyboardBuilder()
-                        back_builder.button(text="⬅Back to List", callback_data=f"refresh_{uid}")
+            # Request 1: The Build Card
+            payload = {"uid": uid, "character_index": char_index, "template": 1, "img": None}
+            async with session.post(card_api, json=payload) as card_resp:
+                card_data = await card_resp.json()
+                card_url = card_data.get("response") or card_data.get("url")
+
+                # Request 2: The Ranking (Correctly Parsing the Dictionary)
+                ranking_text = ""
+                async with session.get(ranking_api) as rank_resp:
+                    if rank_resp.status == 200:
+                        all_ranks = await rank_resp.json()
+                        # Find the rank using the Character ID key
+                        char_rank_data = all_ranks.get(char_id)
                         
-                        # Reply to original user command
-                        target = callback.message.reply_to_message or callback.message
-                        await target.reply_photo(
-                            photo=URLInputFile(card_url),
-                            caption=f"Card generated for character!",
-                            reply_markup=back_builder.as_markup()
-                        )
-                        await callback.message.delete()
-                    else:
-                        await callback.message.edit_caption(caption="API didn't return a link.")
-                elif resp.status == 404:
-                    await callback.message.edit_caption(caption="Error 404: API endpoint not found.")
-                else:
-                    await callback.message.edit_caption(caption=f"API Error: {resp.status}")
-        except asyncio.TimeoutError:
-            await callback.message.edit_caption(caption="Error: API timed out. Try again.")
+                        if char_rank_data:
+                            rank = char_rank_data.get("ranking")
+                            out_of = char_rank_data.get("outOf")
+                            percent = char_rank_data.get("percent")
+                            ranking_text = f"\n\n<b>Global Rank:</b> `#{rank}` / {out_of}\n <b>Top:</b> `{percent}%`"
+                        else:
+                            ranking_text = "\n\n*No ranking found for this character.*"
+
+                if card_url:
+                    # Final Step: Send Result
+                    back_builder = InlineKeyboardBuilder()
+                    back_builder.button(text="Back to List", callback_data=f"refresh_{uid}")
+                    
+                    target = callback.message.reply_to_message or callback.message
+                    await target.reply_photo(
+                        photo=URLInputFile(card_url),
+                        caption=f"Character card builded {ranking_text}",
+                        reply_markup=back_builder.as_markup(),
+                        parse_mode="HTML"
+                    )
+                    await callback.message.delete()
+
         except Exception as e:
-            await callback.message.edit_caption(caption=f"Connection Error: {str(e)}")
+            await callback.message.edit_caption(caption=f"❌ Error: {str(e)}")
 @dp.callback_query(F.data.startswith("refresh_"))
 async def handle_back_button(callback: types.CallbackQuery):
     uid = callback.data.split("_")[1]
