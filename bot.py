@@ -115,16 +115,18 @@ async def cmd_characters(message: types.Message):
     )
 @dp.callback_query(F.data.startswith("gen_"))
 async def handle_card_generation(callback: types.CallbackQuery):
-    # Split the callback_data (e.g., gen_855170541_0)
     parts = callback.data.split("_")
     uid = parts[1]
     char_index = int(parts[2])
-    CARD_API_BASE = "https://gi-card-api.onrender.com"
-    # Show a "loading" alert on the user's screen
-    await callback.answer("Generating Build Card...", show_alert=False)
+
+    await callback.answer("⏳ Generating Build Card...")
     
-    # Edit message to show progress
-    await callback.message.edit_text("Creating your card... this may take 20-40 seconds.")
+    try:
+        await callback.message.edit_caption(caption="🎨 Creating your card... this may take 20-40 seconds.")
+    except Exception:
+        await callback.message.answer("🎨 Creating your card...")
+
+    CARD_API_BASE = "https://gi-card-api.onrender.com"
 
     payload = {
         "uid": uid,
