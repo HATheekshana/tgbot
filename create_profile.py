@@ -39,59 +39,50 @@ async def get_player_full_data(uid):
         "spiral_abyss": data.get("stats", {}).get("spiral_abyss", "Unknown"),
         "characters": data.get("characters", [])
     }
+with open('char.json', 'r') as f:
+    CHARACTER_MAP = json.load(f)
+
 async def get_character_data(uid):
-    # 1. Fetch data from both sources
-    user_info = await get_player_full_data(uid)
+    # 1. Fetch data from Enka only (no Hoyolab needed)
     user_info_enka = await get_enkadata(uid)
-    
-    # 2. Extract the lists
-    hoyolab_chars = user_info.get("characters", [])
     showcase_items = user_info_enka.get("showAvatarInfoList", [])
     
-    # 3. Handle Empty Showcase (Common error: 'Show Character Details' is OFF)
+    # 2. Handle Empty Showcase
     if not showcase_items:
-        print(f"⚠️ No characters found in Enka showcase for UID {uid}. Check in-game settings!")
+        print(f"⚠️ No characters found in Enka showcase for UID {uid}.")
         return []
-
-    # 4. Create a Map (ID -> Data)
-    # We force the ID to int because Enka/Hoyolab sometimes mix types
-    char_map = {int(char["id"]): char for char in hoyolab_chars}
-    
-    # Traveler ID Mapping (Common IDs for Aether and Lumine)
-    traveler_ids = {10000005, 10000007} 
 
     final_list = []
 
-    # 5. Loop through Showcase items and match them to Hoyolab details
+    # 3. Loop through Enka items and match to your JSON
     for item in showcase_items:
-        aid = int(item.get("avatarId", 0))
+        aid = str(item.get("avatarId")) # JSON keys are strings
         
-        # Check if it's the Traveler (who might have a different ID in the map)
-        if aid not in char_map and (aid > 10000000 and aid < 10000100):
-            # Try to find any traveler in the map to use as a base
-            for t_id in traveler_ids:
-                if t_id in char_map:
-                    char_map[aid] = char_map[t_id]
-                    break
-
-        if aid in char_map:
-            details = char_map[aid]
+        # Look up the ID in our mapping
+        char_info = CHARACTER_MAP.get(aid)
+        
+        if char_info:
+            icon_name = char_info["avataricon"]
             
+            # Build the final object
             matched_info = {
-                "id": aid,
-                "name": details.get("name", "Unknown"),
-                "element": details.get("element", "None"),
-                "rarity": details.get("rarity", 4),
-                "icon": details.get("icon", ""),
-                "level": item.get("level", 1), # Take level from Enka (most recent)
-                "friendship": details.get("friendship", 1),
-                "constellation": item.get("tallentIdList", []) # Enka provides actual build data
+                "id": int(aid),
+                "rarity": char_info["rarity"],
+                "icon": f"https://enka.network/ui/{icon_name}.png", # Direct link
+                "level": item.get("propMap", {}).get("4001", {}).get("val", 1), # Enka level path
+                "constellations": len(item.get("talentIdList", [])) 
             }
             final_list.append(matched_info)
         else:
-            print(f"⚠️ Warning: Character ID {aid} not found in your Hoyolab characters.")
+            # Fallback if the character is brand new and not in your JSON yet
+            final_list.append({
+                "id": int(aid),
+                "rarity": 0,
+                "icon": "https://enka.network/ui/UI_AvatarIcon_Side_None.png",
+                "level": 0
+            })
 
-    print(f"✅ Successfully matched {len(final_list)} characters.")
+    print(f"✅ Successfully processed {len(final_list)} characters using local JSON.")
     return final_list
 async def get_namecard_image_url(card_id):
     # 1. Load the JSON file

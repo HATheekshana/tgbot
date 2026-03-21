@@ -1,0 +1,566 @@
+{
+    "10000002": {
+        "avataricon": "UI_AvatarIcon_Ayaka",
+        "rarity": 5
+    },
+    "10000003": {
+        "avataricon": "UI_AvatarIcon_Qin",
+        "rarity": 5
+    },
+    "10000005": {
+        "avataricon": "UI_AvatarIcon_PlayerBoy",
+        "rarity": 5
+    },
+    "10000005-501": {
+        "avataricon": "UI_AvatarIcon_PlayerBoy",
+        "rarity": 5
+    },
+    "10000005-502": {
+        "avataricon": "UI_AvatarIcon_PlayerBoy",
+        "rarity": 5
+    },
+    "10000005-503": {
+        "avataricon": "UI_AvatarIcon_PlayerBoy",
+        "rarity": 5
+    },
+    "10000005-504": {
+        "avataricon": "UI_AvatarIcon_PlayerBoy",
+        "rarity": 5
+    },
+    "10000005-506": {
+        "avataricon": "UI_AvatarIcon_PlayerBoy",
+        "rarity": 5
+    },
+    "10000005-507": {
+        "avataricon": "UI_AvatarIcon_PlayerBoy",
+        "rarity": 5
+    },
+    "10000005-508": {
+        "avataricon": "UI_AvatarIcon_PlayerBoy",
+        "rarity": 5
+    },
+    "10000006": {
+        "avataricon": "UI_AvatarIcon_Lisa",
+        "rarity": 4
+    },
+    "10000007": {
+        "avataricon": "UI_AvatarIcon_PlayerGirl",
+        "rarity": 5
+    },
+    "10000007-701": {
+        "avataricon": "UI_AvatarIcon_PlayerGirl",
+        "rarity": 5
+    },
+    "10000007-702": {
+        "avataricon": "UI_AvatarIcon_PlayerGirl",
+        "rarity": 5
+    },
+    "10000007-703": {
+        "avataricon": "UI_AvatarIcon_PlayerGirl",
+        "rarity": 5
+    },
+    "10000007-704": {
+        "avataricon": "UI_AvatarIcon_PlayerGirl",
+        "rarity": 5
+    },
+    "10000007-706": {
+        "avataricon": "UI_AvatarIcon_PlayerGirl",
+        "rarity": 5
+    },
+    "10000007-707": {
+        "avataricon": "UI_AvatarIcon_PlayerGirl",
+        "rarity": 5
+    },
+    "10000007-708": {
+        "avataricon": "UI_AvatarIcon_PlayerGirl",
+        "rarity": 5
+    },
+    "10000014": {
+        "avataricon": "UI_AvatarIcon_Barbara",
+        "rarity": 4
+    },
+    "10000015": {
+        "avataricon": "UI_AvatarIcon_Kaeya",
+        "rarity": 4
+    },
+    "10000016": {
+        "avataricon": "UI_AvatarIcon_Diluc",
+        "rarity": 5
+    },
+    "10000020": {
+        "avataricon": "UI_AvatarIcon_Razor",
+        "rarity": 4
+    },
+    "10000021": {
+        "avataricon": "UI_AvatarIcon_Ambor",
+        "rarity": 4
+    },
+    "10000022": {
+        "avataricon": "UI_AvatarIcon_Venti",
+        "rarity": 5
+    },
+    "10000023": {
+        "avataricon": "UI_AvatarIcon_Xiangling",
+        "rarity": 4
+    },
+    "10000024": {
+        "avataricon": "UI_AvatarIcon_Beidou",
+        "rarity": 4
+    },
+    "10000025": {
+        "avataricon": "UI_AvatarIcon_Xingqiu",
+        "rarity": 4
+    },
+    "10000026": {
+        "avataricon": "UI_AvatarIcon_Xiao",
+        "rarity": 5
+    },
+    "10000027": {
+        "avataricon": "UI_AvatarIcon_Ningguang",
+        "rarity": 4
+    },
+    "10000029": {
+        "avataricon": "UI_AvatarIcon_Klee",
+        "rarity": 5
+    },
+    "10000030": {
+        "avataricon": "UI_AvatarIcon_Zhongli",
+        "rarity": 5
+    },
+    "10000031": {
+        "avataricon": "UI_AvatarIcon_Fischl",
+        "rarity": 4
+    },
+    "10000032": {
+        "avataricon": "UI_AvatarIcon_Bennett",
+        "rarity": 4
+    },
+    "10000033": {
+        "avataricon": "UI_AvatarIcon_Tartaglia",
+        "rarity": 5
+    },
+    "10000034": {
+        "avataricon": "UI_AvatarIcon_Noel",
+        "rarity": 4
+    },
+    "10000035": {
+        "avataricon": "UI_AvatarIcon_Qiqi",
+        "rarity": 5
+    },
+    "10000036": {
+        "avataricon": "UI_AvatarIcon_Chongyun",
+        "rarity": 4
+    },
+    "10000037": {
+        "avataricon": "UI_AvatarIcon_Ganyu",
+        "rarity": 5
+    },
+    "10000038": {
+        "avataricon": "UI_AvatarIcon_Albedo",
+        "rarity": 5
+    },
+    "10000039": {
+        "avataricon": "UI_AvatarIcon_Diona",
+        "rarity": 4
+    },
+    "10000041": {
+        "avataricon": "UI_AvatarIcon_Mona",
+        "rarity": 5
+    },
+    "10000042": {
+        "avataricon": "UI_AvatarIcon_Keqing",
+        "rarity": 5
+    },
+    "10000043": {
+        "avataricon": "UI_AvatarIcon_Sucrose",
+        "rarity": 4
+    },
+    "10000044": {
+        "avataricon": "UI_AvatarIcon_Xinyan",
+        "rarity": 4
+    },
+    "10000045": {
+        "avataricon": "UI_AvatarIcon_Rosaria",
+        "rarity": 4
+    },
+    "10000046": {
+        "avataricon": "UI_AvatarIcon_Hutao",
+        "rarity": 5
+    },
+    "10000047": {
+        "avataricon": "UI_AvatarIcon_Kazuha",
+        "rarity": 5
+    },
+    "10000048": {
+        "avataricon": "UI_AvatarIcon_Feiyan",
+        "rarity": 4
+    },
+    "10000049": {
+        "avataricon": "UI_AvatarIcon_Yoimiya",
+        "rarity": 5
+    },
+    "10000050": {
+        "avataricon": "UI_AvatarIcon_Tohma",
+        "rarity": 4
+    },
+    "10000051": {
+        "avataricon": "UI_AvatarIcon_Eula",
+        "rarity": 5
+    },
+    "10000052": {
+        "avataricon": "UI_AvatarIcon_Shougun",
+        "rarity": 5
+    },
+    "10000053": {
+        "avataricon": "UI_AvatarIcon_Sayu",
+        "rarity": 4
+    },
+    "10000054": {
+        "avataricon": "UI_AvatarIcon_Kokomi",
+        "rarity": 5
+    },
+    "10000055": {
+        "avataricon": "UI_AvatarIcon_Gorou",
+        "rarity": 4
+    },
+    "10000056": {
+        "avataricon": "UI_AvatarIcon_Sara",
+        "rarity": 4
+    },
+    "10000057": {
+        "avataricon": "UI_AvatarIcon_Itto",
+        "rarity": 5
+    },
+    "10000058": {
+        "avataricon": "UI_AvatarIcon_Yae",
+        "rarity": 5
+    },
+    "10000059": {
+        "avataricon": "UI_AvatarIcon_Heizo",
+        "rarity": 4
+    },
+    "10000060": {
+        "avataricon": "UI_AvatarIcon_Yelan",
+        "rarity": 5
+    },
+    "10000061": {
+        "avataricon": "UI_AvatarIcon_Momoka",
+        "rarity": 4
+    },
+    "10000062": {
+        "avataricon": "UI_AvatarIcon_Aloy",
+        "rarity": 5
+    },
+    "10000063": {
+        "avataricon": "UI_AvatarIcon_Shenhe",
+        "rarity": 5
+    },
+    "10000064": {
+        "avataricon": "UI_AvatarIcon_Yunjin",
+        "rarity": 4
+    },
+    "10000065": {
+        "avataricon": "UI_AvatarIcon_Shinobu",
+        "rarity": 4
+    },
+    "10000066": {
+        "avataricon": "UI_AvatarIcon_Ayato",
+        "rarity": 5
+    },
+    "10000067": {
+        "avataricon": "UI_AvatarIcon_Collei",
+        "rarity": 4
+    },
+    "10000068": {
+        "avataricon": "UI_AvatarIcon_Dori",
+        "rarity": 4
+    },
+    "10000069": {
+        "avataricon": "UI_AvatarIcon_Tighnari",
+        "rarity": 5
+    },
+    "10000070": {
+        "avataricon": "UI_AvatarIcon_Nilou",
+        "rarity": 5
+    },
+    "10000071": {
+        "avataricon": "UI_AvatarIcon_Cyno",
+        "rarity": 5
+    },
+    "10000072": {
+        "avataricon": "UI_AvatarIcon_Candace",
+        "rarity": 4
+    },
+    "10000073": {
+        "avataricon": "UI_AvatarIcon_Nahida",
+        "rarity": 5
+    },
+    "10000074": {
+        "avataricon": "UI_AvatarIcon_Layla",
+        "rarity": 4
+    },
+    "10000075": {
+        "avataricon": "UI_AvatarIcon_Wanderer",
+        "rarity": 5
+    },
+    "10000076": {
+        "avataricon": "UI_AvatarIcon_Faruzan",
+        "rarity": 4
+    },
+    "10000077": {
+        "avataricon": "UI_AvatarIcon_Yaoyao",
+        "rarity": 4
+    },
+    "10000078": {
+        "avataricon": "UI_AvatarIcon_Alhatham",
+        "rarity": 5
+    },
+    "10000079": {
+        "avataricon": "UI_AvatarIcon_Dehya",
+        "rarity": 5
+    },
+    "10000080": {
+        "avataricon": "UI_AvatarIcon_Mika",
+        "rarity": 4
+    },
+    "10000081": {
+        "avataricon": "UI_AvatarIcon_Kaveh",
+        "rarity": 4
+    },
+    "10000082": {
+        "avataricon": "UI_AvatarIcon_Baizhuer",
+        "rarity": 5
+    },
+    "10000083": {
+        "avataricon": "UI_AvatarIcon_Linette",
+        "rarity": 4
+    },
+    "10000084": {
+        "avataricon": "UI_AvatarIcon_Liney",
+        "rarity": 5
+    },
+    "10000085": {
+        "avataricon": "UI_AvatarIcon_Freminet",
+        "rarity": 4
+    },
+    "10000086": {
+        "avataricon": "UI_AvatarIcon_Wriothesley",
+        "rarity": 5
+    },
+    "10000087": {
+        "avataricon": "UI_AvatarIcon_Neuvillette",
+        "rarity": 5
+    },
+    "10000088": {
+        "avataricon": "UI_AvatarIcon_Charlotte",
+        "rarity": 4
+    },
+    "10000089": {
+        "avataricon": "UI_AvatarIcon_Furina",
+        "rarity": 5
+    },
+    "10000090": {
+        "avataricon": "UI_AvatarIcon_Chevreuse",
+        "rarity": 4
+    },
+    "10000091": {
+        "avataricon": "UI_AvatarIcon_Navia",
+        "rarity": 5
+    },
+    "10000092": {
+        "avataricon": "UI_AvatarIcon_Gaming",
+        "rarity": 4
+    },
+    "10000093": {
+        "avataricon": "UI_AvatarIcon_Liuyun",
+        "rarity": 5
+    },
+    "10000094": {
+        "avataricon": "UI_AvatarIcon_Chiori",
+        "rarity": 5
+    },
+    "10000095": {
+        "avataricon": "UI_AvatarIcon_Sigewinne",
+        "rarity": 5
+    },
+    "10000096": {
+        "avataricon": "UI_AvatarIcon_Arlecchino",
+        "rarity": 5
+    },
+    "10000097": {
+        "avataricon": "UI_AvatarIcon_Sethos",
+        "rarity": 4
+    },
+    "10000098": {
+        "avataricon": "UI_AvatarIcon_Clorinde",
+        "rarity": 5
+    },
+    "10000099": {
+        "avataricon": "UI_AvatarIcon_Emilie",
+        "rarity": 5
+    },
+    "10000100": {
+        "avataricon": "UI_AvatarIcon_Kachina",
+        "rarity": 4
+    },
+    "10000101": {
+        "avataricon": "UI_AvatarIcon_Kinich",
+        "rarity": 5
+    },
+    "10000102": {
+        "avataricon": "UI_AvatarIcon_Mualani",
+        "rarity": 5
+    },
+    "10000103": {
+        "avataricon": "UI_AvatarIcon_Xilonen",
+        "rarity": 5
+    },
+    "10000104": {
+        "avataricon": "UI_AvatarIcon_Chasca",
+        "rarity": 5
+    },
+    "10000105": {
+        "avataricon": "UI_AvatarIcon_Olorun",
+        "rarity": 4
+    },
+    "10000106": {
+        "avataricon": "UI_AvatarIcon_Mavuika",
+        "rarity": 5
+    },
+    "10000107": {
+        "avataricon": "UI_AvatarIcon_Citlali",
+        "rarity": 5
+    },
+    "10000108": {
+        "avataricon": "UI_AvatarIcon_Lanyan",
+        "rarity": 4
+    },
+    "10000109": {
+        "avataricon": "UI_AvatarIcon_Mizuki",
+        "rarity": 5
+    },
+    "10000110": {
+        "avataricon": "UI_AvatarIcon_Iansan",
+        "rarity": 4
+    },
+    "10000111": {
+        "avataricon": "UI_AvatarIcon_Varesa",
+        "rarity": 5
+    },
+    "10000112": {
+        "avataricon": "UI_AvatarIcon_Escoffier",
+        "rarity": 5
+    },
+    "10000113": {
+        "avataricon": "UI_AvatarIcon_Ifa",
+        "rarity": 4
+    },
+    "10000114": {
+        "avataricon": "UI_AvatarIcon_SkirkNew",
+        "rarity": 5
+    },
+    "10000115": {
+        "avataricon": "UI_AvatarIcon_Dahlia",
+        "rarity": 4
+    },
+    "10000116": {
+        "avataricon": "UI_AvatarIcon_Ineffa",
+        "rarity": 5
+    },
+    "10000117-11702": {
+        "avataricon": "UI_AvatarIcon_MannequinBoy",
+        "rarity": 5
+    },
+    "10000117-11703": {
+        "avataricon": "UI_AvatarIcon_MannequinBoy",
+        "rarity": 5
+    },
+    "10000117-11704": {
+        "avataricon": "UI_AvatarIcon_MannequinBoy",
+        "rarity": 5
+    },
+    "10000117-11705": {
+        "avataricon": "UI_AvatarIcon_MannequinBoy",
+        "rarity": 5
+    },
+    "10000117-11706": {
+        "avataricon": "UI_AvatarIcon_MannequinBoy",
+        "rarity": 5
+    },
+    "10000117-11707": {
+        "avataricon": "UI_AvatarIcon_MannequinBoy",
+        "rarity": 5
+    },
+    "10000117-11708": {
+        "avataricon": "UI_AvatarIcon_MannequinBoy",
+        "rarity": 5
+    },
+    "10000118": {
+        "avataricon": "UI_AvatarIcon_MannequinGirl",
+        "rarity": 5
+    },
+    "10000118-11803": {
+        "avataricon": "UI_AvatarIcon_MannequinGirl",
+        "rarity": 5
+    },
+    "10000118-11804": {
+        "avataricon": "UI_AvatarIcon_MannequinGirl",
+        "rarity": 5
+    },
+    "10000118-11805": {
+        "avataricon": "UI_AvatarIcon_MannequinGirl",
+        "rarity": 5
+    },
+    "10000118-11806": {
+        "avataricon": "UI_AvatarIcon_MannequinGirl",
+        "rarity": 5
+    },
+    "10000118-11807": {
+        "avataricon": "UI_AvatarIcon_MannequinGirl",
+        "rarity": 5
+    },
+    "10000118-11808": {
+        "avataricon": "UI_AvatarIcon_MannequinGirl",
+        "rarity": 5
+    },
+    "10000119": {
+        "avataricon": "UI_AvatarIcon_Lauma",
+        "rarity": 5
+    },
+    "10000120": {
+        "avataricon": "UI_AvatarIcon_Flins",
+        "rarity": 5
+    },
+    "10000121": {
+        "avataricon": "UI_AvatarIcon_Aino",
+        "rarity": 4
+    },
+    "10000122": {
+        "avataricon": "UI_AvatarIcon_Nefer",
+        "rarity": 5
+    },
+    "10000123": {
+        "avataricon": "UI_AvatarIcon_Durin",
+        "rarity": 5
+    },
+    "10000124": {
+        "avataricon": "UI_AvatarIcon_Jahoda",
+        "rarity": 4
+    },
+    "10000125": {
+        "avataricon": "UI_AvatarIcon_Columbina",
+        "rarity": 5
+    },
+    "10000126": {
+        "avataricon": "UI_AvatarIcon_Zibai",
+        "rarity": 5
+    },
+    "10000127": {
+        "avataricon": "UI_AvatarIcon_Illuga",
+        "rarity": 4
+    },
+    "10000128": {
+        "avataricon": "UI_AvatarIcon_Varka",
+        "rarity": 5
+    }
+}
