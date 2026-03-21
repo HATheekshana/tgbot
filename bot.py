@@ -121,12 +121,17 @@ async def handle_card_generation(callback: types.CallbackQuery):
 
     await callback.answer("⏳ Generating Build Card...")
     
+    # FIX: Use edit_caption because the original message is a photo
     try:
         await callback.message.edit_caption(caption="🎨 Creating your card... this may take 20-40 seconds.")
     except Exception:
+        # Fallback in case the original message wasn't a photo for some reason
         await callback.message.answer("🎨 Creating your card...")
 
+    # ... rest of your payload and aiohttp logic ...
     CARD_API_BASE = "https://gi-card-api.onrender.com"
+    # Show a "loading" alert on the user's screen
+
 
     payload = {
         "uid": uid,
