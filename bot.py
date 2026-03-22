@@ -1114,12 +1114,13 @@ async def cmd_compare(message: types.Message):
     u1, u2 = sender_data['genshin_uid'], target_data['genshin_uid']
     d1, d2 = await asyncio.gather(get_enkadata(u1), get_enkadata(u2))
     
+
     ids1 = {str(c['avatarId']) for c in d1["showAvatarInfoList"]}
     ids2 = {str(c['avatarId']) for c in d2["showAvatarInfoList"]}
     common = ids1.intersection(ids2)
 
     if not common:
-        return await message.answer("No common characters found!")
+        return await message.answer("No common characters found!!")
 
     builder = InlineKeyboardBuilder()
     with open('char.json', 'r') as f:
