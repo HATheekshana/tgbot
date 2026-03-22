@@ -52,12 +52,18 @@ async def get_enkadata(uid):
                 player_info = data.get("playerInfo", {})
                 showcase = player_info.get("showAvatarInfoList", [])
                 return {
+                    "abyssfloor":player_info.get("towerFloorIndex", "Unknown"),
+                    "abysslevel":player_info.get("towerLevelIndex", "Unknown"),
+                    "nickname": player_info.get("nickname", "Unknown"),
+                    "level": player_info.get("level", 0),
+                    "achievements": player_info.get("finishAchievementNum", 0),
                     "worldLevel": player_info.get("worldLevel", 0),
                     "signature": player_info.get("signature", ""),
                     "nameCardId": player_info.get("nameCardId", ""),
                     "showAvatarInfoList": showcase
                 }
-            return {"worldLevel": 0, "signature": "", "nameCardId": "" ,"showAvatarInfoList": []}
+            return {"abyssfloor": "?", "abysslevel": "?", "nickname": "Unknown", "level": 0, "achievements": 0, "worldLevel": 0, "signature": "", "nameCardId": "", "showAvatarInfoList": []}
+
 def calculate_world_level(ar):
     ar = int(ar)
     if ar < 20: return 0
