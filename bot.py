@@ -1122,7 +1122,7 @@ async def cmd_compare(message: types.Message):
         return await message.answer("No common characters found!")
 
     builder = InlineKeyboardBuilder()
-    with open('characters.json', 'r') as f:
+    with open('char.json', 'r') as f:
         char_map = json.load(f)
 
     for cid in list(common)[:18]: # Limit to 18 buttons
