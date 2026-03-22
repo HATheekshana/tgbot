@@ -1124,7 +1124,7 @@ async def cmd_compare(message: types.Message):
     builder = InlineKeyboardBuilder()
     with open('char.json', 'r') as f:
         char_map = json.load(f)
-    comp_img = create_masked_showcase(u1, u2) # You can generate a comparison image here if you want
+    comp_img = await create_masked_showcase(u1, u2) # You can generate a comparison image here if you want
     for cid in list(common)[:18]: # Limit to 18 buttons
         name = char_map.get(cid, {}).get("name", cid)
         builder.button(text=name, callback_data=f"comp:{u1}:{u2}:{cid}")
