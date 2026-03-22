@@ -1,5 +1,4 @@
 import asyncio
-from email import message
 from motor.motor_asyncio import AsyncIOMotorClient
 import logging
 import sys
@@ -1119,23 +1118,17 @@ async def cmd_compare(message: types.Message):
 
 async def show_comparison_menu(event, u1, u2, is_callback=False):
     """Helper function to show the character list (used by command and back button)"""
-    sender_data = await users_col.find_one({"user_id": str(message.from_user.id)})
-
-    target_data = await users_col.find_one({"user_id": str(message.reply_to_message.from_user.id)})
-
-
-
-    if not sender_data or not target_data:
-        return await message.reply("Both users must be /login-ed.")
-    
-    u1, u2 = sender_data['genshin_uid'], target_data['genshin_uid']
-
     d1, d2 = await asyncio.gather(get_enkadata(u1), get_enkadata(u2))
+    
+    # Get common characters from the showcase lists
     ids1 = {str(c['avatarId']) for c in d1["showAvatarInfoList"]}
+
     ids2 = {str(c['avatarId']) for c in d2["showAvatarInfoList"]}
     common = ids1.intersection(ids2)
+
     if not common:
-        return await message.answer("No common characters found!!")
+        msg = "No common characters found in your showcases!"
+        return await event.edit_text(msg) if is_callback else await event.reply(msg)
 
     builder = InlineKeyboardBuilder()
     with open('char.json', 'r') as f:
