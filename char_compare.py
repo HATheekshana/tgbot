@@ -88,7 +88,7 @@ async def compare_characters(uid, uid2, char_id):
     me, them = await get_enkadata(uid), await get_enkadata(uid2)
     me_g, them_g = await get_genshindata(uid), await get_genshindata(uid2)
     
-    with open('characters.json', 'r') as f:
+    with open('char.json', 'r') as f:
         char_map = json.load(f)
 
     active_char_id = str(char_id)
