@@ -1131,7 +1131,7 @@ async def cmd_compare(message: types.Message):
         builder.button(text=name, callback_data=f"comp:{u1}:{u2}:{cid}")
     
     builder.adjust(3)
-    await message.answer_photo(photo=types.BufferedInputFile(comp_img.read(), "compare.png"), caption="Select character:", reply_markup=builder.as_markup())
+    await message.reply_photo(photo=types.BufferedInputFile(comp_img.read(), "compare.png"), caption="Select character:", reply_markup=builder.as_markup())
 
 @dp.callback_query(F.data.startswith("comp:"))
 async def handle_comp(callback: types.CallbackQuery):
@@ -1139,7 +1139,7 @@ async def handle_comp(callback: types.CallbackQuery):
     await callback.answer("Generating...")
     
     img = await compare_characters(int(u1), int(u2), int(cid))
-    await callback.message.answer_photo(photo=types.BufferedInputFile(img.read(), "comp.png"))
+    await callback.message.reply_photo(photo=types.BufferedInputFile(img.read(), "comp.png"))
     await callback.message.delete()
 
 @dp.message(Command("compare"))
