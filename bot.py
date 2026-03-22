@@ -1337,32 +1337,51 @@ async def group_quiz_handler(message: types.Message, bot: Bot):
 @dp.poll_answer()
 async def handle_poll_answer(poll_answer: types.PollAnswer):
     poll_id = poll_answer.poll_id
+    
+    # 1. Check if the poll is managed by the bot
     if poll_id not in active_polls:
         return
 
     data = active_polls[poll_id]
     
-    # Check if correct
+    # 2. Check if the user's answer is correct
+    # poll_answer.option_ids is a list; we check the first (and usually only) selection
     if poll_answer.option_ids[0] == data["correct_id"]:
         elapsed = time.time() - data["start_time"]
+        
+        # Calculate points based on your custom logic
         points = get_quiz_score(data["difficulty"], elapsed)
         
         user_id = str(poll_answer.user.id)
-        chat_id = str(data["chat_id"]) # CRITICAL: MUST BE STRING
         user_name = poll_answer.user.full_name
+        
+        # FIX: Ensure chat_id is a STRING to prevent overwriting or key errors in Mongo
+        chat_id = str(data["chat_id"]) 
 
-        # Update the Object in DB
+        # 3. Update the Database
+        # Using $inc with dot notation (group_quiz.ID) ensures we ADD to the specific group
+        # without affecting other groups saved in the object.
         await users_col.update_one(
             {"user_id": user_id},
             {
-                "$inc": {f"group_quiz.{chat_id}": points},
-                "$set": {"last_known_name": user_name},
-                "$inc": {"wish_count": points}
+                "$inc": {
+                    f"group_quiz.{chat_id}": points, # Increments score for THIS specific group
+                    "wish_count": points,            # Increments global currency
+                    "quiz_points": 1                 # Optional: Track total correct answers
+                },
+                "$set": {
+                    "last_known_name": user_name     # Keeps the username updated
+                }
             },
-            upsert=True
+            upsert=True # Creates the document if the user is new
         )
         
+        # 4. Update the local tracking for this specific poll instance
+        if "winners" not in data:
+            data["winners"] = []
         data["winners"].append((user_name, points))
+
+        print(f"✅ Saved {points} pts for {user_name} in group {chat_id}")
 # --- LEADERBOARD COMMAND ---
 # ---------------- Main ----------------
 async def main():
