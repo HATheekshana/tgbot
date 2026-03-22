@@ -16,171 +16,126 @@ with open('char.json', 'r') as f:
     CHARACTER_MAP = json.load(f)
 
 async def get_character_data(uid):
-    # 1. Fetch data from Enka only (no Hoyolab needed)
     user_info_enka = await get_enkadata(uid)
     showcase_items = user_info_enka.get("showAvatarInfoList", [])
     
-    # 2. Handle Empty Showcase
     if not showcase_items:
         print(f"⚠️ No characters found in Enka showcase for UID {uid}.")
         return []
 
     final_list = []
-
-    # 3. Loop through Enka items and match to your JSON
     for item in showcase_items:
-        aid = str(item.get("avatarId")) # JSON keys are strings
-        
-        # Look up the ID in our mapping
+        aid = str(item.get("avatarId"))
         char_info = CHARACTER_MAP.get(aid)
         
         if char_info:
             icon_name = char_info["avataricon"]
-            
-            # Build the final object
-            matched_info = {
-                "id": int(aid),
-                "rarity": char_info["rarity"],
-                "icon": f"https://enka.network/ui/{icon_name}.png", # Direct link
-                "level": item.get("propMap", {}).get("4001", {}).get("val", 1), # Enka level path
-                "constellations": len(item.get("talentIdList", [])) 
-            }
-            final_list.append(matched_info)
-        else:
-            # Fallback if the character is brand new and not in your JSON yet
             final_list.append({
                 "id": int(aid),
-                "rarity": 0,
+                "rarity": char_info["rarity"],
+                "icon": f"https://enka.network/ui/{icon_name}.png",
+                "level": item.get("propMap", {}).get("4001", {}).get("val", 1),
+                "constellations": len(item.get("talentIdList", [])) 
+            })
+        else:
+            final_list.append({
+                "id": int(aid),
+                "rarity": 4,
                 "icon": "https://enka.network/ui/UI_AvatarIcon_Side_None.png",
                 "level": 0
             })
-
-    print(f"✅ Successfully processed {len(final_list)} characters using local JSON.")
     return final_list
+
 async def get_namecard_image_url(card_id):
-    # 1. Load the JSON file
     with open('data.json', 'r') as file:
         namecard_data = json.load(file)
-    
-    # 2. Search for the ID (convert card_id to string since JSON keys are strings)
     card_info = namecard_data.get(str(card_id))
-    
     if card_info:
         asset_name = card_info["icon"]
-        # 3. Build the URL for Enka.Network
         return f"https://enka.network/ui/{asset_name}.png"
-    else:
-        # Fallback to a default namecard if ID is not found
-        return "https://enka.network/ui/UI_NameCardPic_0_P.png"
-
+    return "https://enka.network/ui/UI_NameCardPic_0_P.png"
 
 async def create_genshin_profile(uid):
-    user_info = await get_player_full_data(uid)
-    user_info_enka = await get_enkadata(uid)
-    avatar_url = user_info['in_game_avatar']
+    try:
+        user_info = await get_player_full_data(uid)
+        avatar_url = user_info['in_game_avatar']
+    except Exception:
+        avatar_url = "https://enka.network/ui/UI_AvatarIcon_PlayerBoy.png"
 
-    level = str(user_info['level'])
-    world_level = str(user_info_enka['worldLevel'])
-    achivemnts = str(user_info['achievements'])
-    nickname = str(user_info['nickname'])
-    abyss = str(user_info['spiral_abyss'])
-    signature = str(user_info_enka['signature'])
-    namecard_id = user_info_enka['nameCardId']
-    namecard_url = await get_namecard_image_url(namecard_id)  # Example card ID, replace with actual ID as needed
+    user_info_enka = await get_enkadata(uid)
     
-    async with aiohttp.ClientSession() as session:
-        async with session.get(avatar_url) as response:
-            if response.status == 200:
-                content = await response.read()
-                # Load the downloaded bytes as a Pillow Image
-                avatar = Image.open(BytesIO(content)).convert("RGBA")
-            else:
-                print(f"❌ Failed to download avatar. Status: {response.status}")
-                return
-    async with aiohttp.ClientSession() as session:
-        async with session.get(namecard_url) as response:
-            if response.status == 200:
-                content = await response.read()
-                # Load the downloaded bytes as a Pillow Image
-                namecard = Image.open(BytesIO(content)).convert("RGBA")
-            else:
-                print(f"❌ Failed to download namecard. Status: {response.status}")
-                return        
+    # 1. Image loading and Setup
     base = Image.open("PROFILE-BACKGROUND.png").convert("RGBA")
     frame = Image.open("AVATAR.png").convert("RGBA")
     banner_frame = Image.open("BANNER_FRAME.png").convert("RGBA")
-    namecard = ImageOps.fit(namecard, (528, 201), Image.Resampling.LANCZOS)
     
-    mask = Image.open("AVATAR_MASKA.png").convert("L")
-    char_mask = Image.open("CHARTER_MASK.png").convert("L")
-    mask = ImageOps.invert(mask)
-    char_mask = ImageOps.invert(char_mask)
-    
-    avatar = ImageOps.fit(avatar, mask.size, centering=(0.5, 0.5))
-    clean_avatar = Image.new("RGBA", mask.size, (0, 0, 0, 0))
-    clean_avatar.paste(avatar, (0, 0), mask)
+    mask = ImageOps.invert(Image.open("AVATAR_MASKA.png").convert("L"))
+    char_mask = ImageOps.invert(Image.open("CHARTER_MASK.png").convert("L"))
 
-    
-    base.paste(namecard, (35, 15), namecard)
+    async with aiohttp.ClientSession() as session:
+        # Fetch Namecard
+        namecard_url = await get_namecard_image_url(user_info_enka['nameCardId'])
+        async with session.get(namecard_url) as resp:
+            namecard_img = Image.open(BytesIO(await resp.read())).convert("RGBA")
+            namecard_img = ImageOps.fit(namecard_img, (528, 201), Image.Resampling.LANCZOS)
+        
+        # Fetch Avatar
+        async with session.get(avatar_url) as resp:
+            avatar_img = Image.open(BytesIO(await resp.read())).convert("RGBA")
+            avatar_img = ImageOps.fit(avatar_img, mask.size, centering=(0.5, 0.5))
+            clean_avatar = Image.new("RGBA", mask.size, (0, 0, 0, 0))
+            clean_avatar.paste(avatar_img, (0, 0), mask)
+
+    # 2. Layering Part 1: Background Elements
+    base.paste(namecard_img, (35, 15), namecard_img)
+    base.paste(banner_frame, (35, 15), banner_frame)
     base.paste(frame, (220, 100), frame)
     base.paste(clean_avatar, (220, 100), clean_avatar)
-    base.paste(banner_frame, (35, 15), banner_frame)
+    
+
+    # 3. Layering Part 2: Characters (Processed after background frames)
     final_list = await get_character_data(uid)
-    print(final_list)
     async with aiohttp.ClientSession() as session:
-        for i, char in enumerate(final_list):
-            print(char['icon'])
+        for i, char in enumerate(final_list): # Limiting to 8 to avoid grid overflow
             async with session.get(char["icon"]) as response:
                 if response.status == 200:
-                    content = await response.read()
-                    charimage = Image.open(BytesIO(content)).convert("RGBA")
-                    
-                    # Apply mask and fit
+                    char_content = await response.read()
+                    charimage = Image.open(BytesIO(char_content)).convert("RGBA")
                     charimage = ImageOps.fit(charimage, char_mask.size, centering=(0.5, 0.5))
+                    
                     clean_char = Image.new("RGBA", char_mask.size, (0, 0, 0, 0))
                     clean_char.paste(charimage, (0, 0), char_mask)
                     
-                    # Grid Math
-                    col = i % 4
-                    row = i // 4
-                    x = 615 + (col * 150)
-                    y = 290 + (row * 150)
-                    if char['rarity'] == 5:
-                        char_bg = Image.open("CHARTER_5.png").convert("RGBA")
-                    else:
-                        char_bg = Image.open("CHARTER_4.png").convert("RGBA")
+                    x = 615 + ((i % 4) * 150)
+                    y = 290 + ((i // 4) * 150)
+                    
+                    bg_file = "CHARTER_5.png" if char['rarity'] == 5 else "CHARTER_4.png"
+                    char_bg = Image.open(bg_file).convert("RGBA")
+                    
                     base.paste(char_bg, (x, y), char_bg)
                     base.paste(clean_char, (x, y), clean_char)
-                else:
-                    print(f"❌ Skip {char['name']}: Status {response.status}")
 
+    # 4. Text Overlay
     draw = ImageDraw.Draw(base)
-
     try:
-        font_small = ImageFont.truetype("Genshin_Impact.ttf", 20)
-        font_xsmall = ImageFont.truetype("Genshin_Impact.ttf", 18)
-        font_big = ImageFont.truetype("Genshin_Impact.ttf", 23)
+        f_big = ImageFont.truetype("Genshin_Impact.ttf", 23)
+        f_small = ImageFont.truetype("Genshin_Impact.ttf", 20)
+        f_xsmall = ImageFont.truetype("Genshin_Impact.ttf", 18)
     except:
-        font_small = ImageFont.load_default()
+        f_big = f_small = f_xsmall = ImageFont.load_default()
 
-    draw.text((300, 290), nickname, font=font_big, fill=(135, 110, 95),anchor="mm")
+    draw.text((300, 290), str(user_info_enka['nickname']), font=f_big, fill=(135, 110, 95), anchor="mm")
+    draw.text((90, 365), f"AR: {user_info_enka['level']}", font=f_small, fill=(135, 110, 95))
+    draw.text((90, 415), f"World Level: {user_info_enka['worldLevel']}", font=f_small, fill=(135, 110, 95))
+    draw.text((75, 475), str(user_info_enka['signature']), font=f_small, fill=(135, 110, 95))
 
-    draw.text((90, 365), "AR:", font=font_small, fill=(135, 110, 95))
-    draw.text((450, 365), level, font=font_small, fill=(135, 110, 95))
+    draw.text((660, 244), "CHARACTERS", font=f_big, fill=(135, 110, 95))
+    draw.text((720, 140), "ACHIEVEMENTS", font=f_xsmall, fill=(135, 110, 95))
+    draw.text((760, 175), str(user_info_enka['achievements']), font=f_big, fill=(135, 110, 95))
 
-    draw.text((90, 415), "World Level:", font=font_small, fill=(135, 110, 95))
-    draw.text((460, 415), world_level, font=font_small, fill=(135, 110, 95))
-
-    draw.text((75, 475),signature, font=font_small, fill=(135, 110, 95))
-
-
-    draw.text((660, 244), "CHARACTERS", font= font_big, fill=(135, 110, 95))
-
-    draw.text((720, 140), "ACHIEVEMENTS", font= font_xsmall, fill=(135, 110, 95))
-    draw.text((760, 175), achivemnts, font=font_big, fill=(135, 110, 95))
-
-    draw.text((1010, 140), "SPIRAL ABYSS", font= font_xsmall, fill=(135, 110, 95))
-    draw.text((1050, 175), abyss, font=font_big, fill=(135, 110, 95))
+    abyss_text = f"{user_info_enka['abyssfloor']}-{user_info_enka['abysslevel']}"
+    draw.text((1010, 140), "SPIRAL ABYSS", font=f_xsmall, fill=(135, 110, 95))
+    draw.text((1050, 175), abyss_text, font=f_big, fill=(135, 110, 95))
 
     buffer = BytesIO()
 
