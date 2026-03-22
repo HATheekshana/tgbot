@@ -11,6 +11,7 @@ import os
 import json
 import time
 from aiogram import types, F
+from char_compare import compare_characters
 from database import users_col, cluster, groups_col
 from enka_api import fetch_enka_data
 from aiogram.filters import Command
@@ -1094,7 +1095,77 @@ async def my_profile(message: types.Message):
     else:
         # Fallback if image generation fails
         await message.answer(msg, parse_mode="HTML")
+from aiogram import types, F
+from aiogram.utils.keyboard import InlineKeyboardBuilder
 
+# 1. THE COMMAND HANDLER
+@dp.message(F.text.startswith("/comparechar")) # Use @dp if in main file
+async def cmd_compare(message: types.Message):
+    if not message.reply_to_message:
+        return await message.answer("Please reply to someone's message to compare.")
+    
+    sender_id = str(message.from_user.id)
+    target_id = str(message.reply_to_message.from_user.id)
+    
+    # Database Lookup
+    sender_data = await users_col.find_one({"user_id": sender_id})
+    target_data = await users_col.find_one({"user_id": target_id})
+
+    if not sender_data or not target_data:
+        return await message.reply("Both users must be logged in to compare.")
+
+    uid_me = sender_data['genshin_uid']
+    uid_them = target_data['genshin_uid']
+
+    # Fetch data and find common characters
+    data_me, data_them = await asyncio.gather(get_enkadata(uid_me), get_enkadata(uid_them))
+    
+    ids_me = {str(c['avatarId']) for c in data_me.get("avatarInfoList", [])}
+    ids_them = {str(c['avatarId']) for c in data_them.get("avatarInfoList", [])}
+    common_ids = ids_me.intersection(ids_them)
+
+    if not common_ids:
+        return await message.answer("No common characters found in your showcases!")
+
+    # Grid Creation
+    builder = InlineKeyboardBuilder()
+    with open('characters.json', 'r') as f:
+        char_map = json.load(f)
+
+    for char_id in common_ids:
+        name = char_map.get(str(char_id), {}).get("name", f"ID: {char_id}")
+        builder.button(text=name, callback_data=f"comp:{uid_me}:{uid_them}:{char_id}")
+    
+    builder.adjust(3) 
+    await message.answer("Select a character to compare:", reply_markup=builder.as_markup())
+
+
+# 2. THE CALLBACK HANDLER
+@dp.callback_query(F.data.startswith("comp:")) # Match the decorator (dp or router)
+async def handle_comparison_click(callback: types.CallbackQuery):
+    _, uid1, uid2, char_id = callback.data.split(":")
+    
+    # Immediate feedback (stops the loading spinner on the button)
+    await callback.answer("Generating image... please wait.")
+    
+    # Edit the message to show "Processing" so the user doesn't click twice
+    loading_msg = await callback.message.edit_text("⏳ Generating comparison image...")
+
+    try:
+        # Generate image using your unified function
+        image_buffer = await compare_characters(int(uid1), int(uid2), int(char_id))
+        
+        input_file = types.BufferedInputFile(image_buffer.getvalue(), filename="compare.png")
+        
+        # Send the final image
+        await callback.message.answer_photo(photo=input_file)
+        
+        # Delete the "Loading" message and the grid
+        await loading_msg.delete()
+        
+    except Exception as e:
+        await callback.message.answer(f"Error generating image: {e}")
+        print(f"Drawing Error: {e}")
 
 @dp.message(Command("compare"))
 async def cmd_compare_reply(message: types.Message):
