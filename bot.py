@@ -1101,47 +1101,85 @@ from aiogram.utils.keyboard import InlineKeyboardBuilder
 # 1. THE COMMAND HANDLER
 @dp.message(F.text.startswith("/comparechar"))
 async def cmd_compare(message: types.Message):
+    # Ensure it's a reply to someone
     if not message.reply_to_message:
-        return await message.answer("Reply to a user to compare characters.")
+        return await message.reply("Please reply to a user's message to compare characters.")
     
-    # Replace with your DB logic
     sender_data = await users_col.find_one({"user_id": str(message.from_user.id)})
     target_data = await users_col.find_one({"user_id": str(message.reply_to_message.from_user.id)})
 
     if not sender_data or not target_data:
-        return await message.reply("Both users must be /login-ed.")
+        return await message.reply("Both users must be registered in the database.")
 
     u1, u2 = sender_data['genshin_uid'], target_data['genshin_uid']
+    
+    # Show the character selection menu
+    await show_comparison_menu(message, u1, u2)
+
+async def show_comparison_menu(event, u1, u2, is_callback=False):
+    """Helper function to show the character list (used by command and back button)"""
     d1, d2 = await asyncio.gather(get_enkadata(u1), get_enkadata(u2))
     
-
-    ids1 = {str(c['avatarId']) for c in d1["showAvatarInfoList"]}
-    ids2 = {str(c['avatarId']) for c in d2["showAvatarInfoList"]}
+    # Get common characters from the showcase lists
+    ids1 = {str(c) for c in d1.get("playerInfo", {}).get("showAvatarInfoList", [])}
+    ids2 = {str(c) for c in d2.get("playerInfo", {}).get("showAvatarInfoList", [])}
     common = ids1.intersection(ids2)
 
     if not common:
-        return await message.answer("No common characters found!!")
+        msg = "No common characters found in your showcases!"
+        return await event.edit_text(msg) if is_callback else await event.reply(msg)
 
     builder = InlineKeyboardBuilder()
-    with open('char.json', 'r') as f:
+    with open('characters.json', 'r') as f:
         char_map = json.load(f)
-    comp_img = await create_masked_showcase(u1, u2) # You can generate a comparison image here if you want
-    for cid in list(common)[:18]: # Limit to 18 buttons
-        name = char_map.get(cid, {}).get("name", cid)
+
+    for cid in list(common)[:18]: 
+        name = char_map.get(str(cid), {}).get("name", f"ID: {cid}")
         builder.button(text=name, callback_data=f"comp:{u1}:{u2}:{cid}")
     
     builder.adjust(3)
-    await message.reply_photo(photo=types.BufferedInputFile(comp_img.read(), "compare.png"), caption="Select character:", reply_markup=builder.as_markup())
+    text = "Character Comparison\nSelect a common character to compare stats:"
+    
+    if is_callback:
+        # Use edit_message_media if you want to swap the image back, 
+        # but for simplicity, we delete and send new or just edit text
+        await event.message.delete()
+        await event.message.answer(text, reply_markup=builder.as_markup())
+    else:
+        await event.reply(text, reply_markup=builder.as_markup())
 
 @dp.callback_query(F.data.startswith("comp:"))
 async def handle_comp(callback: types.CallbackQuery):
-    _, u1, u2, cid = callback.data.split(":")
-    await callback.answer("Generating...")
+    data = callback.data.split(":")
+    u1, u2, cid = data[1], data[2], data[3]
     
-    img = await compare_characters(int(u1), int(u2), int(cid))
-    await callback.message.reply_photo(photo=types.BufferedInputFile(img.read(), "comp.png"))
+    await callback.answer("Fetching data and generating image...")
+
+    # Generate your unified comparison image
+    # Note: Ensure create_unified_comparison returns a BytesIO object
+    img_bytes = await compare_characters(int(u1), int(u2), int(cid))
+    
+    # Build the 'Back' button
+    back_builder = InlineKeyboardBuilder()
+    back_builder.button(text="Back to List", callback_data=f"back_comp:{u1}:{u2}")
+    
+    # Send as a reply to the callback's message context
+    await callback.message.answer_photo(
+        photo=types.BufferedInputFile(img_bytes.read(), filename="comparison.png"),
+        caption=f"Comparison generated for Character",
+        reply_markup=back_builder.as_markup()
+    )
+    
+    # Delete the selection menu to keep the chat clean
     await callback.message.delete()
 
+@dp.callback_query(F.data.startswith("back_comp:"))
+async def handle_back_button(callback: types.CallbackQuery):
+    _, u1, u2 = callback.data.split(":")
+    await callback.answer("Returning to list...")
+    
+    # Re-use the menu helper
+    await show_comparison_menu(callback, u1, u2, is_callback=True)
 @dp.message(Command("compare"))
 async def cmd_compare_reply(message: types.Message):
     if not message.reply_to_message:
