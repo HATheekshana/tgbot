@@ -11,13 +11,13 @@ COOKIES = {
 }
 
 ELEMENT_BG_MAP = {
-    "Pyro": "asstests/backgrounds/pyro.png",
-    "Hydro": "asstests/backgrounds/hydro.png",
-    "Anemo": "asstests/backgrounds/anemo.png",
-    "Electro": "asstests/backgrounds/electro.png",
-    "Dendro": "asstests/backgrounds/dendro.png",
-    "Cryo": "asstests/backgrounds/cryo.png",
-    "Geo": "asstests/backgrounds/geo.png"
+    "Pyro": "asstests/backgrounds/PYRO.png",
+    "Hydro": "asstests/backgrounds/HYDRO.png",
+    "Anemo": "asstests/backgrounds/ANEMO.png",
+    "Electro": "asstests/backgrounds/ELECTRO.png",
+    "Dendro": "asstests/backgrounds/DENDRO.png",
+    "Cryo": "asstests/backgrounds/CRYO.png",
+    "Geo": "asstests/backgrounds/GEO.png"
 }
 
 client = genshin.Client(COOKIES)
