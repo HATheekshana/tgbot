@@ -1099,73 +1099,47 @@ from aiogram import types, F
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 
 # 1. THE COMMAND HANDLER
-@dp.message(F.text.startswith("/comparechar")) # Use @dp if in main file
+@dp.message(F.text.startswith("/comparechar"))
 async def cmd_compare(message: types.Message):
     if not message.reply_to_message:
-        return await message.answer("Please reply to someone's message to compare.")
+        return await message.answer("Reply to a user to compare characters.")
     
-    sender_id = str(message.from_user.id)
-    target_id = str(message.reply_to_message.from_user.id)
-    
-    # Database Lookup
-    sender_data = await users_col.find_one({"user_id": sender_id})
-    target_data = await users_col.find_one({"user_id": target_id})
+    # Replace with your DB logic
+    sender_data = await users_col.find_one({"user_id": str(message.from_user.id)})
+    target_data = await users_col.find_one({"user_id": str(message.reply_to_message.from_user.id)})
 
     if not sender_data or not target_data:
-        return await message.reply("Both users must be logged in to compare.")
+        return await message.reply("Both users must be /login-ed.")
 
-    uid_me = sender_data['genshin_uid']
-    uid_them = target_data['genshin_uid']
-
-    # Fetch data and find common characters
-    data_me, data_them = await asyncio.gather(get_enkadata(uid_me), get_enkadata(uid_them))
+    u1, u2 = sender_data['genshin_uid'], target_data['genshin_uid']
+    d1, d2 = await asyncio.gather(get_enkadata(u1), get_enkadata(u2))
     
-    ids_me = {str(c['avatarId']) for c in data_me.get("avatarInfoList", [])}
-    ids_them = {str(c['avatarId']) for c in data_them.get("avatarInfoList", [])}
-    common_ids = ids_me.intersection(ids_them)
+    ids1 = {str(c['avatarId']) for c in d1["showAvatarInfoList"]}
+    ids2 = {str(c['avatarId']) for c in d2["showAvatarInfoList"]}
+    common = ids1.intersection(ids2)
 
-    if not common_ids:
-        return await message.answer("No common characters found in your showcases!")
+    if not common:
+        return await message.answer("No common characters found!")
 
-    # Grid Creation
     builder = InlineKeyboardBuilder()
     with open('characters.json', 'r') as f:
         char_map = json.load(f)
 
-    for char_id in common_ids:
-        name = char_map.get(str(char_id), {}).get("name", f"ID: {char_id}")
-        builder.button(text=name, callback_data=f"comp:{uid_me}:{uid_them}:{char_id}")
+    for cid in list(common)[:18]: # Limit to 18 buttons
+        name = char_map.get(cid, {}).get("name", cid)
+        builder.button(text=name, callback_data=f"comp:{u1}:{u2}:{cid}")
     
-    builder.adjust(3) 
-    await message.answer("Select a character to compare:", reply_markup=builder.as_markup())
+    builder.adjust(3)
+    await message.answer("Select character:", reply_markup=builder.as_markup())
 
-
-# 2. THE CALLBACK HANDLER
-@dp.callback_query(F.data.startswith("comp:")) # Match the decorator (dp or router)
-async def handle_comparison_click(callback: types.CallbackQuery):
-    _, uid1, uid2, char_id = callback.data.split(":")
+@dp.callback_query(F.data.startswith("comp:"))
+async def handle_comp(callback: types.CallbackQuery):
+    _, u1, u2, cid = callback.data.split(":")
+    await callback.answer("Generating...")
     
-    # Immediate feedback (stops the loading spinner on the button)
-    await callback.answer("Generating image... please wait.")
-    
-    # Edit the message to show "Processing" so the user doesn't click twice
-    loading_msg = await callback.message.edit_text("⏳ Generating comparison image...")
-
-    try:
-        # Generate image using your unified function
-        image_buffer = await compare_characters(int(uid1), int(uid2), int(char_id))
-        
-        input_file = types.BufferedInputFile(image_buffer.getvalue(), filename="compare.png")
-        
-        # Send the final image
-        await callback.message.answer_photo(photo=input_file)
-        
-        # Delete the "Loading" message and the grid
-        await loading_msg.delete()
-        
-    except Exception as e:
-        await callback.message.answer(f"Error generating image: {e}")
-        print(f"Drawing Error: {e}")
+    img = await compare_characters(int(u1), int(u2), int(cid))
+    await callback.message.answer_photo(photo=types.BufferedInputFile(img.read(), "comp.png"))
+    await callback.message.delete()
 
 @dp.message(Command("compare"))
 async def cmd_compare_reply(message: types.Message):
