@@ -4,7 +4,7 @@ import json
 from io import BytesIO
 from genshin_utils import get_player_full_data, get_enkadata
 
-with open('characters.json', 'r') as f:
+with open('char.json', 'r') as f:
     CHARACTER_MAP = json.load(f)
 
 async def get_character_data(uid):
