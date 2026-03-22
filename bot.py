@@ -1,4 +1,5 @@
 import asyncio
+from email import message
 from motor.motor_asyncio import AsyncIOMotorClient
 import logging
 import sys
@@ -1118,19 +1119,26 @@ async def cmd_compare(message: types.Message):
 
 async def show_comparison_menu(event, u1, u2, is_callback=False):
     """Helper function to show the character list (used by command and back button)"""
-    d1, d2 = await asyncio.gather(get_enkadata(u1), get_enkadata(u2))
-    
-    # Get common characters from the showcase lists
-    ids1 = {str(c) for c in d1.get("playerInfo", {}).get("showAvatarInfoList", [])}
-    ids2 = {str(c) for c in d2.get("playerInfo", {}).get("showAvatarInfoList", [])}
-    common = ids1.intersection(ids2)
+    sender_data = await users_col.find_one({"user_id": str(message.from_user.id)})
 
+    target_data = await users_col.find_one({"user_id": str(message.reply_to_message.from_user.id)})
+
+
+
+    if not sender_data or not target_data:
+        return await message.reply("Both users must be /login-ed.")
+    
+    u1, u2 = sender_data['genshin_uid'], target_data['genshin_uid']
+
+    d1, d2 = await asyncio.gather(get_enkadata(u1), get_enkadata(u2))
+    ids1 = {str(c['avatarId']) for c in d1["showAvatarInfoList"]}
+    ids2 = {str(c['avatarId']) for c in d2["showAvatarInfoList"]}
+    common = ids1.intersection(ids2)
     if not common:
-        msg = "No common characters found in your showcases!"
-        return await event.edit_text(msg) if is_callback else await event.reply(msg)
+        return await message.answer("No common characters found!!")
 
     builder = InlineKeyboardBuilder()
-    with open('characters.json', 'r') as f:
+    with open('char.json', 'r') as f:
         char_map = json.load(f)
 
     for cid in list(common)[:18]: 
