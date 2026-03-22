@@ -139,11 +139,8 @@ async def create_genshin_profile(uid):
 
     buffer = BytesIO()
 
-# 2. Save the image into the buffer instead of a file
     base.save(buffer, format="PNG")
 
-    # 3. Move the 'cursor' to the start of the buffer so the bot can read it
     buffer.seek(0)
 
-    # 4. Return the buffer
     return buffer

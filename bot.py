@@ -14,6 +14,7 @@ from aiogram import types, F
 from database import users_col, cluster, groups_col
 from enka_api import fetch_enka_data
 from aiogram.filters import Command
+from comapre_image import create_masked_showcase
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from datetime import datetime, timedelta
@@ -1059,10 +1060,10 @@ async def my_profile(message: types.Message):
 
     msg = "<b>PLAYER INFO</b>\n"
     msg += "─────────୨ৎ─────────\n"
-    msg += f"𖹭 <b>{user_info['nickname']}</b> | UID: <code>{db_uid}</code>\n"
-    msg += f"𖹭 <b>AR {user_info['level']}</b> | WL : {user_info_enka['worldLevel']}\n"
-    msg += f"𖹭 <b>Achievements:</b> {user_info['achievements']}\n"
-    msg+=f"𖹭 <b>Days:</b> {user_info['days_active']}\n"
+    msg += f"𖹭 <b>{user_info_enka['nickname']}</b> | UID: <code>{db_uid}</code>\n"
+    msg += f"𖹭 <b>AR {user_info_enka['level']}</b> | WL : {user_info_enka['worldLevel']}\n"
+    msg += f"𖹭 <b>Achievements:</b> {user_info_enka['achievements']}\n"
+    msg+=f"𖹭 <b>Days:</b> {user_info_enka['days_active']}\n"
     if user_info_enka['signature']:
         msg += f"<i>\"{user_info_enka['signature']}\"</i>\n"
         
@@ -1098,27 +1099,51 @@ async def my_profile(message: types.Message):
 @dp.message(Command("compare"))
 async def cmd_compare_reply(message: types.Message):
     if not message.reply_to_message:
-        return await message.reply("❌ Please <b>reply</b> to a message with <code>/compare</code>", parse_mode="HTML")
+        return await message.reply("Please <b>reply</b> to a message with <code>/compare</code>", parse_mode="HTML")
 
-    sender_id, target_id = str(message.from_user.id), str(message.reply_to_message.from_user.id)
+    sender_id = str(message.from_user.id)
+    target_id = str(message.reply_to_message.from_user.id)
+    
     sender_data = await users_col.find_one({"user_id": sender_id})
     target_data = await users_col.find_one({"user_id": target_id})
 
     if not sender_data or not target_data:
-        return await message.reply("❌ Both users must be /login-ed to compare.")
+        return await message.reply("Both users must be /login-ed to compare.")
 
-    # Shared UID string
-    uids = f"{sender_data['genshin_uid']}_{target_data['genshin_uid']}"
-    
-    builder = InlineKeyboardBuilder()
-    builder.row(types.InlineKeyboardButton(text="𓊝 Compare Exploration", callback_data=f"comp_expl_{uids}"))
-    builder.row(types.InlineKeyboardButton(text="𖨆 Compare Profile Stats", callback_data=f"comp_prof_{uids}"))
+    # Show a "Loading" message so the user knows the image is being generated
+    status_msg = await message.answer("Generating comparison showcase...")
 
-    await message.answer(
-        f"⚔ <b>Comparison Menu</b>\nComparing with <b>{message.reply_to_message.from_user.first_name}</b>",
-        reply_markup=builder.as_markup(),
-        parse_mode="HTML"
-    )
+    try:
+        # 1. Generate the image buffer using your previous function
+        # Using the genshin_uids stored in your database
+        uid1 = sender_data['genshin_uid']
+        uid2 = target_data['genshin_uid']
+        
+        photo_buffer = await create_masked_showcase(uid1, uid2)
+        
+        # 2. Wrap the buffer in an InputFile
+        photo = BufferedInputFile(photo_buffer.read(), filename="compare.png")
+
+        # 3. Create the keyboard
+        uids = f"{uid1}_{uid2}"
+        builder = InlineKeyboardBuilder()
+        builder.row(types.InlineKeyboardButton(text="𓊝 Compare Exploration", callback_data=f"comp_expl_{uids}"))
+        builder.row(types.InlineKeyboardButton(text="𖨆 Compare Profile Stats", callback_data=f"comp_prof_{uids}"))
+
+        # 4. Send the photo with the menu as a caption
+        await message.answer_photo(
+            photo=photo,
+            caption=f"⚔ <b>Comparison Menu</b>\nComparing with <b>{message.reply_to_message.from_user.first_name}</b>",
+            reply_markup=builder.as_markup(),
+            parse_mode="HTML"
+        )
+        
+        # Delete the "Loading" message
+        await status_msg.delete()
+
+    except Exception as e:
+        print(f"Error generating comparison: {e}")
+        await status_msg.edit_text("❌ Failed to generate comparison image. Please ensure both showcases are public.")
 # Helper to handle "N/A" or missing stats
 def to_int(val):
     if val is None or str(val).strip().upper() == "N/A" or str(val).strip() == "":
