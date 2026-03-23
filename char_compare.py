@@ -149,6 +149,7 @@ async def compare_characters(uid, uid2, char_id):
         font = ImageFont.truetype("Genshin_Impact.ttf", 23)
         font_big = ImageFont.truetype("Genshin_Impact.ttf", 28)
         font_small = ImageFont.truetype("Genshin_Impact.ttf", 20)
+        font_xsmall = ImageFont.truetype("Genshin_Impact.ttf", 16)
         
     except: 
         font = ImageFont.load_default()
@@ -226,7 +227,7 @@ async def compare_characters(uid, uid2, char_id):
             weapon_name = get_weapon_name(w_info['hash'])
             
             # --- Draw Weapon Name ---
-            draw.text((pos[0] + 240, 245), weapon_name, font=font_small, fill=(255, 255, 255), anchor="mm")
+            draw.text((pos[0] + 240, 245), weapon_name, font=font_xsmall, fill=(0, 0, 0), anchor="mm")
             
             # --- Draw Base ATK and Sub Stat Boxes ---
             w_stats_list = w_info.get("stats", [])
