@@ -4,20 +4,29 @@ import aiohttp
 import json
 import genshin
 from io import BytesIO
-
+W_STAT_ICONS = {
+        "FIGHT_PROP_BASE_ATTACK": "asstests/icons/atk.png",
+        "FIGHT_PROP_CHARGE_EFFICIENCY": "asstests/icons/er.png",
+        "FIGHT_PROP_ELEMENT_MASTERY": "asstests/icons/em.png",
+        "FIGHT_PROP_CRITICAL": "asstests/icons/cr.png",
+        "FIGHT_PROP_CRITICAL_HURT": "asstests/icons/cd.png",
+        "FIGHT_PROP_ATTACK_PERCENT": "asstests/icons/atk.png",
+        "FIGHT_PROP_HP_PERCENT": "asstests/icons/hp.png",
+        "FIGHT_PROP_DEFENSE_PERCENT": "asstests/icons/def.png"
+    }
 COOKIES = {
     "ltuid_v2": "471000302",
     "ltoken_v2": "v2_CAISDGM5b3FhcTNzM2d1OBokZTFmZTViNmItZDgxOS00MzNlLWJiZDktYWJkMTEzMWY1ZmY0ILaq780GKNa-zZEGMO7Jy-ABQgtiYnNfb3ZlcnNlYVhqagJTRw.NtW7aQAAAAAB.MEUCIGXUWYTB1bk4uUPg-Mwv8mZ6fXGUPvhKlkks9aizJCKVAiEA5ukOrLn7OhrY4JKtlMzZEXWCY-f-lCsBnIESDT_xbpY"
 }
 
 ELEMENT_BG_MAP = {
-    "Pyro": "asstests/backgrounds/PYRO.png",
-    "Hydro": "asstests/backgrounds/HYDRO.png",
-    "Anemo": "asstests/backgrounds/ANEMO.png",
-    "Electro": "asstests/backgrounds/ELECTRO.png",
-    "Dendro": "asstests/backgrounds/DENDRO.png",
-    "Cryo": "asstests/backgrounds/CRYO.png",
-    "Geo": "asstests/backgrounds/GEO.png"
+    "Pyro": "asstests/backgrounds/pyro.png",
+    "Hydro": "asstests/backgrounds/hydro.png",
+    "Anemo": "asstests/backgrounds/anemo.png",
+    "Electro": "asstests/backgrounds/electro.png",
+    "Dendro": "asstests/backgrounds/dendro.png",
+    "Cryo": "asstests/backgrounds/cryo.png",
+    "Geo": "asstests/backgrounds/geo.png"
 }
 
 client = genshin.Client(COOKIES)
@@ -60,10 +69,50 @@ def extract_char_stats(avatar_list, char_id, element):
         if str(char.get("avatarId")) == str(char_id):
             p = char.get("fightPropMap", {})
             friendship = char.get("fetterInfo", {}).get("expLevel", 1)
+            
+            # --- WEAPON EXTRACTION ---
+            weapon_info = {}
+            equips = char.get("equipList", [])
+            for item in equips:
+                flat_data = item.get("flat", {})
+                if item.get("weapon"):
+                    weapon_data = item.get("weapon")
+                    weapon_info["id"] = item.get("itemId")
+                    weapon_info["level"] = weapon_data.get("level")
+                    weapon_info["icon"] = flat_data.get("icon") 
+                    weapon_info["hash"] = flat_data.get("nameTextMapHash")
+                    weapon_info["rank"] = flat_data.get("rankLevel")
+                    affix_map = weapon_data.get("affixMap", {})
+                    if affix_map:
+                        raw_value = list(affix_map.values())[0]
+                        refinement = raw_value + 1
+                    else:
+                        refinement = 1
+
+                    # Affix level 0 = Refinement 1
+                    weapon_info["refinement"] = refinement
+                    
+                    # --- ADDED: Extract Base ATK and Sub Stats ---
+                    w_stats = []
+                    for s in flat_data.get("weaponStats", []):
+                        w_stats.append({
+                            "prop": s.get("appendPropId"),
+                            "val": s.get("statValue")
+                        })
+                    weapon_info["stats"] = w_stats
+                    break
+
             return {
-                "friendship": friendship,"hp": get_prop(p, 2000), "atk": get_prop(p, 2001), "def": get_prop(p, 2002),
-                "em": get_prop(p, 28), "cr": get_prop(p, 20) * 100, "cd": get_prop(p, 22) * 100,
-                "er": get_prop(p, 23) * 100, "elem_bonus": get_prop(p, bonus_id) * 100
+                "friendship": friendship,
+                "hp": get_prop(p, 2000), 
+                "atk": get_prop(p, 2001), 
+                "def": get_prop(p, 2002),
+                "em": get_prop(p, 28), 
+                "cr": get_prop(p, 20) * 100, 
+                "cd": get_prop(p, 22) * 100,
+                "er": get_prop(p, 23) * 100, 
+                "elem_bonus": get_prop(p, bonus_id) * 100,
+                "weapon": weapon_info # Now includes weapon details
             }
     return None
 async def get_namecard_image_url(card_id):
@@ -72,21 +121,37 @@ async def get_namecard_image_url(card_id):
     card_info = namecard_data.get(str(card_id))
     return f"https://enka.network/ui/{card_info['icon']}.png" if card_info else "https://enka.network/ui/UI_NameCardPic_0_P.png"
 
-def draw_dynamic_bubble(draw, text, position, font, padding=20):
-    bbox = draw.textbbox(position, text, font=font, anchor="mm")
+def draw_dynamic_bubble(draw, text, position, font, padding=20, text_color=(255, 255, 255, 255), anchor="mm"):
+    bbox = draw.textbbox(position, text, font=font, anchor=anchor)
     bg_coords = [bbox[0] - padding, bbox[1] - (padding // 2), bbox[2] + padding, bbox[3] + (padding // 2)]
     draw.rounded_rectangle(bg_coords, radius=10, fill=(20, 20, 30, 180), outline=(255, 255, 255, 150), width=1)
-    draw.text(position, text, font=font, fill=(255, 255, 255, 255), anchor="mm")
+    draw.text(position, text, font=font, fill=text_color, anchor=anchor)
+with open('weapon_names.json', 'r') as f:
+    WEAPON_DATA_MAP = json.load(f)
 
+def get_weapon_name(weapon_id):
+    # weapon_id is the itemId from Enka (e.g., 13101)
+    entry = WEAPON_DATA_MAP.get(str(weapon_id))
+    if entry:
+        return entry.get("EN", "Unknown Weapon")
+    return "Unknown Weapon"
 async def fetch_image(session, url):
     async with session.get(url) as response:
         if response.status == 200:
             return Image.open(BytesIO(await response.read())).convert("RGBA")
     return None
 
-async def compare_characters(uid, uid2, char_id):
+async def create_masked_showcase(uid, uid2, char_id):
     me, them = await get_enkadata(uid), await get_enkadata(uid2)
     me_g, them_g = await get_genshindata(uid), await get_genshindata(uid2)
+
+    try: 
+        font = ImageFont.truetype("Genshin_Impact.ttf", 23)
+        font_big = ImageFont.truetype("Genshin_Impact.ttf", 28)
+        font_small = ImageFont.truetype("Genshin_Impact.ttf", 20)
+        
+    except: 
+        font = ImageFont.load_default()
     
     with open('char.json', 'r') as f:
         char_map = json.load(f)
@@ -104,8 +169,18 @@ async def compare_characters(uid, uid2, char_id):
     stats_them = extract_char_stats(me['avatarInfoList'], char_id, element)
 
     async with aiohttp.ClientSession() as session:
+        icon_name_me = stats_me['weapon'].get('icon')
+        icon_name_them = stats_them['weapon'].get('icon')
+
+    # Construct the URLs directly
+        url_me = f"https://enka.network/ui/{icon_name_me}.png" if icon_name_me else "https://enka.network/ui/UI_EquipIcon_Sword_Blunt.png"
+        url_them = f"https://enka.network/ui/{icon_name_them}.png" if icon_name_them else "https://enka.network/ui/UI_EquipIcon_Sword_Blunt.png"
         namecard_me = await fetch_image(session, await get_namecard_image_url(me['nameCardId']))
         namecard_them = await fetch_image(session, await get_namecard_image_url(them['nameCardId']))
+        weapon_img_me, weapon_img_them = await asyncio.gather(
+        fetch_image(session, url_me),
+        fetch_image(session, url_them)
+        )
         avatar_me = await fetch_image(session, me_g['in_game_avatar'])
         avatar_them = await fetch_image(session, them_g['in_game_avatar'])
         splash_art = await fetch_image(session, splash_url)
@@ -135,10 +210,50 @@ async def compare_characters(uid, uid2, char_id):
     tl_coords, tr_coords = [5, 5, 780, 220], [1070, 5, 1845, 220]
     box_w, box_h = 775, 215
     mask_nc = Image.new("L", (box_w, box_h), 0)
-    ImageDraw.Draw(mask_nc).rounded_rectangle([0, 0, box_w, box_h], radius=10, fill=255)
+    ImageDraw.Draw(mask_nc).rounded_rectangle([0, 0, box_w, box_h], radius=10, fill=200)
 
     if namecard_me: background.paste(ImageOps.fit(namecard_me, (box_w, box_h)), (tr_coords[0], tr_coords[1]), mask_nc)
     if namecard_them: background.paste(ImageOps.fit(namecard_them, (box_w, box_h)), (tl_coords[0], tl_coords[1]), mask_nc)
+
+    draw.rounded_rectangle([5, 225, 385, 360], radius=10, fill=(255,255,255,100), outline=(255,255,255,200))
+    draw.rounded_rectangle([395, 225, 780, 360], radius=10, fill=(255,255,255,100), outline=(255,255,255,200))
+
+    for wp, stats, pos in [(weapon_img_me, stats_me, (5, 230)), (weapon_img_them, stats_them, (385, 230))]:
+        if wp and stats:
+            wp_res = wp.resize((120, 120), Image.Resampling.LANCZOS)
+            background.paste(wp_res, pos, wp_res)
+            w_info = stats['weapon']
+            weapon_name = get_weapon_name(w_info['hash'])
+            
+            # --- Draw Weapon Name ---
+            draw_dynamic_bubble(draw, weapon_name, (pos[0]+240, 245), font_small, anchor="mm")
+            
+            # --- Draw Base ATK and Sub Stat Boxes ---
+            w_stats_list = w_info.get("stats", [])
+            stat_x_start = pos[0] + 120
+            for i, s in enumerate(w_stats_list):
+                curr_stat_x = stat_x_start + (i * 125) # Space them apart
+                # Box for stat
+                draw.rounded_rectangle([curr_stat_x, 270, curr_stat_x + 115, 310], radius=5, fill=(15, 15, 25, 200))
+                
+                # Paste small icon
+                icon_path = W_STAT_ICONS.get(s['prop'], "asstests/icons/atk.png")
+                try:
+                    s_icon = Image.open(icon_path).convert("RGBA").resize((22, 22))
+                    ui_layer.paste(s_icon, (curr_stat_x + 5, 279), s_icon)
+                except: pass
+                
+                # Format value (Add % for specific types)
+                val_str = f"{s['val']}"
+                if any(x in s['prop'] for x in ["PERCENT", "CHARGE", "CRITICAL"]):
+                    val_str += "%"
+                
+                draw.text((curr_stat_x + 35, 290), val_str, font=font_small, fill=(255, 255, 255), anchor="lm")
+
+            max_lv: str = "90" if w_info.get('rank', 0) == 5 else "80" if w_info.get('rank', 0) == 4 else "70"
+            
+            draw_dynamic_bubble(draw, f"Lv: {w_info['level']}/{max_lv}", (pos[0] + 140, 335), font_small, anchor="lm")
+            draw_dynamic_bubble(draw, f"R{w_info.get('refinement', 1)}", (pos[0]+355, 335), font_small, text_color=(255, 204, 0, 255), anchor="rm")
     f_level_me = stats_me.get("friendship", 1) if stats_me else 1
     f_level_them = stats_them.get("friendship", 1) if stats_them else 1
 
@@ -155,12 +270,7 @@ async def compare_characters(uid, uid2, char_id):
             background.paste(frame, pos, frame)
             background.paste(av_resized, pos, mask_avatar)
 
-    try: 
-        font = ImageFont.truetype("Genshin_Impact.ttf", 23)
-        font_big = ImageFont.truetype("Genshin_Impact.ttf", 28)
-        
-    except: 
-        font = ImageFont.load_default()
+    
     draw_dynamic_bubble(draw,char_name, (920, 200), font)
     draw_dynamic_bubble(draw, me['nickname'], (1750, 190), font)
     draw_dynamic_bubble(draw, them['nickname'], (100, 190), font)
@@ -184,6 +294,7 @@ async def compare_characters(uid, uid2, char_id):
     draw.rounded_rectangle(tl_coords, radius=10, outline=(255,255,255,200), width=2)
     draw.rounded_rectangle(tr_coords, radius=10, outline=(255,255,255,200), width=2)
     draw.rounded_rectangle([5, 365, 780, 885], radius=10, fill=(255,255,255,100), outline=(255,255,255,200))
+
 
     y_start = 370
     icon_w = 60      # Small box for icon
@@ -239,6 +350,9 @@ async def compare_characters(uid, uid2, char_id):
         val2 = fmt.format(stats_them.get(key, 0)) if stats_them else "0"
         draw.text((v2_x + (val_w // 2), curr_y + (row_height//2)), val2, font=font, fill=(255, 255, 255), anchor="mm")
 
+
+    Image.alpha_composite(background, ui_layer).save("masked_showcase.png")
+    print("Success! Image generated.")
 
     buffer = BytesIO()
     final_img = Image.alpha_composite(background, ui_layer)
