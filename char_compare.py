@@ -226,7 +226,7 @@ async def compare_characters(uid, uid2, char_id):
             weapon_name = get_weapon_name(w_info['hash'])
             
             # --- Draw Weapon Name ---
-            draw_dynamic_bubble(draw, weapon_name, (pos[0]+240, 245), font_small, anchor="mm")
+            draw.text((pos[0] + 240, 245), weapon_name, font=font_small, fill=(255, 255, 255), anchor="mm")
             
             # --- Draw Base ATK and Sub Stat Boxes ---
             w_stats_list = w_info.get("stats", [])
