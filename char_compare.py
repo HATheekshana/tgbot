@@ -141,7 +141,7 @@ async def fetch_image(session, url):
             return Image.open(BytesIO(await response.read())).convert("RGBA")
     return None
 
-async def create_masked_showcase(uid, uid2, char_id):
+async def compare_characters(uid, uid2, char_id):
     me, them = await get_enkadata(uid), await get_enkadata(uid2)
     me_g, them_g = await get_genshindata(uid), await get_genshindata(uid2)
 
