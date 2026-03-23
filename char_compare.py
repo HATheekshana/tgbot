@@ -235,15 +235,12 @@ async def compare_characters(uid, uid2, char_id):
                 curr_stat_x = stat_x_start + (i * 125) # Space them apart
                 # Box for stat
                 draw.rounded_rectangle([curr_stat_x, 270, curr_stat_x + 115, 310], radius=5, fill=(15, 15, 25, 200))
-                
-                # Paste small icon
                 icon_path = W_STAT_ICONS.get(s['prop'], "asstests/icons/atk.png")
                 try:
                     s_icon = Image.open(icon_path).convert("RGBA").resize((22, 22))
                     ui_layer.paste(s_icon, (curr_stat_x + 5, 279), s_icon)
                 except: pass
-                
-                # Format value (Add % for specific types)
+            
                 val_str = f"{s['val']}"
                 if any(x in s['prop'] for x in ["PERCENT", "CHARGE", "CRITICAL"]):
                     val_str += "%"
@@ -253,7 +250,7 @@ async def compare_characters(uid, uid2, char_id):
             max_lv: str = "90" if w_info.get('rank', 0) == 5 else "80" if w_info.get('rank', 0) == 4 else "70"
             
             draw_dynamic_bubble(draw, f"Lv: {w_info['level']}/{max_lv}", (pos[0] + 140, 335), font_small, anchor="lm")
-            draw_dynamic_bubble(draw, f"R{w_info.get('refinement', 1)}", (pos[0]+355, 335), font_small, text_color=(255, 204, 0, 255), anchor="rm")
+            draw_dynamic_bubble(draw, f"R{w_info.get('refinement', 1)}", (pos[0]+345, 335), font_small, text_color=(255, 204, 0, 255), anchor="rm")
     f_level_me = stats_me.get("friendship", 1) if stats_me else 1
     f_level_them = stats_them.get("friendship", 1) if stats_them else 1
 
