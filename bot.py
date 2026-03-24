@@ -407,9 +407,7 @@ async def start_cmd(message: types.Message):
 #wish10------------------------------------------------------------------------------
 @dp.message(Command("abyssinfo"))
 async def abyss_info_command(message: types.Message):
-    user_id = str(message.from_user.id)
-    user_data = await users_col.find_one({"user_id": user_id})
-    
+    user_data = await users_col.find_one({"user_id": str(message.from_user.id)})   
     if not user_data or "uid" not in user_data:
         await message.reply("Please link your UID first using /setuid [UID]")
         return
