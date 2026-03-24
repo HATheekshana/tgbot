@@ -131,39 +131,41 @@ async def get_abyss_data(uid: int):
     except Exception as e:
         print(f"Abyss Error: {e}")
         return None
+
 async def format_abyss_info(abyss_data):
-    """
-    abyss_data: The object returned by client.get_genshin_user(uid).spiral_abyss
-    """
     season = abyss_data.season
     res = f"⸸ SPIRAL ABYSS S{season} ⸸\n"
     
-    # Sort floors to ensure 11 and 12 are in order
+    # --- Floor Logic ---
     for floor in sorted(abyss_data.floors, key=lambda x: x.floor):
-        if floor.floor < 11: continue  # Only show 11 and 12
-        
+        if floor.floor < 11: continue
         res += f"ꫂ❁ FLOOR {floor.floor}】\n"
         for chamber in floor.chambers:
             stars = "✮" * chamber.stars + "☆" * (3 - chamber.stars)
             res += f"⧽ Chamber {chamber.chamber} - {stars}\n"
         res += "╰➤─── ⋆⋅⸸⋅⋆ ──────\n\n"
 
-    # Combat Stats
+    # --- Combat Stats ---
     rank = abyss_data.ranks
     res += f"✎ Deepest Descent: {abyss_data.max_floor}\n"
     res += f"✎ Total Stars: {abyss_data.total_stars}\n"
     res += f"✎ Total Battles: {abyss_data.total_battles}\n"
     
-    # Character Stats (Handling potential empty lists)
-    if rank.most_kills:
-        res += f"✎ Most Kills: {rank.most_kills[0].value} ({rank.most_kills[0].name})\n"
-    if rank.strongest_strike:
-        res += f"✎ Strongest Strike: {rank.strongest_strike[0].value} ({rank.strongest_strike[0].name})\n"
-    if rank.max_damage_taken:
-        res += f"✎ Most Damage Taken: {rank.max_damage_taken[0].value} ({rank.max_damage_taken[0].name})\n"
-    if rank.most_bursts_used:
-        res += f"✎ Most Bursts: {rank.most_bursts_used[0].value} ({rank.most_bursts_used[0].name})\n"
-    if rank.most_skills_used:
-        res += f"✎ Most Skills: {rank.most_skills_used[0].value} ({rank.most_skills_used[0].name})\n"
+    def get_rank_str(possible_attrs):
+        for attr in possible_attrs:
+            val = getattr(rank, attr, None)
+            if val and isinstance(val, list) and len(val) > 0:
+                return f"{val[0].value} ({val[0].name})"
+        return "N/A"
+
+    res += f"✎ Most Kills: {get_rank_str(['most_kills'])}\n"
+    res += f"✎ Strongest Strike: {get_rank_str(['strongest_strike'])}\n"
+    
+    # Based on your JSON, 'take_damage' is the key, 
+    # but the library might map it to 'max_damage_taken'
+    res += f"✎ Most Damage Taken: {get_rank_str(['take_damage', 'max_damage_taken', 'most_damage_taken'])}\n"
+    
+    res += f"✎ Most Bursts: {get_rank_str(['most_bursts', 'most_bursts_used'])}\n"
+    res += f"✎ Most Skills: {get_rank_str(['most_skills', 'most_skills_used'])}\n"
         
     return res
