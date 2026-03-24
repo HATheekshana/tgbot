@@ -25,7 +25,7 @@ from aiogram.filters import Command
 from pytz import timezone
 from wishing import combine_images
 from create_profile import create_genshin_profile
-from genshin_utils import  get_enkadata,get_quiz_score,to_int,get_val,get_exploration_data,get_abyss_data,get_player_full_data,calculate_world_level
+from genshin_utils import  get_enkadata,get_quiz_score,to_int,get_val,get_exploration_data,get_abyss_data,get_player_full_data,calculate_world_level,format_abyss_info
 from data import weapons3, characters4, characters5, rare
 
 quiz_track = {}
@@ -405,7 +405,27 @@ async def start_cmd(message: types.Message):
     await message.answer(commands_list, parse_mode="Markdown")
 
 #wish10------------------------------------------------------------------------------
+@dp.message(Command("abyssinfo"))
+async def abyss_info_command(message: types.Message):
+    user_id = str(message.from_user.id)
+    user_data = await users_col.find_one({"user_id": user_id})
+    
+    if not user_data or "uid" not in user_data:
+        await message.reply("Please link your UID first using /setuid [UID]")
+        return
 
+    uid = user_data["uid"]
+    
+    try:
+        # Fetch fresh data from HoYolab
+        # client is your genshin.Client(COOKIES)
+        abyss = await client.get_spiral_abyss(uid)
+        
+        formatted_text = format_abyss_info(abyss)
+        await message.reply(formatted_text)
+        
+    except Exception as e:
+        await message.reply(f"❌ Error fetching Abyss data: {str(e)}")
 
 @dp.message(Command("wish10"))
 async def send_image_10(message: types.Message):

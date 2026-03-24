@@ -131,3 +131,39 @@ async def get_abyss_data(uid: int):
     except Exception as e:
         print(f"Abyss Error: {e}")
         return None
+async def format_abyss_info(abyss_data):
+    """
+    abyss_data: The object returned by client.get_genshin_user(uid).spiral_abyss
+    """
+    season = abyss_data.season
+    res = f"⸸ SPIRAL ABYSS S{season} ⸸\n"
+    
+    # Sort floors to ensure 11 and 12 are in order
+    for floor in sorted(abyss_data.floors, key=lambda x: x.floor):
+        if floor.floor < 11: continue  # Only show 11 and 12
+        
+        res += f"ꫂ❁ FLOOR {floor.floor}】\n"
+        for chamber in floor.chambers:
+            stars = "✮" * chamber.stars + "☆" * (3 - chamber.stars)
+            res += f"⧽ Chamber {chamber.chamber} - {stars}\n"
+        res += "╰➤─── ⋆⋅⸸⋅⋆ ──────\n\n"
+
+    # Combat Stats
+    rank = abyss_data.ranks
+    res += f"✎ Deepest Descent: {abyss_data.max_floor}\n"
+    res += f"✎ Total Stars: {abyss_data.total_stars}\n"
+    res += f"✎ Total Battles: {abyss_data.total_battles}\n"
+    
+    # Character Stats (Handling potential empty lists)
+    if rank.most_kills:
+        res += f"✎ Most Kills: {rank.most_kills[0].value} ({rank.most_kills[0].name})\n"
+    if rank.strongest_strike:
+        res += f"✎ Strongest Strike: {rank.strongest_strike[0].value} ({rank.strongest_strike[0].name})\n"
+    if rank.take_damage:
+        res += f"✎ Most Damage Taken: {rank.take_damage[0].value} ({rank.take_damage[0].name})\n"
+    if rank.most_bursts:
+        res += f"✎ Most Bursts: {rank.most_bursts[0].value} ({rank.most_bursts[0].name})\n"
+    if rank.most_skills:
+        res += f"✎ Most Skills: {rank.most_skills[0].value} ({rank.most_skills[0].name})\n"
+        
+    return res
