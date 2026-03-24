@@ -1316,8 +1316,8 @@ async def handle_comp(callback: types.CallbackQuery):
     await callback.message.delete()
     
     # Reply to the original command sender to keep it threaded
-    target = callback.message.reply_to_message or callback.message
-    await target.reply_photo(
+    # Replace the 'target' and 'target.reply_photo' lines with this:
+    await callback.message.answer_photo(
         photo=types.BufferedInputFile(img_bytes.read(), filename="comparison.png"),
         caption=f"<b>Comparison Complete!</b>",
         reply_markup=back_builder.as_markup(),
