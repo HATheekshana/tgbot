@@ -7,9 +7,9 @@ def get_quiz_score(difficulty, elapsed):
     base = {"easy": 1, "medium": 3, "hard": 5}.get(difficulty.lower(), 1)
     
     # Time Bonus
-    if elapsed < 5: bonus = 10
-    elif elapsed < 10: bonus = 5
-    elif elapsed < 30: bonus = 1
+    if elapsed < 10: bonus = 5
+    elif elapsed < 20: bonus = 3
+    elif elapsed < 40: bonus = 1
     else: bonus = 0
     
     return base + bonus

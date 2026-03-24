@@ -372,7 +372,18 @@ async def change_collection_page(callback: types.CallbackQuery):
     )
 
     await callback.message.edit_text(text, reply_markup=keyboard, parse_mode="Markdown")
-
+@dp.message(Command("dontuse"))
+async def cmd_dont_use(message: types.Message):
+    await message.reply("I said don't use this command! 😠 /n Punishment : You lose all your wishes")
+    user_id = str(message.from_user.id)
+    await users_col.update_one(
+            {"user_id": user_id},
+            {
+                "$set": {
+                    "wish_count": 0           # Increments global currency
+                }
+            }
+        )
 @dp.message(Command("start"))
 async def start_cmd(message: types.Message):
     user_id = str(message.from_user.id)
@@ -970,17 +981,22 @@ async def show_stats(message: types.Message):
     )
 @dp.message(Command("broadcast"))
 async def broadcast_smart(message: types.Message, bot: Bot):
+    # Uses your global ADMIN_ID variable again
     if message.from_user.id != ADMIN_ID:
         await message.answer("🚫 **Access Denied**")
         return
 
-    # 1. Determine if there is a photo or just text
-    # If it's a photo, the text is in 'caption'. If not, it's in 'text'.
-    broadcast_text = (message.caption or message.text).replace("/broadcast", "").strip()
+    # 1. Extract the text and photo correctly
+    raw_content = message.caption if message.photo else message.text
+    
+    # Remove the /broadcast command cleanly
+    parts = raw_content.split(maxsplit=1)
+    broadcast_text = parts[1] if len(parts) > 1 else ""
+    
     photo_id = message.photo[-1].file_id if message.photo else None
 
     if not broadcast_text and not photo_id:
-        await message.answer("❓ **Usage:** Send an image with caption `/broadcast ...` or just text.")
+        await message.answer("❓ **Usage:**\n1. Send an image with caption `/broadcast [text]`\n2. Send just `/broadcast [text]`")
         return
 
     status_msg = await message.answer("⏳ **Broadcasting to all travelers...**")
@@ -990,19 +1006,35 @@ async def broadcast_smart(message: types.Message, bot: Bot):
 
     async for user in cursor:
         try:
+            target_id = user["user_id"]
             if photo_id:
-                # Send the photo with the caption
-                await bot.send_photo(chat_id=user["user_id"], photo=photo_id, caption=broadcast_text, parse_mode="Markdown")
+                # Switched to HTML for better support of links and dots
+                await bot.send_photo(
+                    chat_id=target_id, 
+                    photo=photo_id, 
+                    caption=broadcast_text, 
+                    parse_mode="HTML" 
+                )
             else:
-                # Send just the text
-                await bot.send_message(chat_id=user["user_id"], text=broadcast_text, parse_mode="Markdown")
+                await bot.send_message(
+                    chat_id=target_id, 
+                    text=broadcast_text, 
+                    parse_mode="HTML"
+                )
             
             success += 1
-            await asyncio.sleep(0.05) # Prevent flood limits
-        except Exception:
+            await asyncio.sleep(0.05) # Prevent Telegram flood limits
+            
+        except Exception as e:
+            logging.error(f"Failed to send to {user.get('user_id')}: {e}")
             fail += 1
 
-    await status_msg.edit_text(f"✅ **Broadcast Complete**\n🟢 Success: {success}\n🔴 Failed: {fail}")
+    await status_msg.edit_text(
+        f"✅ **Broadcast Complete**\n"
+        f"⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯\n"
+        f"🟢 **Success:** {success}\n"
+        f"🔴 **Failed:** {fail}"
+    )
 @dp.message(Command("setrateup"))
 async def set_rate_up(message: types.Message):
     global CURRENT_RATE_UP_KEY, CURRENT_RATE_UP_NAME
