@@ -108,7 +108,8 @@ async def cmd_characters(message: types.Message):
         # Add button
         builder.button(
             text=display_name, 
-            callback_data=f"gen_{db_uid}_{index}" # Added UID to callback for safety
+    # Store the person who sent the command (message.from_user.id)
+            callback_data=f"gen_{db_uid}_{index}_{message.from_user.id}" 
         )
     image_buffer = await create_genshin_profile(db_uid) 
     if image_buffer:
@@ -128,8 +129,9 @@ async def cmd_characters(message: types.Message):
 @dp.callback_query(F.data.startswith("gen_"))
 async def handle_card_generation(callback: types.CallbackQuery):
     parts = callback.data.split("_")
-    uid, char_index = parts[1], int(parts[2])
-
+    uid, char_index, owner_id = parts[1], int(parts[2]), int(parts[3])
+    if callback.from_user.id != owner_id:
+        return await callback.answer("⏳ This menu isn't for you! Run /characters to see your own.", show_alert=True)
     await callback.answer("Fetching Build & Rank...")
 
     # 1. Loading state (Swap to your local image)
@@ -190,7 +192,7 @@ async def handle_card_generation(callback: types.CallbackQuery):
                     # Final Step: Send Result
                     back_builder = InlineKeyboardBuilder()
                     back_builder.button(text="Back to List", callback_data=f"refresh_{uid}")
-                    
+                    await callback.message.delete()
                     target = callback.message.reply_to_message or callback.message
                     await target.reply_photo(
                         photo=URLInputFile(card_url),
@@ -198,14 +200,18 @@ async def handle_card_generation(callback: types.CallbackQuery):
                         reply_markup=back_builder.as_markup(),
                         parse_mode="HTML"
                     )
-                    await callback.message.delete()
+                    
 
         except Exception as e:
             await callback.message.edit_caption(caption=f"❌ Error: {str(e)}")
 @dp.callback_query(F.data.startswith("refresh_"))
 async def handle_back_button(callback: types.CallbackQuery):
-    uid = callback.data.split("_")[1]
-    await callback.answer("Refreshing list...")
+    parts = callback.data.split("_")
+    uid, owner_id = parts[1], int(parts[2])
+
+    # SECURITY CHECK
+    if callback.from_user.id != owner_id:
+        return await callback.answer("❌ You can't use this button.", show_alert=True)
 
     # Re-fetch data for the list
     user_info = await get_enkadata(uid)
@@ -215,7 +221,7 @@ async def handle_back_button(callback: types.CallbackQuery):
     for index, char in enumerate(showcase):
         char_id = str(char.get("avatarId"))
         name = CHARACTER_MAP.get(char_id, {}).get("name", f"ID: {char_id}")
-        builder.button(text=name, callback_data=f"gen_{uid}_{index}")
+        builder.button(text=name, callback_data=f"gen_{uid}_{index}_{owner_id}")
     builder.adjust(3)
 
     # Re-generate profile photo
@@ -1214,7 +1220,6 @@ from aiogram.utils.keyboard import InlineKeyboardBuilder
 # 1. THE COMMAND HANDLER
 @dp.message(F.text.startswith("/comparechar"))
 async def cmd_compare(message: types.Message):
-    # Ensure it's a reply to someone
     if not message.reply_to_message:
         return await message.reply("Please reply to a user's message to compare characters.")
     
@@ -1222,70 +1227,103 @@ async def cmd_compare(message: types.Message):
     target_data = await users_col.find_one({"user_id": str(message.reply_to_message.from_user.id)})
 
     if not sender_data or not target_data:
-        return await message.reply("Both users must be registered in the database.")
+        return await message.reply("Both users must be registered.")
 
     u1, u2 = sender_data['genshin_uid'], target_data['genshin_uid']
+    owner_id = message.from_user.id # The person who typed the command
     
-    # Show the character selection menu
-    await show_comparison_menu(message, u1, u2)
-
-async def show_comparison_menu(event, u1, u2, is_callback=False):
+    await show_comparison_menu(message, u1, u2, owner_id)
+async def show_comparison_menu(event, u1, u2, owner_id, is_callback=False):
     """Helper function to show the character list (used by command and back button)"""
+    
+    # 1. Show a temporary "Fetching" state so the user knows it's working
+    if is_callback:
+        # If they clicked 'Back', just update the current button to show we are loading
+        await event.answer("Refreshing common characters...")
+    else:
+        # If it's the first time (/comparechar), send a temp message
+        temp_msg = await event.reply("Searching for common characters...")
+
+    # 2. Fetch data
     d1, d2 = await asyncio.gather(get_enkadata(u1), get_enkadata(u2))
     
-    # Get common characters from the showcase lists
-    ids1 = {str(c['avatarId']) for c in d1["showAvatarInfoList"]}
-
-    ids2 = {str(c['avatarId']) for c in d2["showAvatarInfoList"]}
+    ids1 = {str(c['avatarId']) for c in d1.get("showAvatarInfoList", [])}
+    ids2 = {str(c['avatarId']) for c in d2.get("showAvatarInfoList", [])}
     common = ids1.intersection(ids2)
 
+    # 3. Handle No Common Characters
     if not common:
-        msg = "No common characters found in your showcases!"
-        return await event.edit_text(msg) if is_callback else await event.reply(msg)
+        error_text = " No common characters found in your showcases!"
+        if not is_callback: await temp_msg.delete() # Clean up temp message
+        return await event.message.edit_text(error_text) if is_callback else await event.reply(error_text)
 
+    # 4. Build the Menu
     builder = InlineKeyboardBuilder()
     with open('char.json', 'r') as f:
         char_map = json.load(f)
 
     for cid in list(common)[:18]: 
         name = char_map.get(str(cid), {}).get("name", f"ID: {cid}")
-        builder.button(text=name, callback_data=f"comp:{u1}:{u2}:{cid}")
+        builder.button(text=name, callback_data=f"comp:{u1}:{u2}:{cid}:{owner_id}")
     
     builder.adjust(3)
-    text = "Character Comparison\nSelect a common character to compare stats:"
+    text = "<b>Character Comparison</b>\nSelect a common character to compare stats:"
     
+    # 5. The "Clean" Swap
     if is_callback:
-        # Use edit_message_media if you want to swap the image back, 
-        # but for simplicity, we delete and send new or just edit text
+        # Coming from the Result Card: Delete the card and send the fresh menu
         await event.message.delete()
-        await event.message.answer(text, reply_markup=builder.as_markup())
+        await event.message.answer(text, reply_markup=builder.as_markup(), parse_mode="HTML")
     else:
-        await event.reply(text, reply_markup=builder.as_markup())
+        # Coming from the Command: Delete the "Searching..." message and send the menu
+        await temp_msg.delete()
+        await event.reply(text, reply_markup=builder.as_markup(), parse_mode="HTML")
 
 @dp.callback_query(F.data.startswith("comp:"))
 async def handle_comp(callback: types.CallbackQuery):
     data = callback.data.split(":")
-    u1, u2, cid = data[1], data[2], data[3]
+    u1, u2, cid, owner_id = data[1], data[2], data[3], int(data[4])
     
-    await callback.answer("Fetching data and generating image...")
+    # 1. Security Check
+    if callback.from_user.id != owner_id:
+        return await callback.answer("⏳ This menu isn't for you!", show_alert=True)
 
-    # Generate your unified comparison image
-    # Note: Ensure create_unified_comparison returns a BytesIO object
+    # 2. Handshake & Loading State
+    await callback.answer() # Stops button spinner
+    
+    try:
+        # Swap the menu image to a loading image
+        await callback.message.edit_media(
+            media=InputMediaPhoto(
+                media=FSInputFile("asstests/loading.png"), # Use your loading image path
+                caption="<b>Creating comparison card... Please wait.</b>",
+                parse_mode="HTML"
+            )
+        )
+    except Exception:
+        # Fallback if image edit fails (e.g., if the user deleted the message)
+        pass
+
+    # 3. Generate the Image (Pillow logic)
     img_bytes = await compare_characters(int(u1), int(u2), int(cid))
     
-    # Build the 'Back' button
+    # 4. Prepare the Back Button
     back_builder = InlineKeyboardBuilder()
-    back_builder.button(text="Back to List", callback_data=f"back_comp:{u1}:{u2}")
+    back_builder.button(text="Back to List", callback_data=f"back_comp:{u1}:{u2}:{owner_id}")
     
-    # Send as a reply to the callback's message context
-    await callback.message.answer_photo(
+    # 5. Clean up and Send Final Result
+    # We delete the loading/menu message entirely to "remove all messages"
+    await callback.message.delete()
+    
+    # Reply to the original command sender to keep it threaded
+    target = callback.message.reply_to_message or callback.message
+    await target.reply_photo(
         photo=types.BufferedInputFile(img_bytes.read(), filename="comparison.png"),
-        caption=f"Comparison generated for Character",
-        reply_markup=back_builder.as_markup()
+        caption=f"<b>Comparison Complete!</b>",
+        reply_markup=back_builder.as_markup(),
+        parse_mode="HTML"
     )
     
-    # Delete the selection menu to keep the chat clean
-    await callback.message.delete()
 
 @dp.callback_query(F.data.startswith("back_comp:"))
 async def handle_back_button(callback: types.CallbackQuery):

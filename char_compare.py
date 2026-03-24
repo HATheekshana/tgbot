@@ -249,7 +249,7 @@ async def compare_characters(uid, uid2, char_id):
                 
                 draw.text((curr_stat_x + 35, 290), val_str, font=font_small, fill=(255, 255, 255), anchor="lm")
 
-            max_lv: str = "90" if w_info.get('rank', 0) == 5 else "80" if w_info.get('rank', 0) == 4 else "70"
+            max_lv: str = "90" if w_info.get('rank', 0) == 5 else "90" if w_info.get('rank', 0) == 4 else "80"
             
             draw_dynamic_bubble(draw, f"Lv: {w_info['level']}/{max_lv}", (pos[0] + 140, 335), font_small, anchor="lm")
             draw_dynamic_bubble(draw, f"R{w_info.get('refinement', 1)}", (pos[0]+345, 335), font_small, text_color=(255, 204, 0, 255), anchor="rm")
@@ -350,8 +350,8 @@ async def compare_characters(uid, uid2, char_id):
                                radius=8, fill=(15, 15, 25, 170), outline=(255,255,255,50))
         val2 = fmt.format(stats_them.get(key, 0)) if stats_them else "0"
         draw.text((v2_x + (val_w // 2), curr_y + (row_height//2)), val2, font=font, fill=(255, 255, 255), anchor="mm")
-        draw_build_column(background, 785, me_data, t_icons, c_icons)
-        draw_build_column(background, 935, them_data, t_icons, c_icons)
+        draw_build_column(background, 785, them_data, t_icons, c_icons)
+        draw_build_column(background, 935, me_data, t_icons, c_icons)
     buffer = BytesIO()
     final_img = Image.alpha_composite(background, ui_layer)
     final_img.convert("RGB").save(buffer, format="PNG") # Convert to RGB to reduce file size
