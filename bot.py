@@ -1295,7 +1295,7 @@ async def handle_comp(callback: types.CallbackQuery):
         # Swap the menu image to a loading image
         await callback.message.edit_media(
             media=InputMediaPhoto(
-                media=FSInputFile("asstests/loading.png"), # Use your loading image path
+                media=FSInputFile("asstests/Loading_Screen_Startup.webp"), # Use your loading image path
                 caption="<b>Creating comparison card... Please wait.</b>",
                 parse_mode="HTML"
             )
@@ -1327,11 +1327,19 @@ async def handle_comp(callback: types.CallbackQuery):
 
 @dp.callback_query(F.data.startswith("back_comp:"))
 async def handle_back_button(callback: types.CallbackQuery):
-    _, u1, u2 = callback.data.split(":")
+    # 1. Properly unpack the data (we need the 4th part!)
+    parts = callback.data.split(":")
+    # parts[0]="back_comp", [1]=u1, [2]=u2, [3]=owner_id
+    u1, u2, owner_id = parts[1], parts[2], int(parts[3])
+    
+    # 2. Add the Security Check (Important!)
+    if callback.from_user.id != owner_id:
+        return await callback.answer("This menu isn't for you!", show_alert=True)
+
     await callback.answer("Returning to list...")
     
-    # Re-use the menu helper
-    await show_comparison_menu(callback, u1, u2, is_callback=True)
+    # 3. Pass the owner_id back to the helper function
+    await show_comparison_menu(callback, u1, u2, owner_id, is_callback=True)
 @dp.message(Command("compare"))
 async def cmd_compare_reply(message: types.Message):
     if not message.reply_to_message:
