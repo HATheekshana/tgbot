@@ -2,6 +2,7 @@ import asyncio
 import genshin
 from motor.motor_asyncio import AsyncIOMotorClient
 import logging
+import math
 import sys
 import random
 import io
@@ -374,56 +375,54 @@ async def change_collection_page(callback: types.CallbackQuery):
     await callback.message.edit_text(text, reply_markup=keyboard, parse_mode="Markdown")
 import asyncio
 
+import math # Add this at the top of your file
+
 @dp.message(Command("dontuse"))
 async def cmd_dont_use(message: types.Message, bot: Bot):
     user_id = str(message.from_user.id)
     user_name = message.from_user.full_name
     
-    # 1. Send the initial "Panic" message
-    countdown_msg = await message.reply("⚠️ <b>CRITICAL ERROR:</b> You weren't supposed to do that...",parse_mode="HTML")
-    await asyncio.sleep(1.5)
+    # 1. Start the countdown
+    countdown_msg = await message.reply("⚠️ <b>CRITICAL ERROR:</b> Analyzing data...",parse_mode="HTML")
+    for i in range(3, 0, -1):
+        await asyncio.sleep(1)
+        await countdown_msg.edit_text(f"🛑 <b>SYSTEM BREACH:</b> Halving wishes in {i}s...",parse_mode="HTML")
 
-    # 2. The Visual Countdown
-    for i in range(5, 0, -1):
-        await countdown_msg.edit_text(f"🛑 <b>SYSTEM BREACH:</b> Deleting wishes in {i}s...",parse_mode="HTML")
-        await asyncio.sleep(1) # Wait 1 second between updates
-
-    # 3. Fetch data and calculate loss AFTER the countdown
+    # 2. Fetch data to calculate the NEW integer balance
     user_data = await users_col.find_one({"user_id": user_id})
     current_wishes = user_data.get("wish_count", 0)
     
-    # If they have 0 wishes, no need to punish
     if current_wishes <= 0:
-        await countdown_msg.edit_text("💢 You're lucky you're broke. Don't do it again.")
+        await countdown_msg.edit_text("💢 You have no wishes to lose. Consider yourself lucky.",parse_mode="HTML")
         return
 
-    lost_wishes = int(current_wishes // 2)
-    
-    # 4. Apply the Halving Punishment
+    # Calculate half and use math.floor to remove decimals (e.g., 31 -> 15)
+    new_wish_count = math.floor(current_wishes / 2)
+    lost_wishes = current_wishes - new_wish_count
+
+    # 3. Update database with the clean Integer
     await users_col.update_one(
         {"user_id": user_id},
-        {"$mul": {"wish_count": 0.5}}
+        {"$set": {"wish_count": int(new_wish_count)}} # Force integer type
     )
 
-    # 5. Final message to the user
+    # 4. Final message to user
     await countdown_msg.edit_text(
         f"I said don't use this command! 😠\n\n"
         f"<b>Punishment:</b> You lost half of your wishes ({lost_wishes} 💫 gone).",parse_mode="HTML"
     )
 
-    # 6. Notify Admin (You)
+    # 5. Notify Admin
     try:
         admin_alert = (
             f"💀 <b>Trap Triggered!</b>\n"
-            f"⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯\n"
             f"👤 <b>User:</b> {user_name}\n"
-            f"🆔 <b>ID:</b> <code>{user_id}</code>\n"
             f"📉 <b>Lost:</b> {lost_wishes} wishes\n"
-            f"💰 <b>Remaining:</b> {current_wishes - lost_wishes}"
+            f"💰 <b>New Balance:</b> {new_wish_count}"
         )
         await bot.send_message(chat_id=ADMIN_ID, text=admin_alert, parse_mode="HTML")
     except Exception as e:
-        logging.error(f"Could not notify admin: {e}")
+        logging.error(f"Admin notification failed: {e}")
 @dp.message(Command("start"))
 async def start_cmd(message: types.Message):
     user_id = str(message.from_user.id)
