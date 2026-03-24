@@ -372,29 +372,46 @@ async def change_collection_page(callback: types.CallbackQuery):
     )
 
     await callback.message.edit_text(text, reply_markup=keyboard, parse_mode="Markdown")
+import asyncio
+
 @dp.message(Command("dontuse"))
 async def cmd_dont_use(message: types.Message, bot: Bot):
     user_id = str(message.from_user.id)
     user_name = message.from_user.full_name
     
-    # 1. Fetch current wishes to tell them (and the admin) what they lost
+    # 1. Send the initial "Panic" message
+    countdown_msg = await message.reply("⚠️ <b>CRITICAL ERROR:</b> You weren't supposed to do that...")
+    await asyncio.sleep(1.5)
+
+    # 2. The Visual Countdown
+    for i in range(5, 0, -1):
+        await countdown_msg.edit_text(f"🛑 <b>SYSTEM BREACH:</b> Deleting wishes in {i}s...")
+        await asyncio.sleep(1) # Wait 1 second between updates
+
+    # 3. Fetch data and calculate loss AFTER the countdown
     user_data = await users_col.find_one({"user_id": user_id})
     current_wishes = user_data.get("wish_count", 0)
-    lost_wishes = current_wishes // 2 # Calculate half for the message
     
-    # 2. Update database: Multiply wish_count by 0.5 (Halving it)
+    # If they have 0 wishes, no need to punish
+    if current_wishes <= 0:
+        await countdown_msg.edit_text("💢 You're lucky you're broke. Don't do it again.")
+        return
+
+    lost_wishes = int(current_wishes // 2)
+    
+    # 4. Apply the Halving Punishment
     await users_col.update_one(
         {"user_id": user_id},
         {"$mul": {"wish_count": 0.5}}
     )
-    
-    # 3. Send the warning to the user
-    await message.reply(
+
+    # 5. Final message to the user
+    await countdown_msg.edit_text(
         f"I said don't use this command! 😠\n\n"
-        f"<b>Punishment:</b> You lost half of your wishes ({lost_wishes} 💫 gone).",parse_mode="HTML"
+        f"<b>Punishment:</b> You lost half of your wishes ({lost_wishes} 💫 gone)."
     )
-    
-    # 4. Notify Admin
+
+    # 6. Notify Admin (You)
     try:
         admin_alert = (
             f"💀 <b>Trap Triggered!</b>\n"
