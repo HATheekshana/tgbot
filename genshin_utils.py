@@ -160,10 +160,10 @@ async def format_abyss_info(abyss_data):
     if rank.strongest_strike:
         res += f"✎ Strongest Strike: {rank.strongest_strike[0].value} ({rank.strongest_strike[0].name})\n"
     if rank.take_damage:
-        res += f"✎ Most Damage Taken: {rank.take_damage[0].value} ({rank.take_damage[0].name})\n"
+        res += f"✎ Most Damage Taken: {rank.take_damage[0].value} ({rank.max_damage_taken[0].name})\n"
     if rank.most_bursts:
-        res += f"✎ Most Bursts: {rank.most_bursts[0].value} ({rank.most_bursts[0].name})\n"
+        res += f"✎ Most Bursts: {rank.most_bursts[0].value} ({rank.most_bursts_used[0].name})\n"
     if rank.most_skills:
-        res += f"✎ Most Skills: {rank.most_skills[0].value} ({rank.most_skills[0].name})\n"
+        res += f"✎ Most Skills: {rank.most_skills[0].value} ({rank.most_skills_used[0].name})\n"
         
     return res
