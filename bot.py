@@ -380,12 +380,12 @@ async def cmd_dont_use(message: types.Message, bot: Bot):
     user_name = message.from_user.full_name
     
     # 1. Send the initial "Panic" message
-    countdown_msg = await message.reply("⚠️ <b>CRITICAL ERROR:</b> You weren't supposed to do that...")
+    countdown_msg = await message.reply("⚠️ <b>CRITICAL ERROR:</b> You weren't supposed to do that...",parse_mode="HTML")
     await asyncio.sleep(1.5)
 
     # 2. The Visual Countdown
     for i in range(5, 0, -1):
-        await countdown_msg.edit_text(f"🛑 <b>SYSTEM BREACH:</b> Deleting wishes in {i}s...")
+        await countdown_msg.edit_text(f"🛑 <b>SYSTEM BREACH:</b> Deleting wishes in {i}s...",parse_mode="HTML")
         await asyncio.sleep(1) # Wait 1 second between updates
 
     # 3. Fetch data and calculate loss AFTER the countdown
