@@ -511,7 +511,13 @@ async def send_image_10(message: types.Message):
                 splash_rarity = "Rare"
                 file_path = FSInputFile(f"images/rare/{current_file_key}.webp")
                 best_rarity_score = 3
-            results.append(f"꩜ {current_display_name} ✨")
+            total_so_far = current_collection.get(current_display_name, 0) + pulled_chars.count(current_display_name)
+            if total_so_far >= 7:
+                wish_count += 1
+                results.append(f"꩜ {current_display_name} (C6+ -> +1 Wish) (rare) ✨")
+            else:
+                pulled_chars.append(current_display_name)
+                results.append(f"꩜ {current_display_name} (rare) ✨")
 
         elif is_4star:
             current_file_key = random.choice(list(characters4.keys()))
