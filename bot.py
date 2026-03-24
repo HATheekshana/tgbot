@@ -373,17 +373,40 @@ async def change_collection_page(callback: types.CallbackQuery):
 
     await callback.message.edit_text(text, reply_markup=keyboard, parse_mode="Markdown")
 @dp.message(Command("dontuse"))
-async def cmd_dont_use(message: types.Message):
-    await message.reply("I said don't use this command! 😠 /n Punishment : You lose all your wishes")
+async def cmd_dont_use(message: types.Message, bot: Bot):
     user_id = str(message.from_user.id)
+    user_name = message.from_user.full_name
+    
+    # 1. Fetch current wishes to tell them (and the admin) what they lost
+    user_data = await users_col.find_one({"user_id": user_id})
+    current_wishes = user_data.get("wish_count", 0)
+    lost_wishes = current_wishes // 2 # Calculate half for the message
+    
+    # 2. Update database: Multiply wish_count by 0.5 (Halving it)
     await users_col.update_one(
-            {"user_id": user_id},
-            {
-                "$set": {
-                    "wish_count": 0           # Increments global currency
-                }
-            }
+        {"user_id": user_id},
+        {"$mul": {"wish_count": 0.5}}
+    )
+    
+    # 3. Send the warning to the user
+    await message.reply(
+        f"I said don't use this command! 😠\n\n"
+        f"<b>Punishment:</b> You lost half of your wishes ({lost_wishes} 💫 gone)."
+    )
+    
+    # 4. Notify Admin
+    try:
+        admin_alert = (
+            f"💀 <b>Trap Triggered!</b>\n"
+            f"⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯\n"
+            f"👤 <b>User:</b> {user_name}\n"
+            f"🆔 <b>ID:</b> <code>{user_id}</code>\n"
+            f"📉 <b>Lost:</b> {lost_wishes} wishes\n"
+            f"💰 <b>Remaining:</b> {current_wishes - lost_wishes}"
         )
+        await bot.send_message(chat_id=ADMIN_ID, text=admin_alert, parse_mode="HTML")
+    except Exception as e:
+        logging.error(f"Could not notify admin: {e}")
 @dp.message(Command("start"))
 async def start_cmd(message: types.Message):
     user_id = str(message.from_user.id)
