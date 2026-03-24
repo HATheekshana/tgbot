@@ -98,7 +98,7 @@ def draw_build_column(canvas, start_x, data,t_icons, c_icons):
         indent = 50 if i == 1 else 0
         x, y = start_x + indent, 220 + (i * 80)
         lvl = data['talents'][i]
-        draw.ellipse([x+50, y+50, x+150, y+150], fill=(0, 0, 0, 100)) # Base circle for level indicator    
+        draw.ellipse([x+20, y+20, x+100, y+100], fill=(0, 0, 0, 100)) # Base circle for level indicator    
         t_bg = (ten_bg if lvl >= 10 else entry_bg).resize((90, 90), Image.Resampling.LANCZOS)
         canvas.paste(t_bg, (x, y), t_bg)
 
