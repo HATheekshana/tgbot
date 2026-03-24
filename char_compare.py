@@ -4,6 +4,7 @@ import aiohttp
 import json
 import genshin
 from io import BytesIO
+from t_c import fetch_build_assets, draw_build_column
 W_STAT_ICONS = {
         "FIGHT_PROP_BASE_ATTACK": "asstests/icons/atk.png",
         "FIGHT_PROP_CHARGE_EFFICIENCY": "asstests/icons/er.png",
@@ -144,7 +145,7 @@ async def fetch_image(session, url):
 async def compare_characters(uid, uid2, char_id):
     me, them = await get_enkadata(uid), await get_enkadata(uid2)
     me_g, them_g = await get_genshindata(uid), await get_genshindata(uid2)
-
+    me_data, them_data, t_icons, c_icons = await fetch_build_assets(uid, uid2, char_id)
     try: 
         font = ImageFont.truetype("Genshin_Impact.ttf", 23)
         font_big = ImageFont.truetype("Genshin_Impact.ttf", 28)
@@ -291,9 +292,11 @@ async def compare_characters(uid, uid2, char_id):
 
     draw.rounded_rectangle(tl_coords, radius=10, outline=(255,255,255,200), width=2)
     draw.rounded_rectangle(tr_coords, radius=10, outline=(255,255,255,200), width=2)
+    draw.rounded_rectangle([785, 220, 932, 480], radius=10, fill=(255,255,255,60), outline=(255,255,255,200))
     draw.rounded_rectangle([5, 365, 780, 885], radius=10, fill=(255,255,255,100), outline=(255,255,255,200))
-
-
+    draw.rounded_rectangle([937, 220, 1085, 480], radius=10, fill=(255,255,255,60), outline=(255,255,255,200))
+    draw.rounded_rectangle([937, 490, 1085, 875], radius=10, fill=(255,255,255,60), outline=(255,255,255,200))
+    draw.rounded_rectangle([785, 490, 932, 875], radius=10, fill=(255,255,255,60), outline=(255,255,255,200))
     y_start = 370
     icon_w = 60      # Small box for icon
     label_w = 330     # Box for stat name
@@ -347,11 +350,8 @@ async def compare_characters(uid, uid2, char_id):
                                radius=8, fill=(15, 15, 25, 170), outline=(255,255,255,50))
         val2 = fmt.format(stats_them.get(key, 0)) if stats_them else "0"
         draw.text((v2_x + (val_w // 2), curr_y + (row_height//2)), val2, font=font, fill=(255, 255, 255), anchor="mm")
-
-
-    Image.alpha_composite(background, ui_layer).save("masked_showcase.png")
-    print("Success! Image generated.")
-
+        draw_build_column(background, 785, me_data, t_icons, c_icons)
+        draw_build_column(background, 935, them_data, t_icons, c_icons)
     buffer = BytesIO()
     final_img = Image.alpha_composite(background, ui_layer)
     final_img.convert("RGB").save(buffer, format="PNG") # Convert to RGB to reduce file size
