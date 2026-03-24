@@ -122,8 +122,8 @@ def draw_build_column(canvas, start_x, data,t_icons, c_icons):
         if is_locked:
             img = img.convert("L").convert("RGBA")
             c_bg_res = lock_bg.resize((70, 70), Image.Resampling.LANCZOS)
-            
+            canvas.paste(c_bg_res, (x, y), c_bg_res)
         
-        canvas.paste(c_bg_res, (x, y), c_bg_res)
+        
         
             
