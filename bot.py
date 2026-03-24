@@ -296,8 +296,6 @@ async def show_collection(message: types.Message):
     )
 
     await message.reply(text, reply_markup=keyboard, parse_mode="Markdown")
-
-    await message.reply(text, reply_markup=keyboard, parse_mode="Markdown")
 def build_collection_page(sorted_chars, page, first_name, user_id): # Added user_id
     start = page * ITEMS_PER_PAGE
     end = start + ITEMS_PER_PAGE
