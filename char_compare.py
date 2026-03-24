@@ -283,12 +283,12 @@ async def compare_characters(uid, uid2, char_id):
     draw.rounded_rectangle([205,165, 320,215],radius=8, fill=(15, 15, 25, 220), outline=(255,255,255,50))
     f_icon = Image.open("asstests/icons/FRIENDS.png").convert("RGBA").resize((32, 32))
     ui_layer.paste(f_icon, (205 + 14, 165 + 11), f_icon)
-    draw.text((270, 190),str(f_level_them), font=font_big, fill=(255, 255, 255, 255), anchor="lm")
+    draw.text((270, 190),str(f_level_me), font=font_big, fill=(255, 255, 255, 255), anchor="lm")
 
     draw.rounded_rectangle([1525,165, 1640,215],radius=8, fill=(15, 15, 25, 220), outline=(255,255,255,50))
     f_icon = Image.open("asstests/icons/FRIENDS.png").convert("RGBA").resize((32, 32))
     ui_layer.paste(f_icon, (1525 + 14, 165 + 11), f_icon)
-    draw.text((1595, 190),str(f_level_me), font=font_big, fill=(255, 255, 255, 255), anchor="lm")
+    draw.text((1595, 190),str(f_level_them), font=font_big, fill=(255, 255, 255, 255), anchor="lm")
 
     draw.rounded_rectangle(tl_coords, radius=10, outline=(255,255,255,200), width=2)
     draw.rounded_rectangle(tr_coords, radius=10, outline=(255,255,255,200), width=2)
