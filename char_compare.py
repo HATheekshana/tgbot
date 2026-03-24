@@ -21,13 +21,13 @@ COOKIES = {
 }
 
 ELEMENT_BG_MAP = {
-    "PYRO": "asstests/backgrounds/PYRO.png",
-    "HYDRO": "asstests/backgrounds/HYDRO.png",
-    "ANEMO": "asstests/backgrounds/ANEMO.png",
-    "ELECTRO": "asstests/backgrounds/ELECTRO.png",
-    "DENDRO": "asstests/backgrounds/DENDRO.png",
-    "CRYO": "asstests/backgrounds/CRYO.png",
-    "GEO": "asstests/backgrounds/GEO.png"
+    "Pyro": "asstests/backgrounds/PYRO.png",
+    "Hydro": "asstests/backgrounds/HYDRO.png",
+    "Anemo": "asstests/backgrounds/ANEMO.png",
+    "Electro": "asstests/backgrounds/ELECTRO.png",
+    "Dendro": "asstests/backgrounds/DENDRO.png",
+    "Cryo": "asstests/backgrounds/CRYO.png",
+    "Geo": "asstests/backgrounds/GEO.png"
 }
 
 client = genshin.Client(COOKIES)
@@ -63,7 +63,7 @@ def get_prop(stats_dict, prop_id):
     """Handles Enka's mix of string and integer keys for stats."""
     return stats_dict.get(str(prop_id), stats_dict.get(int(prop_id), 0))
 def extract_char_stats(avatar_list, char_id, element):
-    element_map = {"PYRO": 40, "CRYO": 41, "ELECTRO": 42, "HYDRO": 43, "DENDRO": 44, "ANEMO": 45, "GEO": 46}
+    element_map = {"Pyro": 40, "Cryo": 41, "ELECTRO": 42, "Hydro": 43, "Dendro": 44, "Anemo": 45, "Geo": 46}
     bonus_id = element_map.get(element, 45)
 
     for char in avatar_list:
