@@ -1,4 +1,5 @@
 import asyncio
+import genshin
 from motor.motor_asyncio import AsyncIOMotorClient
 import logging
 import sys
@@ -31,7 +32,12 @@ from data import weapons3, characters4, characters5, rare
 quiz_track = {}
 group_message_counts = {}
 QUIZ_THRESHOLD = 40
-
+COOKIES = {
+    "ltuid_v2": "471000302",
+    "ltoken_v2": "v2_CAISDGM5b3FhcTNzM2d1OBokZTFmZTViNmItZDgxOS00MzNlLWJiZDktYWJkMTEzMWY1ZmY0ILaq780GKNa-zZEGMO7Jy-ABQgtiYnNfb3ZlcnNlYVhqagJTRw.NtW7aQAAAAAB.MEUCIGXUWYTB1bk4uUPg-Mwv8mZ6fXGUPvhKlkks9aizJCKVAiEA5ukOrLn7OhrY4JKtlMzZEXWCY-f-lCsBnIESDT_xbpY"
+}
+client = genshin.Client(COOKIES)
+client.region = genshin.Region.OVERSEAS
 ITEMS_PER_PAGE = 10
 dp = Dispatcher()
 
@@ -412,8 +418,6 @@ async def abyss_info_command(message: types.Message):
         return await message.answer("❌ Please /login <uid> first.")
 
     uid = str(user_data["genshin_uid"]).strip()
-
-    uid = user_data["uid"]
     
     try:
         # Fetch fresh data from HoYolab
