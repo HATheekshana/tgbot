@@ -421,14 +421,19 @@ async def abyss_info_command(message: types.Message):
     
     try:
         # Fetch fresh data from HoYolab
-        # client is your genshin.Client(COOKIES)
         abyss = await client.get_spiral_abyss(uid)
         
-        formatted_text = format_abyss_info(abyss)
+        # ✅ Added 'await' here to resolve the coroutine into a string
+        formatted_text = await format_abyss_info(abyss)
+        
         await message.reply(formatted_text)
         
     except Exception as e:
-        await message.reply(f"❌ Error fetching Abyss data: {str(e)}")
+        # If the error is regarding privacy settings in HoYoLAB
+        if "Stats are not public" in str(e):
+            await message.reply("❌ Your Abyss stats are private. Please enable 'Public' in HoYoLAB settings.")
+        else:
+            await message.reply(f"❌ Error fetching Abyss data: {str(e)}")
 
 @dp.message(Command("wish10"))
 async def send_image_10(message: types.Message):
