@@ -189,7 +189,7 @@ async def compare_characters(uid, uid2, char_id):
         char_icon = await fetch_image(session, char_url)
 
     target_size = (1875, 890)
-    bg_path = ELEMENT_BG_MAP.get(element, "asstests/backgrounds/anemo.jpg")
+    bg_path = ELEMENT_BG_MAP.get(element, "asstests/backgrounds/ANEMO.png")
     
     bg_base = ImageOps.fit(Image.open(bg_path).convert("RGBA"), target_size, method=Image.Resampling.LANCZOS)
     
