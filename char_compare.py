@@ -292,10 +292,10 @@ async def compare_characters(uid, uid2, char_id):
 
     draw.rounded_rectangle(tl_coords, radius=10, outline=(255,255,255,200), width=2)
     draw.rounded_rectangle(tr_coords, radius=10, outline=(255,255,255,200), width=2)
-    draw.rounded_rectangle([785, 220, 932, 480], radius=10, fill=(255,255,255,60), outline=(255,255,255,200))
+    draw.rounded_rectangle([785, 220, 932, 480], radius=10, fill=(0,0,0,60), outline=(255,255,255,200))
     draw.rounded_rectangle([5, 365, 780, 885], radius=10, fill=(255,255,255,100), outline=(255,255,255,200))
-    draw.rounded_rectangle([937, 220, 1085, 480], radius=10, fill=(255,255,255,60), outline=(255,255,255,200))
-    draw.rounded_rectangle([937, 490, 1085, 875], radius=10, fill=(255,255,255,100), outline=(255,255,255,200))
+    draw.rounded_rectangle([937, 220, 1085, 480], radius=10, fill=(0,0,0,60), outline=(255,255,255,200))
+    draw.rounded_rectangle([937, 490, 1085, 875], radius=10, fill=(0,0,0,60), outline=(255,255,255,200))
     draw.rounded_rectangle([785, 490, 932, 875], radius=10, fill=(0,0,0,60), outline=(255,255,255,200))
     y_start = 370
     icon_w = 60      # Small box for icon
