@@ -267,44 +267,67 @@ def get_rarity(name):
         return 5
     elif clean_name in characters4.values():
         return 4
+    elif clean_name in rare.values():
+        return 6
     else:
         return 3
+@dp.message(Command("collection"))
+async def show_collection(message: types.Message):
+    user_id = str(message.from_user.id)
+    user = await users_col.find_one({"user_id": user_id})
 
-def build_collection_page(sorted_chars, page, first_name):
+    if not user or "collection" not in user or not user["collection"]:
+        await message.reply("Your collection is empty!\nUse /wish or /wish10 to find characters.")
+        return
 
+    chars = user["collection"]
+    sorted_chars = sorted(
+        chars.items(),
+        key=lambda x: (get_rarity(x[0]), x[1]),
+        reverse=True
+    )
+
+    # Pass user_id here
+    text, keyboard = build_collection_page(
+        sorted_chars,
+        0,
+        message.from_user.first_name,
+        user_id
+    )
+
+    await message.reply(text, reply_markup=keyboard, parse_mode="Markdown")
+
+    await message.reply(text, reply_markup=keyboard, parse_mode="Markdown")
+def build_collection_page(sorted_chars, page, first_name, user_id): # Added user_id
     start = page * ITEMS_PER_PAGE
     end = start + ITEMS_PER_PAGE
     items = sorted_chars[start:end]
 
-    response = f"📜 {first_name}'s Characters\n"
-    response += "⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯\n\n"
+    response = f"𑣲 {first_name}'s Characters\n"
+    response += "──── ⋆⋅☆⋅⋆ ────\n\n"
 
     for name, count in items:
-
         num = count - 1
         constellation = "C6+" if num > 6 else f"C{num}"
-
         rarity = get_rarity(name)
-        stars = "★" * rarity
-
+        stars = "✨" if rarity == 6 else "★" * rarity
         response += f"{stars} {name} — {constellation}\n"
 
     total_pages = (len(sorted_chars) - 1) // ITEMS_PER_PAGE
-
     buttons = []
 
+    # Format: col_PAGE_USERID
     if page > 0:
         buttons.append(
-            InlineKeyboardButton(text="⬅ Back", callback_data=f"col_{page-1}")
+            InlineKeyboardButton(text="Back", callback_data=f"col_{page-1}_{user_id}")
         )
 
     if page < total_pages:
         buttons.append(
-            InlineKeyboardButton(text="Next ➡", callback_data=f"col_{page+1}")
+            InlineKeyboardButton(text="Next", callback_data=f"col_{page+1}_{user_id}")
         )
 
     keyboard = InlineKeyboardMarkup(inline_keyboard=[buttons]) if buttons else None
-
     return response, keyboard
 async def add_to_collection(user_id, char_name):
     # $inc increases the count by 1. If character doesn't exist, it creates it.
@@ -315,24 +338,33 @@ async def add_to_collection(user_id, char_name):
 
 @dp.callback_query(lambda c: c.data.startswith("col_"))
 async def change_collection_page(callback: types.CallbackQuery):
+    # Split the data: col, page, owner_id
+    data_parts = callback.data.split("_")
+    page = int(data_parts[1])
+    owner_id = data_parts[2]
+    clicker_id = str(callback.from_user.id)
 
-    page = int(callback.data.split("_")[1])
+    # The Security Check
+    if clicker_id != owner_id:
+        await callback.answer("This is not your collection menu!", show_alert=True)
+        return
 
-    user_id = str(callback.from_user.id)
-    user = await users_col.find_one({"user_id": user_id})
+    user = await users_col.find_one({"user_id": owner_id})
+    if not user:
+        return
 
     chars = user["collection"]
-
     sorted_chars = sorted(
-    chars.items(),
-    key=lambda x: (get_rarity(x[0]), x[1]),
-    reverse=True
-     )
+        chars.items(),
+        key=lambda x: (get_rarity(x[0]), x[1]),
+        reverse=True
+    )
 
     text, keyboard = build_collection_page(
         sorted_chars,
         page,
-        callback.from_user.first_name
+        callback.from_user.first_name,
+        owner_id
     )
 
     await callback.message.edit_text(text, reply_markup=keyboard, parse_mode="Markdown")
@@ -880,31 +912,6 @@ async def check_individual_dailies(bot: Bot):
             await asyncio.sleep(0.05) # Prevent Telegram flood limits
         except Exception as e:
             logging.error(f"Failed to notify {user['user_id']}: {e}")
-@dp.message(Command("collection"))
-async def show_collection(message: types.Message):
-
-    user_id = str(message.from_user.id)
-    user = await users_col.find_one({"user_id": user_id})
-
-    if not user or "collection" not in user or not user["collection"]:
-        await message.answer("📭Your collection is empty!\nUse /wish or /wish10 to find characters.")
-        return
-
-    chars = user["collection"]
-    # Sort by rarity first, then by the number of duplicates
-    sorted_chars = sorted(
-        chars.items(),
-        key=lambda x: (get_rarity(x[0]), x[1]),
-        reverse=True
- )
-
-    text, keyboard = build_collection_page(
-        sorted_chars,
-        0,
-        message.from_user.first_name
-    )
-
-    await message.answer(text, reply_markup=keyboard, parse_mode="Markdown")
 
 @dp.message(Command("stats"))
 async def show_stats(message: types.Message):
