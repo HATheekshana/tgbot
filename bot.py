@@ -408,7 +408,7 @@ async def cmd_dont_use(message: types.Message, bot: Bot):
     # 5. Final message to the user
     await countdown_msg.edit_text(
         f"I said don't use this command! 😠\n\n"
-        f"<b>Punishment:</b> You lost half of your wishes ({lost_wishes} 💫 gone)."
+        f"<b>Punishment:</b> You lost half of your wishes ({lost_wishes} 💫 gone).",parse_mode="HTML"
     )
 
     # 6. Notify Admin (You)
