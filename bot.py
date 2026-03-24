@@ -407,10 +407,11 @@ async def start_cmd(message: types.Message):
 #wish10------------------------------------------------------------------------------
 @dp.message(Command("abyssinfo"))
 async def abyss_info_command(message: types.Message):
-    user_data = await users_col.find_one({"user_id": str(message.from_user.id)})   
-    if not user_data or "uid" not in user_data:
-        await message.reply("Please link your UID first using /setuid [UID]")
-        return
+    user_data = await users_col.find_one({"user_id": str(message.from_user.id)})
+    if not user_data or "genshin_uid" not in user_data:
+        return await message.answer("❌ Please /login <uid> first.")
+
+    uid = str(user_data["genshin_uid"]).strip()
 
     uid = user_data["uid"]
     
