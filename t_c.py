@@ -112,13 +112,14 @@ def draw_build_column(canvas, start_x, data,t_icons, c_icons):
         if not icon: continue
         indent = 60 if (i + 1) % 2 == 0 else 0
         x, y = start_x + indent, 500 + (i * 60)
-        draw.ellipse([x, y, x+70, y+70], fill=(0, 0, 0, 160)) # Base circle for level indicator    
         is_locked = i >= data['cons_count']
+        draw.ellipse([x+5, y+5, x+65, y+65], fill=(0, 0, 0, 160))
+        c_bgs_res = con_bg.resize((70, 70), Image.Resampling.LANCZOS)
+        canvas.paste(c_bgs_res, (x, y), c_bgs_res) # Base circle for level indicator    
         img = icon.resize((60, 60), Image.Resampling.LANCZOS)
         c_mask = mask.resize((60, 60), Image.Resampling.LANCZOS)
         canvas.paste(img, (x+5, y+5), c_mask)
-        c_bgs_res = con_bg.resize((70, 70), Image.Resampling.LANCZOS)
-        canvas.paste(c_bgs_res, (x, y), c_bgs_res)
+        
         if is_locked:
             img = img.convert("L").convert("RGBA")
             c_bg_res = lock_bg.resize((70, 70), Image.Resampling.LANCZOS)
