@@ -63,8 +63,8 @@ active_polls = {}
 # ---------------- Dictionaries ----------------
 
 
-CURRENT_RATE_UP_KEY = "chasca" 
-CURRENT_RATE_UP_NAME = characters5.get(CURRENT_RATE_UP_KEY, "Chasca")
+CURRENT_RATE_UP_KEY = "skirk" 
+CURRENT_RATE_UP_NAME = characters5.get(CURRENT_RATE_UP_KEY, "Skirk")
 
 try:
     with open('char.json', 'r') as file:
@@ -1261,10 +1261,11 @@ async def show_comparison_menu(event, u1, u2, owner_id, is_callback=False):
     builder = InlineKeyboardBuilder()
     with open('char.json', 'r') as f:
         char_map = json.load(f)
-
+    orig_msg_id = event.message.message_id if is_callback else event.message_id
     for cid in list(common)[:18]: 
         name = char_map.get(str(cid), {}).get("name", f"ID: {cid}")
-        builder.button(text=name, callback_data=f"comp:{u1}:{u2}:{cid}:{owner_id}")
+    # ADD orig_msg_id to the end of the data string
+        builder.button(text=name, callback_data=f"comp:{u1}:{u2}:{cid}:{owner_id}:{orig_msg_id}")
     
     builder.adjust(3)
     text = "<b>Character Comparison</b>\nSelect a common character to compare stats:"
@@ -1282,7 +1283,8 @@ async def show_comparison_menu(event, u1, u2, owner_id, is_callback=False):
 @dp.callback_query(F.data.startswith("comp:"))
 async def handle_comp(callback: types.CallbackQuery):
     data = callback.data.split(":")
-    u1, u2, cid, owner_id = data[1], data[2], data[3], int(data[4])
+    # Now we have index 5 for the message ID
+    u1, u2, cid, owner_id, orig_msg_id = data[1], data[2], data[3], int(data[4]), int(data[5])
     
     # 1. Security Check
     if callback.from_user.id != owner_id:
@@ -1314,7 +1316,8 @@ async def handle_comp(callback: types.CallbackQuery):
     await callback.message.answer_photo(
         photo=types.BufferedInputFile(img_bytes.read(), filename="comparison.png"),
         caption=f"<b>Comparison Complete!</b>",
-        parse_mode="HTML"
+        parse_mode="HTML",
+        reply_to_message_id=orig_msg_id  # THIS makes it show as a reply
     )
     
 @dp.message(Command("compare"))
