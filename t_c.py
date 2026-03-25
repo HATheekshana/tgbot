@@ -98,7 +98,7 @@ def draw_build_column(canvas, start_x, data,t_icons, c_icons):
         indent = 50 if i == 1 else 0
         x, y = start_x + indent, 220 + (i * 80)
         lvl = data['talents'][i]
-            
+        draw.ellipse([x+15, y+15, x+75, y+75], fill=(0, 0, 0, 100)) # Base circle for level indicator    
         t_bg = (ten_bg if lvl >= 10 else entry_bg).resize((90, 90), Image.Resampling.LANCZOS)
         canvas.paste(t_bg, (x, y), t_bg)
 
@@ -112,18 +112,18 @@ def draw_build_column(canvas, start_x, data,t_icons, c_icons):
         if not icon: continue
         indent = 60 if (i + 1) % 2 == 0 else 0
         x, y = start_x + indent, 500 + (i * 60)
-            
         is_locked = i >= data['cons_count']
+        c_bgs_res = con_bg.resize((70, 70), Image.Resampling.LANCZOS)
+        canvas.paste(c_bgs_res, (x, y), c_bgs_res)
         img = icon.resize((60, 60), Image.Resampling.LANCZOS)
         c_mask = mask.resize((60, 60), Image.Resampling.LANCZOS)
         canvas.paste(img, (x+5, y+5), c_mask)
+        
         if is_locked:
             img = img.convert("L").convert("RGBA")
             c_bg_res = lock_bg.resize((70, 70), Image.Resampling.LANCZOS)
-        else:
-            c_bg_res = con_bg.resize((70, 70), Image.Resampling.LANCZOS)
-            
+            canvas.paste(c_bg_res, (x, y), c_bg_res)
         
-        canvas.paste(c_bg_res, (x, y), c_bg_res)
+        
         
             
