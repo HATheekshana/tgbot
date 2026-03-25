@@ -272,8 +272,8 @@ async def compare_characters(uid, uid2, char_id):
             
             draw_dynamic_bubble(draw, f"Lv: {w_info['level']}/{max_lv}", (pos[0] + 140, 335), font_small, anchor="lm")
             draw_dynamic_bubble(draw, f"R{w_info.get('refinement', 1)}", (pos[0]+345, 335), font_small, text_color=(255, 204, 0, 255), anchor="rm")
-    f_level_me = stats_me.get("friendship", 1) if stats_me else 1
-    f_level_them = stats_them.get("friendship", 1) if stats_them else 1
+    f_level_me = stats_them.get("friendship", 1) if stats_me else 1
+    f_level_them = stats_me.get("friendship", 1) if stats_them else 1
     char_level_me = stats_me.get("char_level", 1) if stats_me else 1
     char_level_them = stats_them.get("char_level", 1) if stats_them else 1
     CI_coords = [840,5,1010,195]
