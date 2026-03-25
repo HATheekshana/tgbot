@@ -353,12 +353,7 @@ async def compare_characters(uid, uid2, char_id):
         draw.text((v2_x + (val_w // 2), curr_y + (row_height//2)), val2, font=font, fill=(255, 255, 255), anchor="mm")
     draw_build_column(ui_layer, 785, them_data, t_icons, c_icons)
     draw_build_column(ui_layer, 935, me_data, t_icons, c_icons) 
-    draw_build_column(ui_layer, 785, them_data, t_icons, c_icons)
-    draw_build_column(ui_layer, 935, me_data, t_icons, c_icons)
-    draw_build_column(ui_layer, 785, them_data, t_icons, c_icons)
-    draw_build_column(ui_layer, 935, me_data, t_icons, c_icons)
-    draw_build_column(ui_layer, 785, them_data, t_icons, c_icons)
-    draw_build_column(ui_layer, 935, me_data, t_icons, c_icons)
+
 
     if rarity == 4:
         star4 = Image.open("asstests/icons/stars/c_stars_4.png").convert("RGBA")

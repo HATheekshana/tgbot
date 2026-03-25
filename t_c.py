@@ -118,13 +118,18 @@ def draw_build_column(canvas, start_x, data,t_icons, c_icons):
         if is_locked:
             img = img.convert("L").convert("RGBA")
             c_bg_res = lock_bg.resize((70, 70), Image.Resampling.LANCZOS)
+            c_mask = mask.resize((60, 60), Image.Resampling.LANCZOS)
+            canvas.paste(img, (x+5, y+5), c_mask)
+            canvas.paste(c_bg_res, (x, y), c_bg_res)
         else:
+            draw.ellipse([x+15, y+15, x+55, y+55], fill=(0, 0, 0, 200)) # Base circle for level indicator    
             c_bg_res = con_bg.resize((70, 70), Image.Resampling.LANCZOS)
+            canvas.paste(c_bg_res, (x, y), c_bg_res)
+            canvas.paste(img, (x+5, y+5), c_mask)
             
         
-        canvas.paste(c_bg_res, (x, y), c_bg_res)
-        c_mask = mask.resize((60, 60), Image.Resampling.LANCZOS)
-        canvas.paste(img, (x+5, y+5), c_mask)
+        
+        
          # Base circle for level indicator    
         
         
