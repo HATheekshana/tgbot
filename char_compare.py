@@ -71,7 +71,7 @@ def extract_char_stats(avatar_list, char_id, element):
         if str(char.get("avatarId")) == str(char_id):
             p = char.get("fightPropMap", {})
             friendship = char.get("fetterInfo", {}).get("expLevel", 1)
-            
+            char_level = char.get("propMap", {}).get("4001", {}).get("val", "1")
             # --- WEAPON EXTRACTION ---
             weapon_info = {}
             equips = char.get("equipList", [])
@@ -105,6 +105,7 @@ def extract_char_stats(avatar_list, char_id, element):
                     break
 
             return {
+                "char_level": char_level,
                 "friendship": friendship,
                 "hp": get_prop(p, 2000), 
                 "atk": get_prop(p, 2001), 
@@ -142,6 +143,21 @@ async def fetch_image(session, url):
         if response.status == 200:
             return Image.open(BytesIO(await response.read())).convert("RGBA")
     return None
+async def get_rank(uid, char_id, session): # Add session here
+    ranking_api = f"https://test-xehj.onrender.com/get/ranking/{uid}"
+    try:
+        async with session.get(ranking_api, timeout=10) as rank_resp:
+            if rank_resp.status == 200:
+                all_ranks = await rank_resp.json()
+                char_rank_data = all_ranks.get(str(char_id)) # Ensure string key
+                if char_rank_data:
+                    rank = char_rank_data.get("ranking")
+                    out_of = char_rank_data.get("outOf")
+                    percent = char_rank_data.get("percent")
+                    return f"Rank: {rank}/{out_of} (Top {percent}%)"
+            return "No Rank Found"
+    except Exception as e:
+        return f"Error: {e}"
 
 async def compare_characters(uid, uid2, char_id):
     me, them = await get_enkadata(uid), await get_enkadata(uid2)
@@ -174,8 +190,10 @@ async def compare_characters(uid, uid2, char_id):
     async with aiohttp.ClientSession() as session:
         icon_name_me = stats_me['weapon'].get('icon')
         icon_name_them = stats_them['weapon'].get('icon')
+        rank_me_task = get_rank(uid, char_id, session)
+        rank_them_task = get_rank(uid2, char_id, session)
 
-    # Construct the URLs directly
+        rank_me, rank_them = await asyncio.gather(rank_me_task, rank_them_task)
         url_me = f"https://enka.network/ui/{icon_name_me}.png" if icon_name_me else "https://enka.network/ui/UI_EquipIcon_Sword_Blunt.png"
         url_them = f"https://enka.network/ui/{icon_name_them}.png" if icon_name_them else "https://enka.network/ui/UI_EquipIcon_Sword_Blunt.png"
         namecard_me = await fetch_image(session, await get_namecard_image_url(me['nameCardId']))
@@ -256,7 +274,8 @@ async def compare_characters(uid, uid2, char_id):
             draw_dynamic_bubble(draw, f"R{w_info.get('refinement', 1)}", (pos[0]+345, 335), font_small, text_color=(255, 204, 0, 255), anchor="rm")
     f_level_me = stats_me.get("friendship", 1) if stats_me else 1
     f_level_them = stats_them.get("friendship", 1) if stats_them else 1
-
+    char_level_me = stats_me.get("char_level", 1) if stats_me else 1
+    char_level_them = stats_them.get("char_level", 1) if stats_them else 1
     CI_coords = [840,5,1010,195]
     c_box_w, c_box_h = 170, 170
     mask_ci = Image.new("L", (c_box_w, c_box_h), 0)
@@ -270,7 +289,10 @@ async def compare_characters(uid, uid2, char_id):
             background.paste(frame, pos, frame)
             background.paste(av_resized, pos, mask_avatar)
 
-    
+    draw_dynamic_bubble(draw, rank_them, (1110, 870), font_xsmall, anchor="lm")
+    draw_dynamic_bubble(draw,rank_me, (1505, 870), font_xsmall, anchor="lm")
+    draw_dynamic_bubble(draw, f"Character Lv : {char_level_me}/90", (750, 190), font, anchor="rm")
+    draw_dynamic_bubble(draw, f"Character Lv : {char_level_them}/90", (1100, 190), font, anchor="lm")
     draw_dynamic_bubble(draw,char_name, (920, 200), font)
     draw_dynamic_bubble(draw, me['nickname'], (1750, 190), font)
     draw_dynamic_bubble(draw, them['nickname'], (100, 190), font)

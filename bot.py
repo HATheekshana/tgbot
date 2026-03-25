@@ -1286,7 +1286,7 @@ async def handle_comp(callback: types.CallbackQuery):
     
     # 1. Security Check
     if callback.from_user.id != owner_id:
-        return await callback.answer("⏳ This menu isn't for you!", show_alert=True)
+        return await callback.answer("This menu isn't for you!", show_alert=True)
 
     # 2. Handshake & Loading State
     await callback.answer() # Stops button spinner
@@ -1307,12 +1307,6 @@ async def handle_comp(callback: types.CallbackQuery):
     # 3. Generate the Image (Pillow logic)
     img_bytes = await compare_characters(int(u1), int(u2), int(cid))
     
-    # 4. Prepare the Back Button
-    back_builder = InlineKeyboardBuilder()
-    back_builder.button(text="Back to List", callback_data=f"back_comp:{u1}:{u2}:{owner_id}")
-    
-    # 5. Clean up and Send Final Result
-    # We delete the loading/menu message entirely to "remove all messages"
     await callback.message.delete()
     
     # Reply to the original command sender to keep it threaded
@@ -1320,26 +1314,9 @@ async def handle_comp(callback: types.CallbackQuery):
     await callback.message.answer_photo(
         photo=types.BufferedInputFile(img_bytes.read(), filename="comparison.png"),
         caption=f"<b>Comparison Complete!</b>",
-        reply_markup=back_builder.as_markup(),
         parse_mode="HTML"
     )
     
-
-@dp.callback_query(F.data.startswith("back_comp:"))
-async def handle_back_button(callback: types.CallbackQuery):
-    # 1. Properly unpack the data (we need the 4th part!)
-    parts = callback.data.split(":")
-    # parts[0]="back_comp", [1]=u1, [2]=u2, [3]=owner_id
-    u1, u2, owner_id = parts[1], parts[2], int(parts[3])
-    
-    # 2. Add the Security Check (Important!)
-    if callback.from_user.id != owner_id:
-        return await callback.answer("This menu isn't for you!", show_alert=True)
-
-    await callback.answer("Returning to list...")
-    
-    # 3. Pass the owner_id back to the helper function
-    await show_comparison_menu(callback, u1, u2, owner_id, is_callback=True)
 @dp.message(Command("compare"))
 async def cmd_compare_reply(message: types.Message):
     if not message.reply_to_message:

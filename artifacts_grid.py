@@ -113,10 +113,10 @@ async def draw_all_artifacts(session, background, me_char_data, them_char_data, 
     them_relics = get_relics(them_char_data)
 
     for i, art in enumerate(me_relics[:5]):
-        tasks.append(draw_artifact_card(session, background, 1485, 250 + (i * 125), art, font))
+        tasks.append(draw_artifact_card(session, background, 1485, 230 + (i * 125), art, font))
             
     for i, art in enumerate(them_relics[:5]):
-        tasks.append(draw_artifact_card(session, background, 1090, 250 + (i * 125), art, font))
+        tasks.append(draw_artifact_card(session, background, 1090, 230 + (i * 125), art, font))
     
     if tasks:
         await asyncio.gather(*tasks)
