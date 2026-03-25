@@ -122,7 +122,7 @@ def draw_build_column(canvas, start_x, data,t_icons, c_icons):
             canvas.paste(c_bg_res, (x, y), c_bg_res)
         else:
             img = img.convert("L").convert("RGBA")
-            draw.ellipse([x+15, y+15, x+55, y+55], fill=(0, 0, 0, 200)) # Base circle for level indicator    
+            draw.ellipse([x+15, y+15, x+55, y+55], fill=(0, 0, 0, 160)) # Base circle for level indicator    
             c_bg_res = con_bg.resize((70, 70), Image.Resampling.LANCZOS)
             canvas.paste(c_bg_res, (x, y), c_bg_res)
             canvas.paste(img, (x+5, y+5), c_mask)
