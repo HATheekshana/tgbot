@@ -4,6 +4,7 @@ import aiohttp
 import json
 import genshin
 from io import BytesIO
+from artifacts_grid import draw_all_artifacts
 from t_c import fetch_build_assets, draw_build_column
 W_STAT_ICONS = {
         "FIGHT_PROP_BASE_ATTACK": "asstests/icons/atk.png",
@@ -63,7 +64,7 @@ def get_prop(stats_dict, prop_id):
     """Handles Enka's mix of string and integer keys for stats."""
     return stats_dict.get(str(prop_id), stats_dict.get(int(prop_id), 0))
 def extract_char_stats(avatar_list, char_id, element):
-    element_map = {"Pyro": 40, "Cryo": 41, "ELECTRO": 42, "Hydro": 43, "Dendro": 44, "Anemo": 45, "Geo": 46}
+    element_map = {"Pyro": 40, "Cryo": 41, "Electro": 42, "Hydro": 43, "Dendro": 44, "Anemo": 45, "Geo": 46}
     bonus_id = element_map.get(element, 45)
 
     for char in avatar_list:
@@ -159,8 +160,8 @@ async def compare_characters(uid, uid2, char_id):
         char_map = json.load(f)
 
     active_char_id = str(char_id)
-    char_info = char_map.get(active_char_id, {"element": "Anemo", "avataricon": "UI_AvatarIcon_Qin", "name": "Unknown"})
-    
+    char_info = char_map.get(active_char_id, {"rarity": 5, "element": "Anemo", "avataricon": "UI_AvatarIcon_Qin", "name": "Unknown"})
+    rarity = char_info.get("rarity", 5)
     element = char_info['element']
     char_name = char_info['avataricon'].replace("UI_AvatarIcon_", "")
     splash_name = char_info['avataricon'].replace("UI_AvatarIcon", "UI_Gacha_AvatarImg")
@@ -189,7 +190,7 @@ async def compare_characters(uid, uid2, char_id):
         char_icon = await fetch_image(session, char_url)
 
     target_size = (1875, 890)
-    bg_path = ELEMENT_BG_MAP.get(element, "asstests/backgrounds/ANEMO.png")
+    bg_path = ELEMENT_BG_MAP.get(element, "asstests/backgrounds/anemo.jpg")
     
     bg_base = ImageOps.fit(Image.open(bg_path).convert("RGBA"), target_size, method=Image.Resampling.LANCZOS)
     
@@ -249,7 +250,7 @@ async def compare_characters(uid, uid2, char_id):
                 
                 draw.text((curr_stat_x + 35, 290), val_str, font=font_small, fill=(255, 255, 255), anchor="lm")
 
-            max_lv: str = "90" if w_info.get('rank', 0) == 5 else "90" if w_info.get('rank', 0) == 4 else "80"
+            max_lv: str = "90" if w_info.get('rank', 0) == 5 else "80" if w_info.get('rank', 0) == 4 else "70"
             
             draw_dynamic_bubble(draw, f"Lv: {w_info['level']}/{max_lv}", (pos[0] + 140, 335), font_small, anchor="lm")
             draw_dynamic_bubble(draw, f"R{w_info.get('refinement', 1)}", (pos[0]+345, 335), font_small, text_color=(255, 204, 0, 255), anchor="rm")
@@ -283,12 +284,12 @@ async def compare_characters(uid, uid2, char_id):
     draw.rounded_rectangle([205,165, 320,215],radius=8, fill=(15, 15, 25, 220), outline=(255,255,255,50))
     f_icon = Image.open("asstests/icons/FRIENDS.png").convert("RGBA").resize((32, 32))
     ui_layer.paste(f_icon, (205 + 14, 165 + 11), f_icon)
-    draw.text((270, 190),str(f_level_me), font=font_big, fill=(255, 255, 255, 255), anchor="lm")
+    draw.text((270, 190),str(f_level_them), font=font_big, fill=(255, 255, 255, 255), anchor="lm")
 
     draw.rounded_rectangle([1525,165, 1640,215],radius=8, fill=(15, 15, 25, 220), outline=(255,255,255,50))
     f_icon = Image.open("asstests/icons/FRIENDS.png").convert("RGBA").resize((32, 32))
     ui_layer.paste(f_icon, (1525 + 14, 165 + 11), f_icon)
-    draw.text((1595, 190),str(f_level_them), font=font_big, fill=(255, 255, 255, 255), anchor="lm")
+    draw.text((1595, 190),str(f_level_me), font=font_big, fill=(255, 255, 255, 255), anchor="lm")
 
     draw.rounded_rectangle(tl_coords, radius=10, outline=(255,255,255,200), width=2)
     draw.rounded_rectangle(tr_coords, radius=10, outline=(255,255,255,200), width=2)
@@ -297,8 +298,6 @@ async def compare_characters(uid, uid2, char_id):
     draw.rounded_rectangle([937, 220, 1085, 480], radius=10, fill=(255,255,255,60), outline=(255,255,255,200))
     draw.rounded_rectangle([937, 490, 1085, 875], radius=10, fill=(255,255,255,60), outline=(255,255,255,200))
     draw.rounded_rectangle([785, 490, 932, 875], radius=10, fill=(255,255,255,60), outline=(255,255,255,200))
-    draw_build_column(background, 785, them_data, t_icons, c_icons)
-    draw_build_column(background, 935, me_data, t_icons, c_icons)
     y_start = 370
     icon_w = 60      # Small box for icon
     label_w = 330     # Box for stat name
@@ -352,6 +351,39 @@ async def compare_characters(uid, uid2, char_id):
                                radius=8, fill=(15, 15, 25, 170), outline=(255,255,255,50))
         val2 = fmt.format(stats_them.get(key, 0)) if stats_them else "0"
         draw.text((v2_x + (val_w // 2), curr_y + (row_height//2)), val2, font=font, fill=(255, 255, 255), anchor="mm")
+    draw_build_column(background, 785, me_data, t_icons, c_icons)
+    draw_build_column(background, 935, them_data, t_icons, c_icons) 
+    draw_build_column(background, 785, me_data, t_icons, c_icons)
+    draw_build_column(background, 935, them_data, t_icons, c_icons)
+    draw_build_column(background, 785, me_data, t_icons, c_icons)
+    draw_build_column(background, 935, them_data, t_icons, c_icons)
+    draw_build_column(background, 785, me_data, t_icons, c_icons)
+    draw_build_column(background, 935, them_data, t_icons, c_icons)
+
+    if rarity == 4:
+        star4 = Image.open("asstests/icons/stars/c_stars_4.png").convert("RGBA")
+        background.paste(star4, (850, 150), star4)
+    elif rarity == 5:
+        star5 = Image.open("asstests/icons/stars/c_stars_5.png").convert("RGBA")
+        background.paste(star5, (850, 150), star5)
+    async with aiohttp.ClientSession() as session:
+        # How to extract the specific character objects from the Enka API response
+        try:
+            # me and them are the full JSON responses from Enka
+            me_char_obj = next(c for c in me['avatarInfoList'] if str(c['avatarId']) == str(char_id))
+            them_char_obj = next(c for c in them['avatarInfoList'] if str(c['avatarId']) == str(char_id))
+        except StopIteration:
+            print("Character not found in one of the showcases!")
+            return
+
+        # In char_compare.py, inside your main drawing function
+        await draw_all_artifacts(
+            session=session, 
+            background=ui_layer, 
+            me_char_data=me_char_obj,    # The dictionary for the character from Player 1
+            them_char_data=them_char_obj, # The dictionary for the character from Player 2
+            font=font_small                    # Your loaded ImageFont object
+        )
         
     buffer = BytesIO()
     final_img = Image.alpha_composite(background, ui_layer)
