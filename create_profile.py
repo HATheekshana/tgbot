@@ -6,8 +6,8 @@ import json
 from io import BytesIO
 from genshin_utils import get_player_full_data, get_enkadata
 COOKIES = {
-    "ltuid_v2": "471000302",
-    "ltoken_v2": "v2_CAISDGM5b3FhcTNzM2d1OBokZTFmZTViNmItZDgxOS00MzNlLWJiZDktYWJkMTEzMWY1ZmY0ILaq780GKNa-zZEGMO7Jy-ABQgtiYnNfb3ZlcnNlYVhqagJTRw.NtW7aQAAAAAB.MEUCIGXUWYTB1bk4uUPg-Mwv8mZ6fXGUPvhKlkks9aizJCKVAiEA5ukOrLn7OhrY4JKtlMzZEXWCY-f-lCsBnIESDT_xbpY"
+    "ltuid_v2": "449108883",
+    "ltoken_v2": "v2_CAISDGM5b3FhcTNzM2d1OBokZTFmZTViNmItZDgxOS00MzNlLWJiZDktYWJkMTEzMWY1ZmY0INfdl84GKKqWspIEMJO3k9YBQgtiYnNfb3ZlcnNlYVhqagJTRw.1-7FaQAAAAAB.MEQCIEsAG1_80WwjGD-w-RttY1nyIvBuaHgMueVLUxOPicK-AiAtXHeX04bCunNlFtGu6ifNnz8Qbd57M2AEt25fZwV06Q"
 }
 client = genshin.Client(COOKIES)
 client.region = genshin.Region.OVERSEAS
