@@ -290,8 +290,8 @@ async def compare_characters(uid, uid2, char_id):
             background.paste(frame, pos, frame)
             background.paste(av_resized, pos, mask_avatar)
 
-    draw_dynamic_bubble(draw, rank_them, (1110, 870), font_xsmall, anchor="lm")
-    draw_dynamic_bubble(draw,rank_me, (1505, 870), font_xsmall, anchor="lm")
+    draw_dynamic_bubble(draw, str(rank_them), (1110, 870), font_xsmall, anchor="lm")
+    draw_dynamic_bubble(draw, str(rank_me), (1505, 870), font_xsmall, anchor="lm")
     draw_dynamic_bubble(draw, f"Character Lv : {char_level_me}/90", (750, 190), font, anchor="rm")
     draw_dynamic_bubble(draw, f"Character Lv : {char_level_them}/90", (1100, 190), font, anchor="lm")
     draw_dynamic_bubble(draw,char_name, (920, 200), font)
