@@ -10,3 +10,4 @@ aiohttp
 genshin
 aioenkanetworkcard
 cryptography
+datetime
