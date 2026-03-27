@@ -174,7 +174,7 @@ def get_guide_keyboard(step: int):
     if step > 1:
         builder.button(text="Back", callback_data=f"cookie_guide:{step-1}")
     
-    if step < 3: # Total steps
+    if step < 5: # Total steps
         builder.button(text="Next", callback_data=f"cookie_guide:{step+1}")
     else:
         builder.button(text="Done", callback_data="cookie_guide:close")
