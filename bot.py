@@ -1261,8 +1261,9 @@ async def my_profile(message: types.Message):
     msg += f"𖹭 <b>{user_info_enka['nickname']}</b> | UID: <code>{db_uid}</code>\n"
     msg += f"𖹭 <b>AR {user_info_enka['level']}</b> | WL : {user_info_enka['worldLevel']}\n"
     msg += f"𖹭 <b>Achievements:</b> {user_info_enka['achievements']}\n"
-    msg += f"𖹭 <b>Days Active:</b> {user_info.get('days_active', 'N/A')}\n"    if user_info_enka['signature']:
-    msg += f"<i>\"{user_info_enka['signature']}\"</i>\n"
+    msg += f"𖹭 <b>Days Active:</b> {user_info.get('days_active', 'N/A')}\n"   
+    if user_info_enka['signature']:
+     msg += f"<i>\"{user_info_enka['signature']}\"</i>\n"
         
     msg += "────────────────────\n\n"
 
