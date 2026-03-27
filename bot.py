@@ -185,7 +185,7 @@ def get_guide_keyboard(step: int):
 # --- Content for each step ---
 GUIDE_TEXTS = {
     1: "<b>Step 1: Login to HoYoLAB</b>\n\nOpen your browser and login to <a href='https://www.hoyolab.com'>hoyolab.com</a>. Make sure you are on the home page.",
-    2: "<b>Step 2: Open Developer Tools</b>\n\nPress <code>Ctrl + Shift + I</code> (or <code>F12</code>) to open the Inspect panel. Click on the (1) aplication tab on top, then on the left side under (2)<code>Cookies</code>, click on Cookies and select the one under it.</b>",
+    2: "<b>Step 2: Open Developer Tools</b>\n\nPress <code>Ctrl + Shift + I</code> (or <code>F12</code>) to open the Inspect panel. Click on the (1) aplication tab on top, then on the left side under (2)<code>Cookies</code>, click on Cookies and select the one under it.",
     3: "<b>Step 3: Scroll down and search for <code>ltuid_v2</code> and <code>ltoken_v2</code> values.</b>",
     4: "<b>Step 4: Click on the value and copy it</b>",
     5: "<b>Once you have both values, use the command:\n<code>/cookie_login [ltuid_v2] [ltoken_v2]</code>\n\nExample:\n<code>/cookie_login 123456789 v2_abcdefg...</code></b>"
