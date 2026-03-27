@@ -194,6 +194,7 @@ async def compare_characters(uid, uid2, char_id):
         rank_them_task = get_rank(uid2, char_id, session)
 
         rank_them = await asyncio.gather(rank_them_task)
+        rank_me =await asyncio.gather(rank_me_task)
         url_me = f"https://enka.network/ui/{icon_name_me}.png" if icon_name_me else "https://enka.network/ui/UI_EquipIcon_Sword_Blunt.png"
         url_them = f"https://enka.network/ui/{icon_name_them}.png" if icon_name_them else "https://enka.network/ui/UI_EquipIcon_Sword_Blunt.png"
         namecard_me = await fetch_image(session, await get_namecard_image_url(me['nameCardId']))
@@ -206,7 +207,7 @@ async def compare_characters(uid, uid2, char_id):
         avatar_them = await fetch_image(session, them_g['in_game_avatar'])
         splash_art = await fetch_image(session, splash_url)
         char_icon = await fetch_image(session, char_url)
-        rank_me = await asyncio.gather(rank_me_task)
+
     target_size = (1875, 890)
     bg_path = ELEMENT_BG_MAP.get(element, "asstests/backgrounds/anemo.jpg")
     
