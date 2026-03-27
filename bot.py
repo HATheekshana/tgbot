@@ -150,8 +150,8 @@ async def cmd_daily_login(message: types.Message):
         client = genshin.Client(cookies)
         client.region = genshin.Region.OVERSEAS
         
-        # Claim Reward
-        reward = await client.claim_daily_reward()
+
+        reward = await client.claim_daily_reward(game=genshin.Game.GENSHIN)
         
         safe_name = html.escape(message.from_user.full_name)
         await message.answer(
