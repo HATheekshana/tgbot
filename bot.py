@@ -192,11 +192,11 @@ GUIDE_TEXTS = {
 }
 
 GUIDE_IMAGES = {
-    1: "images/tutorial/tutorial1.png", # Path to your local images
-    2: "images/tutorial/tutorial2.png",
-    3: "images/tutorial/tutorial3.png",
-    4: "images/tutorial/tutorial4.png",
-    5: "images/tutorial/tutorial5.png"
+    1: "images/tutorial/tutorial1.jpg", # Path to your local images
+    2: "images/tutorial/tutorial2.jpg",
+    3: "images/tutorial/tutorial3.jpg",
+    4: "images/tutorial/tutorial4.jpg",
+    5: "images/tutorial/tutorial5.jpg"
 }
 # 1. Start the guide
 @dp.message(Command("cookiehelp"))
