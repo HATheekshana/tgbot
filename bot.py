@@ -29,6 +29,8 @@ from wishing import combine_images
 from create_profile import create_genshin_profile
 from genshin_utils import  get_enkadata,get_quiz_score,to_int,get_val,get_exploration_data,get_abyss_data,get_player_full_data,calculate_world_level,format_abyss_info
 from data import weapons3, characters4, characters5, rare
+from cryptography.fernet import Fernet
+
 
 quiz_track = {}
 group_message_counts = {}
@@ -43,14 +45,12 @@ ITEMS_PER_PAGE = 10
 dp = Dispatcher()
 
 load_dotenv()
-
+KEY = os.getenv("ENCRYPTION_KEY").encode()
+cipher = Fernet(KEY)
 TOKEN = os.getenv("BOT_TOKEN")
 MONGO_URL = os.getenv("MONGO_URL")
 ADMIN_VAL = os.getenv("ADMIN_ID")
 
-if not TOKEN or not MONGO_URL or not ADMIN_VAL:
-    print("❌ ERROR: Missing environment variables in .env file!")
-    sys.exit(1)
 
 ADMIN_ID = int(ADMIN_VAL)
 
@@ -72,6 +72,65 @@ try:
 except Exception as e:
     print(f"Error loading char.json: {e}")
     CHARACTER_MAP = {}
+def encrypt_cookies(ltuid, ltoken):
+    data = json.dumps({"ltuid": ltuid, "ltoken": ltoken}).encode()
+    return cipher.encrypt(data).decode()
+
+def decrypt_cookies(encrypted_str):
+    decrypted_data = cipher.decrypt(encrypted_str.encode()).decode()
+    return json.loads(decrypted_data)
+if not TOKEN or not MONGO_URL or not ADMIN_VAL:
+    print("❌ ERROR: Missing environment variables in .env file!")
+    sys.exit(1)
+@dp.message_handler(commands=['cookie_login'])
+async def cmd_cookie_login(message: types.Message):
+    args = message.get_args().split()
+    if len(args) != 2:
+        return await message.answer("Use: `/cookie_login <ltuid_v2> <ltoken_v2>`", parse_mode="Markdown")
+
+    ltuid, ltoken = args[0], args[1]
+    
+    # Validate cookies before saving
+    client = genshin.Client({"ltuid_v2": ltuid, "ltoken_v2": ltoken})
+    try:
+        await client.get_genshin_user(123456789) # Simple check
+    except genshin.InvalidCookies:
+        return await message.answer("Invalid cookies. Please check your values.")
+    except Exception:
+        pass # Some UIDs might be private, but if no InvalidCookies, they are usually okay
+
+    # Encrypt and save
+    encrypted_data = encrypt_cookies(ltuid, ltoken)
+    await users_col.update_one(
+        {"user_id": str(message.from_user.id)},
+        {"$set": {"hoyolab_data": encrypted_data}},
+        upsert=True
+    )
+    
+    await message.answer("Cookies encrypted and saved successfully! You can now use /dailylogin.")
+@dp.message_handler(commands=['dailylogin'])
+async def cmd_daily_login(message: types.Message):
+    user = await users_col.find_one({"user_id": str(message.from_user.id)})
+    
+    if not user or "hoyolab_data" not in user:
+        return await message.answer("You haven't logged in. Use /cookie_login first.")
+
+    # Decrypt
+    try:
+        creds = decrypt_cookies(user["hoyolab_data"])
+        client = genshin.Client({"ltuid_v2": creds["ltuid"], "ltoken_v2": creds["ltoken"]})
+        client.region = genshin.Region.OVERSEAS
+        
+        # Claim
+        reward = await client.claim_daily_reward()
+        await message.answer(f"Daily reward claimed: {reward.amount}x {reward.name}")
+        
+    except genshin.AlreadyClaimed:
+        await message.answer("ℹYou already claimed your reward today.")
+    except genshin.InvalidCookies:
+        await message.answer("Your cookies have expired. Please login again.")
+    except Exception as e:
+        await message.answer(f"An error occurred: {str(e)}")
 
 @dp.message(Command("characters"))
 async def cmd_characters(message: types.Message):
@@ -1631,7 +1690,7 @@ async def handle_poll_answer(poll_answer: types.PollAnswer):
         data["winners"].append((user_name, points))
 
         print(f"✅ Saved {points} pts for {user_name} in group {chat_id}")
-# --- LEADERBOARD COMMAND ---
+
 # ---------------- Main ----------------
 async def main():
     # 1. Test MongoDB connection first
