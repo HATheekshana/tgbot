@@ -90,7 +90,7 @@ async def cmd_cookie_login(message: types.Message, command: CommandObject):
     if not command.args or len(command.args.split()) != 2:
         return await message.answer(
             "⚠️ <b>Usage:</b>\n<code>/cookie_login [ltuid_v2] [ltoken_v2]</code>\n\n"
-            "<i>Get these from HoYoLAB cookies (document.cookie)</i>"
+            "<i>Get these from HoYoLAB cookies (document.cookie)</i>",parse_mode="HTML"
         )
 
     ltuid, ltoken = command.args.split()
@@ -101,7 +101,7 @@ async def cmd_cookie_login(message: types.Message, command: CommandObject):
         # Check if cookies work by fetching basic info
         await check_client.get_genshin_user(123456789) 
     except genshin.InvalidCookies:
-        return await message.answer("❌ <b>Error:</b> These cookies are invalid or expired.")
+        return await message.answer("❌ <b>Error:</b> These cookies are invalid or expired.",parse_mode="HTML")
     except Exception:
         pass # Private profiles might error, but InvalidCookies is what we care about
 
@@ -116,7 +116,7 @@ async def cmd_cookie_login(message: types.Message, command: CommandObject):
         upsert=True
     )
     
-    await message.answer("🔒 <b>Success!</b> Your cookies are encrypted and saved.")
+    await message.answer("🔒 <b>Success!</b> Your cookies are encrypted and saved.", parse_mode="HTML")
 
 # 4. Command: /dailylogin
 @dp.message(Command("dailylogin"))
@@ -124,7 +124,7 @@ async def cmd_daily_login(message: types.Message):
     user = await users_col.find_one({"user_id": str(message.from_user.id)})
     
     if not user or "hoyolab_data" not in user:
-        return await message.answer("❌ <b>Not Logged In!</b>\nUse /cookie_login first.")
+        return await message.answer("❌ <b>Not Logged In!</b>\nUse /cookie_login first.", parse_mode="HTML")
 
     try:
         # Decrypt
@@ -141,15 +141,15 @@ async def cmd_daily_login(message: types.Message):
         await message.answer(
             f"✅ <b>Daily Reward Claimed!</b>\n"
             f"👤 User: <b>{safe_name}</b>\n"
-            f"🎁 Reward: <b>{reward.amount}x {reward.name}</b>"
+            f"🎁 Reward: <b>{reward.amount}x {reward.name}</b>",parse_mode="HTML"
         )
         
     except genshin.AlreadyClaimed:
-        await message.answer("ℹ️ <b>Already Done:</b> You've already claimed your reward today!")
+        await message.answer("ℹ️ <b>Already Done:</b> You've already claimed your reward today!", parse_mode="HTML")
     except genshin.InvalidCookies:
-        await message.answer("⚠️ <b>Expired:</b> Your cookies have expired. Please login again.")
+        await message.answer("⚠️ <b>Expired:</b> Your cookies have expired. Please login again.", parse_mode="HTML")
     except Exception as e:
-        await message.answer(f"❌ <b>Error:</b> <code>{html.escape(str(e))}</code>")
+        await message.answer(f"❌ <b>Error:</b> <code>{html.escape(str(e))}</code>", parse_mode="HTML")
 
 @dp.message(Command("characters"))
 async def cmd_characters(message: types.Message):
