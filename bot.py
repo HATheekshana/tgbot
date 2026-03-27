@@ -87,26 +87,43 @@ if not TOKEN or not MONGO_URL or not ADMIN_VAL:
 
 @dp.message(Command("cookie_login"))
 async def cmd_cookie_login(message: types.Message, command: CommandObject):
-    if not command.args or len(command.args.split()) != 2:
+    # Support for 2 arguments (uid/token) or 3 arguments (uid/token/mid)
+    if not command.args or len(command.args.split()) < 2:
         return await message.answer(
-            "⚠️ <b>Usage:</b>\n<code>/cookie_login [ltuid_v2] [ltoken_v2]</code>\n\n"
-            "<i>Get these from HoYoLAB cookies (document.cookie)</i>",parse_mode="HTML"
+            "⚠️ <b>Usage:</b>\n<code>/cookie_login [ltuid_v2] [ltoken_v2]</code>\n"
+            "<i>(Optional: add ltmid_v2 as a third argument if login fails)</i>",
+            parse_mode="HTML"
         )
 
-    ltuid, ltoken = command.args.split()
+    args = command.args.split()
+    ltuid = args[0]
+    ltoken = args[1]
+    # Handle optional ltmid_v2 if provided
+    ltmid = args[2] if len(args) > 2 else None
+
+    # Construct cookie dict
+    cookie_dict = {"ltuid_v2": ltuid, "ltoken_v2": ltoken}
+    if ltmid:
+        cookie_dict["ltmid_v2"] = ltmid
+
+    # Setup validation client
+    check_client = genshin.Client(cookie_dict)
+    check_client.region = genshin.Region.OVERSEAS # Ensure global region
     
-    # Simple validation check
-    check_client = genshin.Client({"ltuid_v2": ltuid, "ltoken_v2": ltoken})
     try:
-        # Check if cookies work by fetching basic info
-        await check_client.get_genshin_user(123456789) 
+        # A more reliable way to check if cookies are valid:
+        # This checks the check-in status of the account itself
+        await check_client.get_reward_info() 
     except genshin.InvalidCookies:
-        return await message.answer("❌ <b>Error:</b> These cookies are invalid or expired.",parse_mode="HTML")
-    except Exception:
-        pass # Private profiles might error, but InvalidCookies is what we care about
+        return await message.answer("❌ <b>Error:</b> These cookies are invalid or expired.", parse_mode="HTML")
+    except Exception as e:
+        # If it's a network error or HoYoLAB is down, we can log it but maybe let the user proceed
+        print(f"Validation Warning: {e}")
 
     # Encrypt and save to MongoDB
-    encrypted_str = encrypt_cookies(ltuid, ltoken)
+    # We save as a JSON string to include the optional ltmid
+    encrypted_str = cipher.encrypt(json.dumps(cookie_dict).encode()).decode()
+    
     await users_col.update_one(
         {"user_id": str(message.from_user.id)},
         {"$set": {
@@ -118,7 +135,6 @@ async def cmd_cookie_login(message: types.Message, command: CommandObject):
     
     await message.answer("🔒 <b>Success!</b> Your cookies are encrypted and saved.", parse_mode="HTML")
 
-# 4. Command: /dailylogin
 @dp.message(Command("dailylogin"))
 async def cmd_daily_login(message: types.Message):
     user = await users_col.find_one({"user_id": str(message.from_user.id)})
@@ -127,21 +143,22 @@ async def cmd_daily_login(message: types.Message):
         return await message.answer("❌ <b>Not Logged In!</b>\nUse /cookie_login first.", parse_mode="HTML")
 
     try:
-        # Decrypt
-        creds = decrypt_cookies(user["hoyolab_data"])
-        client = genshin.Client({"ltuid_v2": creds["ltuid"], "ltoken_v2": creds["ltoken"]})
+        # Decrypt the full cookie dictionary
+        decrypted_data = cipher.decrypt(user["hoyolab_data"].encode()).decode()
+        cookies = json.loads(decrypted_data)
+        
+        client = genshin.Client(cookies)
         client.region = genshin.Region.OVERSEAS
         
         # Claim Reward
         reward = await client.claim_daily_reward()
         
-        # Escape user name for safety
         safe_name = html.escape(message.from_user.full_name)
-        
         await message.answer(
             f"✅ <b>Daily Reward Claimed!</b>\n"
             f"👤 User: <b>{safe_name}</b>\n"
-            f"🎁 Reward: <b>{reward.amount}x {reward.name}</b>",parse_mode="HTML"
+            f"🎁 Reward: <b>{reward.amount}x {reward.name}</b>",
+            parse_mode="HTML"
         )
         
     except genshin.AlreadyClaimed:
@@ -150,7 +167,6 @@ async def cmd_daily_login(message: types.Message):
         await message.answer("⚠️ <b>Expired:</b> Your cookies have expired. Please login again.", parse_mode="HTML")
     except Exception as e:
         await message.answer(f"❌ <b>Error:</b> <code>{html.escape(str(e))}</code>", parse_mode="HTML")
-
 @dp.message(Command("characters"))
 async def cmd_characters(message: types.Message):
     user_data = await users_col.find_one({"user_id": str(message.from_user.id)})
