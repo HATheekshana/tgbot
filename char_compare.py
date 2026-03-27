@@ -193,8 +193,7 @@ async def compare_characters(uid, uid2, char_id):
         rank_me_task = get_rank(uid, char_id, session)
         rank_them_task = get_rank(uid2, char_id, session)
 
-        rank_them = await asyncio.gather(rank_them_task)
-        rank_me =await asyncio.gather(rank_me_task)
+        rank_me, rank_them = await asyncio.gather(rank_me_task, rank_them_task)
         url_me = f"https://enka.network/ui/{icon_name_me}.png" if icon_name_me else "https://enka.network/ui/UI_EquipIcon_Sword_Blunt.png"
         url_them = f"https://enka.network/ui/{icon_name_them}.png" if icon_name_them else "https://enka.network/ui/UI_EquipIcon_Sword_Blunt.png"
         namecard_me = await fetch_image(session, await get_namecard_image_url(me['nameCardId']))
@@ -290,8 +289,8 @@ async def compare_characters(uid, uid2, char_id):
             background.paste(frame, pos, frame)
             background.paste(av_resized, pos, mask_avatar)
 
-    draw_dynamic_bubble(draw, str(rank_them), (1110, 870), font_xsmall, anchor="lm")
-    draw_dynamic_bubble(draw, str(rank_me), (1505, 870), font_xsmall, anchor="lm")
+    draw_dynamic_bubble(draw, rank_them, (1110, 870), font_xsmall, anchor="lm")
+    draw_dynamic_bubble(draw,rank_me, (1505, 870), font_xsmall, anchor="lm")
     draw_dynamic_bubble(draw, f"Character Lv : {char_level_me}/90", (750, 190), font, anchor="rm")
     draw_dynamic_bubble(draw, f"Character Lv : {char_level_them}/90", (1100, 190), font, anchor="lm")
     draw_dynamic_bubble(draw,char_name, (920, 200), font)
