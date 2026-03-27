@@ -82,7 +82,7 @@ def decrypt_cookies(encrypted_str):
     decrypted_data = cipher.decrypt(encrypted_str.encode()).decode()
     return json.loads(decrypted_data)
 if not TOKEN or not MONGO_URL or not ADMIN_VAL:
-    print("❌ ERROR: Missing environment variables in .env file!")
+    print("ERROR: Missing environment variables in .env file!")
     sys.exit(1)
 
 @dp.message(Command("cookie_login"))
@@ -90,7 +90,7 @@ async def cmd_cookie_login(message: types.Message, command: CommandObject):
     # Support for 2 arguments (uid/token) or 3 arguments (uid/token/mid)
     if not command.args or len(command.args.split()) < 2:
         return await message.answer(
-            "⚠️ <b>Usage:</b>\n<code>/cookie_login [ltuid_v2] [ltoken_v2]</code>\n"
+            "<b>Usage:</b>\n<code>/cookie_login [ltuid_v2] [ltoken_v2]</code>\n"
             "<i>(Optional: add ltmid_v2 as a third argument if login fails)</i>",
             parse_mode="HTML"
         )
@@ -115,7 +115,7 @@ async def cmd_cookie_login(message: types.Message, command: CommandObject):
         # This checks the check-in status of the account itself
         await check_client.get_reward_info() 
     except genshin.InvalidCookies:
-        return await message.answer("❌ <b>Error:</b> These cookies are invalid or expired.", parse_mode="HTML")
+        return await message.answer("<b>Error:</b> These cookies are invalid or expired.", parse_mode="HTML")
     except Exception as e:
         # If it's a network error or HoYoLAB is down, we can log it but maybe let the user proceed
         print(f"Validation Warning: {e}")
@@ -133,14 +133,14 @@ async def cmd_cookie_login(message: types.Message, command: CommandObject):
         upsert=True
     )
     
-    await message.answer("🔒 <b>Success!</b> Your cookies are encrypted and saved.", parse_mode="HTML")
+    await message.answer("<b>Success!</b> Your cookies are encrypted and saved.", parse_mode="HTML")
 
 @dp.message(Command("dailylogin"))
 async def cmd_daily_login(message: types.Message):
     user = await users_col.find_one({"user_id": str(message.from_user.id)})
     
     if not user or "hoyolab_data" not in user:
-        return await message.answer("❌ <b>Not Logged In!</b>\nUse /cookie_login first.", parse_mode="HTML")
+        return await message.answer("<b>Not Logged In!</b>\nUse /cookie_login first.", parse_mode="HTML")
 
     try:
         # Decrypt the full cookie dictionary
@@ -155,18 +155,87 @@ async def cmd_daily_login(message: types.Message):
         
         safe_name = html.escape(message.from_user.full_name)
         await message.answer(
-            f"✅ <b>Daily Reward Claimed!</b>\n"
-            f"👤 User: <b>{safe_name}</b>\n"
-            f"🎁 Reward: <b>{reward.amount}x {reward.name}</b>",
+            f"<b>Daily Reward Claimed!</b>\n"
+            f"User: <b>{safe_name}</b>\n"
+            f"Reward: <b>{reward.amount}x {reward.name}</b>",
             parse_mode="HTML"
         )
         
     except genshin.AlreadyClaimed:
-        await message.answer("ℹ️ <b>Already Done:</b> You've already claimed your reward today!", parse_mode="HTML")
+        await message.answer("<b>Already Done:</b> You've already claimed your reward today!", parse_mode="HTML")
     except genshin.InvalidCookies:
-        await message.answer("⚠️ <b>Expired:</b> Your cookies have expired. Please login again.", parse_mode="HTML")
+        await message.answer("<b>Expired:</b> Your cookies have expired. Please login again.", parse_mode="HTML")
     except Exception as e:
-        await message.answer(f"❌ <b>Error:</b> <code>{html.escape(str(e))}</code>", parse_mode="HTML")
+        await message.answer(f"<b>Error:</b> <code>{html.escape(str(e))}</code>", parse_mode="HTML")
+def get_guide_keyboard(step: int):
+    builder = InlineKeyboardBuilder()
+    
+    # Navigation buttons
+    if step > 1:
+        builder.button(text="Back", callback_data=f"cookie_guide:{step-1}")
+    
+    if step < 3: # Total steps
+        builder.button(text="Next", callback_data=f"cookie_guide:{step+1}")
+    else:
+        builder.button(text="Done", callback_data="cookie_guide:close")
+    
+    builder.adjust(2)
+    return builder.as_markup()
+
+# --- Content for each step ---
+GUIDE_TEXTS = {
+    1: "<b>Step 1: Login to HoYoLAB</b>\n\nOpen your browser and login to <a href='https://www.hoyolab.com'>hoyolab.com</a>. Make sure you are on the home page.",
+    2: "<b>Step 2: Open Developer Tools</b>\n\nPress <code>Ctrl + Shift + I</code> (or <code>F12</code>) to open the Inspect panel. Click on the (1) aplication tab on top, then on the left side under (2)<code>Cookies</code>, click on Cookies and select the one under it.",
+    3: "<b>Step 3: Scroll down and search for <code>ltuid_v2</code> and <code>ltoken_v2</code> values.",
+    4: "<b>Step 4: Click on the value and copy it",
+    5: "Once you have both values, use the command:\n<code>/cookie_login [ltuid_v2] [ltoken_v2]</code>\n\nExample:\n<code>/cookie_login 123456789 v2_abcdefg...</code>"
+}
+
+GUIDE_IMAGES = {
+    1: "images/tutorial/tutorial1.png", # Path to your local images
+    2: "images/tutorial/tutorial2.png",
+    3: "images/tutorial/tutorial3.png",
+    4: "images/tutorial/tutorial4.png",
+    5: "images/tutorial/tutorial5.png"
+}
+# 1. Start the guide
+@dp.message(Command("cookiehelp"))
+async def cmd_cookiehelp(message: types.Message):
+    # Check if it's a Private Chat (DM)
+    if message.chat.type != "private":
+        return await message.answer("This command only works in Private DMs to protect your privacy.")
+
+    photo = FSInputFile(GUIDE_IMAGES[1])
+    await message.answer_photo(
+        photo=photo,
+        caption=GUIDE_TEXTS[1],
+        reply_markup=get_guide_keyboard(1),
+        parse_mode="HTML"
+    )
+
+# 2. Handle Button Clicks
+@dp.callback_query(F.data.startswith("cookie_guide:"))
+async def handle_guide_navigation(callback: types.CallbackQuery):
+    step = callback.data.split(":")[1]
+    
+    if step == "close":
+        await callback.message.delete()
+        return await callback.answer("Guide closed.")
+
+    step = int(step)
+    
+    # Update the photo and caption
+    new_photo = InputMediaPhoto(
+        media=FSInputFile(GUIDE_IMAGES[step]),
+        caption=GUIDE_TEXTS[step],
+        parse_mode="HTML"
+    )
+    
+    await callback.message.edit_media(
+        media=new_photo,
+        reply_markup=get_guide_keyboard(step)
+    )
+    await callback.answer()
 @dp.message(Command("characters"))
 async def cmd_characters(message: types.Message):
     user_data = await users_col.find_one({"user_id": str(message.from_user.id)})
