@@ -89,6 +89,8 @@ if not TOKEN or not MONGO_URL or not ADMIN_VAL:
 @dp.message(Command("cookie_login"))
 async def cmd_cookie_login(message: types.Message, command: CommandObject):
     # Support for 2 arguments (uid/token) or 3 arguments (uid/token/mid)
+    if message.chat.type != "private":
+        return await message.answer("This command only works in Private DMs to protect your privacy.")
     if not command.args or len(command.args.split()) < 2:
         return await message.answer(
             "<b>Usage:</b>\n<code>/cookie_login [ltuid_v2] [ltoken_v2]</code>\nUse /cookiehelp for a step-by-step guide on how to get these values.\n\n"
