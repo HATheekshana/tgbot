@@ -1,26 +1,23 @@
 import json
-from time import timezone
 import genshin
+import pytz  # Import the whole module
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 
+# Note: Removed 'from time import timezone' entirely
+
 async def check_resin_alerts(bot, users_col, cipher):
-    # Get all users who have logged in
     cursor = users_col.find({"hoyolab_data": {"$exists": True}})
     
     async for user in cursor:
         try:
-            # Decrypt Cookies
             decrypted_data = cipher.decrypt(user["hoyolab_data"].encode()).decode()
             cookies = json.loads(decrypted_data)
             
-            # Setup Client
             client = genshin.Client(cookies)
             client.region = genshin.Region.OVERSEAS
             
-            # Get Notes
             notes = await client.get_genshin_notes()
             
-            # Check Threshold
             if notes.current_resin >= 155 and not user.get("resin_notified", False):
                 await bot.send_message(
                     user["user_id"], 
@@ -36,8 +33,9 @@ async def check_resin_alerts(bot, users_col, cipher):
             print(f"Error checking resin for {user.get('user_id')}: {e}")
 
 def setup_scheduler(bot, users_col, cipher):
-    # Use the same timezone as your bot
-    lk_timezone = timezone("Asia/Colombo")
+    # Use pytz explicitly to avoid conflicts
+    lk_timezone = pytz.timezone("Asia/Colombo")
+
     scheduler = AsyncIOScheduler(timezone=lk_timezone)
     
     scheduler.add_job(
