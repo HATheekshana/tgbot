@@ -112,25 +112,24 @@ async def cmd_cookie_login(message: types.Message, command: CommandObject):
     check_client.region = genshin.Region.OVERSEAS # Ensure global region
     
     try:
-        # 1. Explicitly set the game to Genshin for validation
-        # This prevents the "No default game set" error
+        # 1. Target Genshin specifically for validation
         await check_client.get_reward_info(game=genshin.Game.GENSHIN) 
         
-        # 2. Fetch accounts specifically for Genshin
-        game_accounts = await check_client.get_genshin_accounts()
+        # 2. Use the updated method name: search_genshin_characters
+        game_accounts = await check_client.search_genshin_characters()
         
         if not game_accounts:
-            return await message.answer("❌ <b>Error:</b> No Genshin Impact accounts found on this profile.")
+            return await message.answer("❌ <b>Error:</b> No Genshin Impact accounts found.")
         
-        # Pick the one with the highest level (usually the main)
+        # 3. Pick the account with the highest level
         main_acc = max(game_accounts, key=lambda x: x.level)
         uid = main_acc.uid
         nickname = main_acc.nickname
 
     except genshin.InvalidCookies:
-        return await message.answer("❌ <b>Error:</b> Cookies are invalid.", parse_mode="HTML")
+        return await message.answer("❌ <b>Error:</b> Cookies are invalid or expired.", parse_mode="HTML")
     except Exception as e:
-        # This will now catch specific issues like "Account not found"
+        # This will catch if the method name is still wrong or other API issues
         return await message.answer(f"❌ <b>Validation Failed:</b> <code>{str(e)}</code>", parse_mode="HTML")
     # Encrypt and save to MongoDB
     # We save as a JSON string to include the optional ltmid
