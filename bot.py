@@ -1845,7 +1845,7 @@ async def handle_poll_answer(poll_answer: types.PollAnswer):
 
 # ---------------- Main ----------------
 async def main():
-    # 1. Test MongoDB connection
+    # 1. Test MongoDB connection first
     try:
         await cluster.admin.command('ping')
         print("✅ Successfully connected to MongoDB!")
@@ -1853,25 +1853,27 @@ async def main():
         print(f"❌ MongoDB Connection Error: {e}")
         return 
 
-    # 2. Initialize Bot and Timezone
+    # 2. Create the Bot object FIRST
     bot = Bot(token=TOKEN)
+
+    # Use your local Sri Lanka timezone
     lk_timezone = timezone("Asia/Colombo")
     
-    # 3. Start the HoYoLAB Tasks (Resin/Daily Login from tasks.py)
-    # This must happen before polling
+    scheduler = AsyncIOScheduler(timezone=lk_timezone)
     setup_scheduler(bot, users_col, cipher)
     
-    # 4. Setup Local Scheduler for Wishes/Dailies
-    local_scheduler = AsyncIOScheduler(timezone=lk_timezone)
-    
-    local_scheduler.add_job(
+    # Start the bot polling
+    asyncio.run(dp.start_polling(bot))
+    # --- JOB 1: Check individual 24h cooldowns every 15 minutes ---
+    scheduler.add_job(
         check_individual_dailies, 
         "interval", 
         minutes=15, 
         args=[bot]
     )
 
-    local_scheduler.add_job(
+    # --- JOB 2: Run the daily reset task at Midnight (Optional) ---
+    scheduler.add_job(
         daily_wish, 
         "cron", 
         hour=0, 
@@ -1879,13 +1881,16 @@ async def main():
         args=[bot]
     )
     
-    local_scheduler.start()
-    print("✅ All Schedulers Started")
+    # 4. Start everything
+    scheduler.start()
+    print("⏰ Both schedulers started (Interval & Midnight)!")
 
-    # 5. START POLLING LAST
-    # This keeps the script alive.
-    print("🤖 Bot is now polling...")
+    # 5. Start polling
+    asyncio.create_task(clear_old_polls())
     await dp.start_polling(bot)
+
+if __name__ == "__main__":
+    asyncio.run(main())
 
 
 
