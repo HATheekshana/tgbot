@@ -1844,6 +1844,7 @@ async def handle_poll_answer(poll_answer: types.PollAnswer):
         print(f"✅ Saved {points} pts for {user_name} in group {chat_id}")
 
 # ---------------- Main ----------------
+# ---------------- Main ----------------
 async def main():
     # 1. Test MongoDB connection first
     try:
@@ -1853,17 +1854,18 @@ async def main():
         print(f"❌ MongoDB Connection Error: {e}")
         return 
 
-    # 2. Create the Bot object FIRST
+    # 2. Create the Bot object
     bot = Bot(token=TOKEN)
 
-    # Use your local Sri Lanka timezone
+    # 3. Setup Timezone and Schedulers
     lk_timezone = timezone("Asia/Colombo")
     
-    scheduler = AsyncIOScheduler(timezone=lk_timezone)
+    # Start the HoYoLAB tasks from your separate tasks.py file
     setup_scheduler(bot, users_col, cipher)
     
-    # Start the bot polling
-    asyncio.run(dp.start_polling(bot))
+    # Setup the local scheduler for wishes and cooldowns
+    scheduler = AsyncIOScheduler(timezone=lk_timezone)
+    
     # --- JOB 1: Check individual 24h cooldowns every 15 minutes ---
     scheduler.add_job(
         check_individual_dailies, 
@@ -1872,7 +1874,7 @@ async def main():
         args=[bot]
     )
 
-    # --- JOB 2: Run the daily reset task at Midnight (Optional) ---
+    # --- JOB 2: Run the daily reset task at Midnight ---
     scheduler.add_job(
         daily_wish, 
         "cron", 
@@ -1881,16 +1883,22 @@ async def main():
         args=[bot]
     )
     
-    # 4. Start everything
+    # 4. Start the scheduler BEFORE polling
     scheduler.start()
-    print("⏰ Both schedulers started (Interval & Midnight)!")
+    print("⏰ All schedulers started (HoYoLAB, Interval & Midnight Reset)!")
 
-    # 5. Start polling
+    # 5. Start background tasks (non-blocking)
     asyncio.create_task(clear_old_polls())
+
+    # 6. Start polling (This is the LAST line)
+    print("🤖 Bot is now online and polling...")
     await dp.start_polling(bot)
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    try:
+        asyncio.run(main())
+    except (KeyboardInterrupt, SystemExit):
+        print("🤖 Bot stopped.")
 
 
 
