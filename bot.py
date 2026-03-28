@@ -1845,15 +1845,23 @@ async def handle_poll_answer(poll_answer: types.PollAnswer):
 
 # ---------------- Main ----------------
 async def main():
-    # ... (connection code) ...
+    # 1. Test MongoDB connection
+    try:
+        await cluster.admin.command('ping')
+        print("✅ Successfully connected to MongoDB!")
+    except Exception as e:
+        print(f"❌ MongoDB Connection Error: {e}")
+        return 
+
+    # 2. Initialize Bot and Timezone
     bot = Bot(token=TOKEN)
     lk_timezone = timezone("Asia/Colombo")
     
-    # 1. Start the Genshin/HoYoLAB Tasks (Resin/Daily Login)
-    # We pass 'bot', 'users_col', and 'cipher' to the other file
+    # 3. Start the HoYoLAB Tasks (Resin/Daily Login from tasks.py)
+    # This must happen before polling
     setup_scheduler(bot, users_col, cipher)
     
-    # 2. Start the local Game Tasks (Wishes/Cooldowns)
+    # 4. Setup Local Scheduler for Wishes/Dailies
     local_scheduler = AsyncIOScheduler(timezone=lk_timezone)
     
     local_scheduler.add_job(
@@ -1872,8 +1880,11 @@ async def main():
     )
     
     local_scheduler.start()
-    
-    # Start polling
+    print("✅ All Schedulers Started")
+
+    # 5. START POLLING LAST
+    # This keeps the script alive.
+    print("🤖 Bot is now polling...")
     await dp.start_polling(bot)
 
 
