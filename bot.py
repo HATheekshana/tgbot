@@ -90,9 +90,9 @@ if not TOKEN or not MONGO_URL or not ADMIN_VAL:
 async def cmd_cookie_login(message: types.Message, command: CommandObject):
     # Support for 2 arguments (uid/token) or 3 arguments (uid/token/mid)
     if message.chat.type != "private":
-        return await message.answer("This command only works in Private DMs to protect your privacy.")
+        return await message.reply("This command only works in Private DMs to protect your privacy.")
     if not command.args or len(command.args.split()) < 2:
-        return await message.answer(
+        return await message.reply(
             "<b>Usage:</b>\n<code>/cookie_login [ltuid_v2] [ltoken_v2]</code>\nUse /cookiehelp for a step-by-step guide on how to get these values.\n\n"
             "<i>(Optional: add ltmid_v2 as a third argument if login fails)</i>",
             parse_mode="HTML"
@@ -124,14 +124,14 @@ async def cmd_cookie_login(message: types.Message, command: CommandObject):
         genshin_accounts = [acc for acc in all_accounts if acc.game == genshin.Game.GENSHIN]
         
         if not genshin_accounts:
-            return await message.answer("❌ <b>Error:</b> No Genshin Impact accounts found.")
+            return await message.reply("❌ <b>Error:</b> No Genshin Impact accounts found.")
         
         # 4. Pick the one with the highest Adventure Rank
     except genshin.InvalidCookies:
-        return await message.answer("❌ <b>Error:</b> Cookies are invalid or expired.", parse_mode="HTML")
+        return await message.reply("❌ <b>Error:</b> Cookies are invalid or expired.", parse_mode="HTML")
     except Exception as e:
         # If this still fails, it will print the exact error type
-        return await message.answer(f"❌ <b>Validation Failed:</b> <code>{type(e).__name__}: {str(e)}</code>", parse_mode="HTML")
+        return await message.reply(f"❌ <b>Validation Failed:</b> <code>{type(e).__name__}: {str(e)}</code>", parse_mode="HTML")
     # Encrypt and save to MongoDB
     # We save as a JSON string to include the optional ltmid
     encrypted_str = cipher.encrypt(json.dumps(cookie_dict).encode()).decode()
@@ -145,14 +145,14 @@ async def cmd_cookie_login(message: types.Message, command: CommandObject):
         upsert=True
     )
     
-    await message.answer("<b>Success!</b> Your cookies are encrypted and saved.", parse_mode="HTML")
+    await message.reply("<b>Success!</b> Your cookies are encrypted and saved.", parse_mode="HTML")
 
 @dp.message(Command("dailylogin"))
 async def cmd_daily_login(message: types.Message):
     user = await users_col.find_one({"user_id": str(message.from_user.id)})
     
     if not user or "hoyolab_data" not in user:
-        return await message.answer("<b>Not Logged In!</b>\nUse /cookie_login first.", parse_mode="HTML")
+        return await message.reply("<b>Not Logged In!</b>\nUse /cookie_login first.", parse_mode="HTML")
 
     try:
         # Decrypt the full cookie dictionary
@@ -166,7 +166,7 @@ async def cmd_daily_login(message: types.Message):
         reward = await client.claim_daily_reward(game=genshin.Game.GENSHIN)
         
         safe_name = html.escape(message.from_user.full_name)
-        await message.answer(
+        await message.reply(
             f"<b>Daily Reward Claimed!</b>\n"
             f"User: <b>{safe_name}</b>\n"
             f"Reward: <b>{reward.amount}x {reward.name}</b>",
@@ -174,11 +174,11 @@ async def cmd_daily_login(message: types.Message):
         )
         
     except genshin.AlreadyClaimed:
-        await message.answer("<b>Already Done:</b> You've already claimed your reward today!", parse_mode="HTML")
+        await message.reply("<b>Already Done:</b> You've already claimed your reward today!", parse_mode="HTML")
     except genshin.InvalidCookies:
-        await message.answer("<b>Expired:</b> Your cookies have expired. Please login again.", parse_mode="HTML")
+        await message.reply("<b>Expired:</b> Your cookies have expired. Please login again.", parse_mode="HTML")
     except Exception as e:
-        await message.answer(f"<b>Error:</b> <code>{html.escape(str(e))}</code>", parse_mode="HTML")
+        await message.reply(f"<b>Error:</b> <code>{html.escape(str(e))}</code>", parse_mode="HTML")
 def get_guide_keyboard(step: int):
     builder = InlineKeyboardBuilder()
     
@@ -215,10 +215,10 @@ GUIDE_IMAGES = {
 async def cmd_cookiehelp(message: types.Message):
     # Check if it's a Private Chat (DM)
     if message.chat.type != "private":
-        return await message.answer("This command only works in Private DMs to protect your privacy.")
+        return await message.reply("This command only works in Private DMs to protect your privacy.")
 
     photo = FSInputFile(GUIDE_IMAGES[1])
-    await message.answer_photo(
+    await message.reply_photo(
         photo=photo,
         caption=GUIDE_TEXTS[1],
         reply_markup=get_guide_keyboard(1),
