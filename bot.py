@@ -241,7 +241,7 @@ async def cmd_resin(message: types.Message):
     user = await users_col.find_one({"user_id": str(message.from_user.id)})
     
     if not user or "hoyolab_data" not in user:
-        return await message.answer("<b>Not Logged In!</b>\nUse /cookie_login first.", parse_mode="HTML")
+        return await message.reply("<b>Not Logged In!</b>\nUse /cookie_login first.", parse_mode="HTML")
 
     try:
         # 1. Decrypt the cookie dictionary
@@ -271,18 +271,18 @@ async def cmd_resin(message: types.Message):
         # Optional: Add extra info like Realm Currency or Dailies
         response += f"\n<b> Daily Commissions:</b> {notes.completed_commissions}/{notes.max_commissions}"
         
-        await message.answer(response, parse_mode="HTML")
+        await message.reply(response, parse_mode="HTML")
         
     except genshin.InvalidCookies:
-        await message.answer("<b>Expired:</b> Your cookies have expired. Please login again.", parse_mode="HTML")
+        await message.reply("<b>Expired:</b> Your cookies have expired. Please login again.", parse_mode="HTML")
     except genshin.DataNotPublic:
-        await message.answer(
+        await message.reply(
             "<b>Error:</b> Your Real-Time Notes are private.\n\n"
             "Go to HoYoLAB -> Settings -> Privacy Settings -> Enable 'Real-time Notes'.", 
             parse_mode="HTML"
         )
     except Exception as e:
-        await message.answer(f"<b>Error:</b> <code>{html.escape(str(e))}</code>", parse_mode="HTML")
+        await message.reply(f"<b>Error:</b> <code>{html.escape(str(e))}</code>", parse_mode="HTML")
 @dp.message(Command("characters"))
 async def cmd_characters(message: types.Message):
     user_data = await users_col.find_one({"user_id": str(message.from_user.id)})
