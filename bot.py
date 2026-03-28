@@ -112,14 +112,13 @@ async def cmd_cookie_login(message: types.Message, command: CommandObject):
     check_client.region = genshin.Region.OVERSEAS # Ensure global region
     
     try:
-        # A more reliable way to check if cookies are valid:
-        # This checks the check-in status of the account itself
+        # We MUST successfully get info to proceed
         await check_client.get_reward_info() 
     except genshin.InvalidCookies:
-        return await message.answer("<b>Error:</b> These cookies are invalid or expired.", parse_mode="HTML")
+        return await message.answer("❌ <b>Error:</b> These cookies are invalid or expired.", parse_mode="HTML")
     except Exception as e:
-        # If it's a network error or HoYoLAB is down, we can log it but maybe let the user proceed
-        print(f"Validation Warning: {e}")
+        # This catches "Login required", "Account not found", or network errors
+        return await message.answer(f"❌ <b>Validation Failed:</b> <code>{str(e)}</code>", parse_mode="HTML")
 
     # Encrypt and save to MongoDB
     # We save as a JSON string to include the optional ltmid
