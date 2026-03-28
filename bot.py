@@ -1048,66 +1048,55 @@ async def give_wishes(message: types.Message):
         await message.answer("❌ User not found in database.")
 
 @dp.message(Command("gamble"))
-async def gamble_wishes(message: types.Message):
+async def gamble_wishes(message: types.Message, command: CommandObject):
     if message.chat.type != "private":
-        await message.reply("⚠️ <b>Gambling is restricted to Private DMs only!</b>\nPlease message me directly to play.", parse_mode="HTML")
-        return
-    user_id = str(message.from_user.id)
-    args = message.text.split()
+        return await message.reply("⚠️ <b>Gambling is restricted to Private DMs!</b>", parse_mode="HTML")
 
-    # 1. Validation: Did they provide a number?
-    if len(args) < 2:
-        await message.answer("🎲 Double or Nothing\nUsage: `/gamble <amount>`\nExample: `/gamble 50`")
-        return
+    user_id = str(message.from_user.id)
+    
+    if not command.args:
+        return await message.answer("🎲 <b>Double or Nothing</b>\nUsage: <code>/gamble &lt;amount&gt;</code>", parse_mode="HTML")
 
     try:
-        bet = int(args[1])
+        bet = int(command.args)
     except ValueError:
-        await message.answer("❌ Please enter a whole number for your bet.")
-        return
+        return await message.answer("❌ Please enter a valid number.")
 
-    if bet <= 0:
-        await message.answer("❌ You can't bet 0 or negative wishes!")
-        return
-
-    # 2. Database Check: Do they have the money?
     user = await users_col.find_one({"user_id": user_id})
-    if not user:
-        await message.answer("❌ Please run `/start` first!")
-        return
-        
-    current_balance = user.get("wish_count", 0)
-    if current_balance < bet:
-        await message.answer(f"❌ You only have {current_balance} wishes. You can't bet {bet}!")
-        return
+    current_balance = user.get("wish_count", 0) if user else 0
 
-    # 3. The 50/50 Roll
-    # random.random() returns a float between 0.0 and 1.0
-    win = random.random() >= 0.5 
+    if bet <= 0 or current_balance < bet:
+        return await message.answer(f"❌ Invalid bet. Balance: {current_balance}")
+
+    # --- Dynamic Odds Logic ---
+    if current_balance < 500:
+        win_chance = 0.50
+    elif current_balance < 750:
+        win_chance = 0.40
+    elif current_balance < 1000:
+        win_chance = 0.30
+    else:
+        win_chance = 0.80  # The 1000+ bonus
+
+    win = random.random() < win_chance
+    # --------------------------
 
     if win:
-        # Win: They keep their bet and get an equal amount added
         new_balance = current_balance + bet
-        result_msg = f"🏆 WINNER!\nYou doubled your bet! Received +{bet} wishes."
+        msg = f"🏆 <b>WINNER!</b>\nYour luck was {int(win_chance*100)}%\nResult: +{bet} Wishes"
         emoji = "💰"
     else:
-        # Lose: The bet amount is subtracted
         new_balance = current_balance - bet
-        result_msg = f"💀 BUSTED!\nYou lost your {bet} wishes. Better luck next time!"
+        msg = f"💀 <b>BUSTED!</b>\nYour luck was {int(win_chance*100)}%\nResult: -{bet} Wishes"
         emoji = "📉"
 
-    # 4. Update Database
-    await users_col.update_one(
-        {"user_id": user_id},
-        {"$set": {"wish_count": new_balance}}
-    )
+    await users_col.update_one({"user_id": user_id}, {"$set": {"wish_count": new_balance}})
 
-    # 5. Final Response
     await message.answer(
-        f"🎲 Gamble Result\n⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯\n"
-        f"{emoji} {result_msg}\n\n"
-        f"👛 New Balance: {new_balance} Wishes",
-        parse_mode="Markdown"
+        f"🎲 <b>Gamble Result</b>\n⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯\n"
+        f"{emoji} {msg}\n\n"
+        f"👛 <b>New Balance:</b> {new_balance} Wishes",
+        parse_mode="HTML"
     )
 @dp.message(Command("daily"))
 async def daily_wish(message: types.Message):
