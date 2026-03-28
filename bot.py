@@ -32,6 +32,7 @@ from create_profile import create_genshin_profile
 from genshin_utils import  get_enkadata,get_quiz_score,to_int,get_val,get_exploration_data,get_abyss_data,get_player_full_data,calculate_world_level,format_abyss_info
 from data import weapons3, characters4, characters5, rare
 from cryptography.fernet import Fernet
+from tasks import setup_scheduler
 
 
 quiz_track = {}
@@ -269,7 +270,7 @@ async def cmd_resin(message: types.Message):
             response += "<b>Your Resin is full!</b>\n"
 
         # Optional: Add extra info like Realm Currency or Dailies
-        response += f"\n<b> Daily Commissions:</b> {notes.completed_commissions}/{notes.max_commissions}"
+        response += f"\n<b>Daily Commissions:</b> {notes.completed_commissions}/{notes.max_commissions}"
         
         await message.reply(response, parse_mode="HTML")
         
@@ -1844,32 +1845,25 @@ async def handle_poll_answer(poll_answer: types.PollAnswer):
 
 # ---------------- Main ----------------
 async def main():
-    # 1. Test MongoDB connection first
-    try:
-        await cluster.admin.command('ping')
-        print("✅ Successfully connected to MongoDB!")
-    except Exception as e:
-        print(f"❌ MongoDB Connection Error: {e}")
-        return 
-
-    # 2. Create the Bot object FIRST
+    # ... (connection code) ...
     bot = Bot(token=TOKEN)
-
-    # Use your local Sri Lanka timezone
     lk_timezone = timezone("Asia/Colombo")
     
-    scheduler = AsyncIOScheduler(timezone=lk_timezone)
-
-    # --- JOB 1: Check individual 24h cooldowns every 15 minutes ---
-    scheduler.add_job(
+    # 1. Start the Genshin/HoYoLAB Tasks (Resin/Daily Login)
+    # We pass 'bot', 'users_col', and 'cipher' to the other file
+    setup_scheduler(bot, users_col, cipher)
+    
+    # 2. Start the local Game Tasks (Wishes/Cooldowns)
+    local_scheduler = AsyncIOScheduler(timezone=lk_timezone)
+    
+    local_scheduler.add_job(
         check_individual_dailies, 
         "interval", 
         minutes=15, 
         args=[bot]
     )
 
-    # --- JOB 2: Run the daily reset task at Midnight (Optional) ---
-    scheduler.add_job(
+    local_scheduler.add_job(
         daily_wish, 
         "cron", 
         hour=0, 
@@ -1877,16 +1871,10 @@ async def main():
         args=[bot]
     )
     
-    # 4. Start everything
-    scheduler.start()
-    print("⏰ Both schedulers started (Interval & Midnight)!")
-
-    # 5. Start polling
-    asyncio.create_task(clear_old_polls())
+    local_scheduler.start()
+    
+    # Start polling
     await dp.start_polling(bot)
-
-if __name__ == "__main__":
-    asyncio.run(main())
 
 
 
