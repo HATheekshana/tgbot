@@ -269,7 +269,7 @@ async def cmd_resin(message: types.Message):
             response += "<b>Your Resin is full!</b>\n"
 
         # Optional: Add extra info like Realm Currency or Dailies
-        response += f"\n<b>Daily Commissions:</b> {notes.completed_commissions}/{notes.total_commissions}"
+        response += f"\n<b> Daily Commissions:</b> {notes.completed_commissions}/{notes.max_commissions}"
         
         await message.answer(response, parse_mode="HTML")
         
