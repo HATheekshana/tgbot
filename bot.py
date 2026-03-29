@@ -1080,14 +1080,12 @@ async def gamble_wishes(message: types.Message, command: CommandObject):
         return await message.answer(f"❌ Invalid bet. Balance: {current_balance}")
 
     # --- Dynamic Odds Logic ---
-    if current_balance < 500:
+    if current_balance < 2000:
         win_chance = 0.50
-    elif current_balance < 750:
-        win_chance = 0.40
-    elif current_balance < 1000:
-        win_chance = 0.30
+    elif current_balance < 2500:
+        win_chance = 0.45
     else:
-        win_chance = 0.20  # The 1000+ bonus
+        win_chance = 0.40  # The 1000+ bonus
 
     win = random.random() < win_chance
     # --------------------------
