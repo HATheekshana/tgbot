@@ -1087,18 +1087,18 @@ async def gamble_wishes(message: types.Message, command: CommandObject):
     elif current_balance < 1000:
         win_chance = 0.30
     else:
-        win_chance = 0.80  # The 1000+ bonus
+        win_chance = 0.20  # The 1000+ bonus
 
     win = random.random() < win_chance
     # --------------------------
 
     if win:
         new_balance = current_balance + bet
-        msg = f"🏆 <b>WINNER!</b>\nYour luck was {int(win_chance*100)}%\nResult: +{bet} Wishes"
+        msg = f"🏆 <b>WINNER!</b>\nResult: +{bet} Wishes"
         emoji = "💰"
     else:
         new_balance = current_balance - bet
-        msg = f"💀 <b>BUSTED!</b>\nYour luck was {int(win_chance*100)}%\nResult: -{bet} Wishes"
+        msg = f"💀 <b>BUSTED!</b>\nResult: -{bet} Wishes"
         emoji = "📉"
 
     await users_col.update_one({"user_id": user_id}, {"$set": {"wish_count": new_balance}})
