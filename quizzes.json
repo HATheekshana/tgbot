@@ -240,12 +240,6 @@
     "difficulty": "hard"
   },
   {
-    "question": "Why was Columbina able to be rescued by Arlecchino from the 'Wild Hunt' in Nod-Krai?",
-    "correct": "She was incredibly weak after losing her lunar authorities",
-    "wrong_pool": ["She was being controlled by Dottore's Segments", "She was trapped in the Moon's Reflection", "She had been poisoned by Bifrons's mushrooms", "She was protecting the Frostmoon Scions"],
-    "difficulty": "hard"
-  },
-  {
     "question": "What did Arlecchino do with the cores of Sandrone and Pulonia after the battle with Dottore?",
     "correct": "Sent them to the Fontaine Research Institute",
     "wrong_pool": ["Returned them to the Tsaritsa", "Buried them in the Frostmoon ruins", "Used them to power the Kuuvahki Cannon", "Crushed them to end their suffering"],
@@ -507,12 +501,6 @@
     "question": "What is the name of the bird companion that fights alongside Fischl?",
     "correct": "Oz",
     "wrong_pool": ["Guoba", "Ushi", "Dvalin", "Paimon", "Hanachirusato"],
-    "difficulty": "easy"
-  },
-  {
-    "question": "Which item is commonly used to revive a fallen character in the early game?",
-    "correct": "Teyvat Fried Egg",
-    "wrong_pool": ["Sweet Madame", "Mushroom Skewer", "Fisherman's Toast", "Apple"],
     "difficulty": "easy"
   },
   {
