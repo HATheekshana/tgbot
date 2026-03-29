@@ -1060,64 +1060,66 @@ async def give_wishes(message: types.Message):
 @dp.message(Command("share"))
 async def share_wishes(message: types.Message):
     args = message.text.split()
-    sender_id = str(message.from_user.id)
+    sender = message.from_user
+    sender_name = sender.first_name  # The person sending the gift
     target_id = None
+    target_name = "User" # Default if we can't find a name
     amount = 0
 
     # 1. Logic for Reply vs. Manual ID
     if message.reply_to_message:
-        target_id = str(message.reply_to_message.from_user.id)
+        target_user = message.reply_to_message.from_user
+        target_id = str(target_user.id)
+        target_name = target_user.first_name # The person receiving the gift
+        
         if len(args) < 2:
-            return await message.answer("Usage: Reply to someone with <code>/share [amount]</code>", parse_mode="HTML")
+            return await message.reply("Usage: Reply to someone with <code>/share [amount]</code>", parse_mode="HTML")
         try:
             amount = int(args[1])
         except ValueError:
-            return await message.answer("<b>Amount must be a number!</b>", parse_mode="HTML")
+            return await message.reply("<b>Amount must be a number!</b>", parse_mode="HTML")
     else:
+        # Manual mode: /share <user_id> <amount>
         if len(args) < 3:
-            return await message.answer("Usage: <code>/share [user_id] [amount]</code>", parse_mode="HTML")
+            return await message.reply("Usage: <code>/share [user_id] [amount]</code>", parse_mode="HTML")
         target_id = args[1]
         try:
             amount = int(args[2])
         except ValueError:
-            return await message.answer("<b>Amount must be a number!</b>", parse_mode="HTML")
+            return await message.reply("<b>Amount must be a number!</b>", parse_mode="HTML")
 
     # 2. Basic Validations
     if amount <= 0:
-        return await message.answer("<b>You must share at least 1 wish!</b>", parse_mode="HTML")
+        return await message.reply("<b>You must share at least 1 wish!</b>", parse_mode="HTML")
     
-    if sender_id == target_id:
-        return await message.answer("😂 <b>Nice try!</b> You cannot share wishes with yourself.", parse_mode="HTML")
+    if str(sender.id) == target_id:
+        return await message.reply("<b>Nice try!</b> You cannot share wishes with yourself.", parse_mode="HTML")
 
     # 3. Check Sender's Balance
-    sender_data = await users_col.find_one({"user_id": sender_id})
-    # Using 'wish_count' to match your /give command
+    sender_data = await users_col.find_one({"user_id": str(sender.id)})
     current_balance = sender_data.get("wish_count", 0) if sender_data else 0
 
     if current_balance < amount:
-        return await message.answer(f"<b>Insufficient Balance!</b>\nYou have <b>{current_balance}</b> wishes.", parse_mode="HTML")
+        return await message.reply(f"<b>Insufficient Balance!</b>\nYou have <b>{current_balance}</b> wishes.", parse_mode="HTML")
 
     # 4. Atomic Transaction
-    # Deduct from Sender
-    await users_col.update_one({"user_id": sender_id}, {"$inc": {"wish_count": -amount}})
-    
-    # Add to Receiver
-    await users_col.update_one(
-        {"user_id": target_id}, 
-        {"$inc": {"wish_count": amount}}, 
-        upsert=True
-    )
+    await users_col.update_one({"user_id": str(sender.id)}, {"$inc": {"wish_count": -amount}})
+    await users_col.update_one({"user_id": target_id}, {"$inc": {"wish_count": amount}}, upsert=True)
 
     # 5. Success Notifications
-    await message.answer(
-        f"<b>Transaction Successful!</b>\nSent 💫 <b>{amount}</b> wishes to user <code>{target_id}</code>.", 
+    # Using names in the public confirmation
+    await message.reply(
+        f"<b>Transaction Successful!</b>✅\n"
+        f"<b>{sender_name}</b> sent 💫 <b>{amount}</b> wishes to <b>{target_name}</b>.", 
         parse_mode="HTML"
     )
 
     try:
         await message.bot.send_message(
             chat_id=target_id,
-            text=f"<b>You received a gift!</b>\nUser <code>{sender_id}</code> sent you <b>{amount}</b> wishes!\nCheck <code>/stats</code>",
+            text=f"<b>You received a gift!</b>\n"
+                 f"<b>{sender_name}</b> sent you <b>{amount}</b> wishes!\n"
+                 f"Check <code>/stats</code>",
             parse_mode="HTML"
         )
     except:
