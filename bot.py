@@ -1687,10 +1687,10 @@ async def execute_profile_comparison(callback: types.CallbackQuery):
 
         builder = InlineKeyboardBuilder()
         builder.row(types.InlineKeyboardButton(text="◀ Back", callback_data=f"back_comp_{my_uid}_{target_uid}"))
-        await callback.message.edit_text(msg, reply_markup=builder.as_markup(), parse_mode="HTML")
+        await callback.message.edit_caption(msg, reply_markup=builder.as_markup(), parse_mode="HTML")
 
     except Exception as e:
-        await callback.message.edit_text(f"❌ Profile Error: {e}")
+        await callback.message.edit_caption(f"❌ Profile Error: {e}")
 
 @dp.callback_query(F.data.startswith("comp_expl_"))
 async def execute_exploration_comparison(callback: types.CallbackQuery):
@@ -1749,10 +1749,10 @@ async def execute_exploration_comparison(callback: types.CallbackQuery):
         builder = InlineKeyboardBuilder()
         builder.row(types.InlineKeyboardButton(text="◀ Back", callback_data=f"back_comp_{my_uid}_{target_uid}"))
         
-        await callback.message.edit_text(msg, reply_markup=builder.as_markup(), parse_mode="HTML")
+        await callback.message.edit_caption(msg, reply_markup=builder.as_markup(), parse_mode="HTML")
 
     except Exception as e:
-        await callback.message.edit_text(f"❌ Comparison Error: {e}")
+        await callback.message.edit_caption(f"❌ Comparison Error: {e}")
 @dp.callback_query(F.data.startswith("back_comp_"))
 async def back_to_compare_prep(callback: types.CallbackQuery):
     parts = callback.data.split("_")
@@ -1764,7 +1764,7 @@ async def back_to_compare_prep(callback: types.CallbackQuery):
     builder.row(types.InlineKeyboardButton(text="𓊝 Compare Exploration", callback_data=f"comp_expl_{uids}"))
     builder.row(types.InlineKeyboardButton(text="𖨆 Compare Profile Stats", callback_data=f"comp_prof_{uids}"))
 
-    await callback.message.edit_text(
+    await callback.message.edit_caption(
         "⚔️ <b>Comparison Menu</b>\nChoose what to compare:",
         reply_markup=builder.as_markup(),
         parse_mode="HTML"
