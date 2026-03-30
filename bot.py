@@ -1685,16 +1685,20 @@ async def execute_profile_comparison(callback: types.CallbackQuery):
             icon = "←--" if v1 > v2 else "--→" if v2 > v1 else "-𔓘-"
             msg += f"<b>{label}:</b>\n<code>{v1:>5}</code> {icon} <code>{v2:>5}</code>\n\n"
 
+        original_user_msg_id = callback.message.reply_to_message.message_id if callback.message.reply_to_message else None
+
+    # 2. Delete the bot's photo message
         await callback.message.delete()
 
-        # 2. Send the new Comparison Battle as a Text Message
+        # 3. Send the text battle as a NEW reply to that original user message
         builder = InlineKeyboardBuilder()
         builder.row(types.InlineKeyboardButton(text="Back to Menu", callback_data=f"back_comp_{my_uid}_{target_uid}"))
         
-        await callback.message.reply(
+        await callback.message.answer(
             msg, 
             reply_markup=builder.as_markup(), 
-            parse_mode="HTML"
+            parse_mode="HTML",
+            reply_to_message_id=original_user_msg_id  # <--- THIS keeps the thread!
         )
     except Exception as e:
         await callback.message.reply(f"❌ Profile Error: {e}")
@@ -1753,16 +1757,20 @@ async def execute_exploration_comparison(callback: types.CallbackQuery):
             msg += f"<code>{p1:>5.1f}%</code> {icon} <code>{p2:>5.1f}%</code>\n\n"
 
         # 6. Navigation
+        original_user_msg_id = callback.message.reply_to_message.message_id if callback.message.reply_to_message else None
+
+    # 2. Delete the bot's photo message
         await callback.message.delete()
 
-        # 2. Send the new Comparison Battle as a Text Message
+        # 3. Send the text battle as a NEW reply to that original user message
         builder = InlineKeyboardBuilder()
         builder.row(types.InlineKeyboardButton(text="Back to Menu", callback_data=f"back_comp_{my_uid}_{target_uid}"))
         
-        await callback.message.reply(
+        await callback.message.answer(
             msg, 
             reply_markup=builder.as_markup(), 
-            parse_mode="HTML"
+            parse_mode="HTML",
+            reply_to_message_id=original_user_msg_id  # <--- THIS keeps the thread!
         )
     except Exception as e:
         await callback.message.reply(f"❌ Profile Error: {e}")
@@ -1771,12 +1779,13 @@ async def back_to_compare_prep(callback: types.CallbackQuery):
     parts = callback.data.split("_")
     my_uid, target_uid = parts[2], parts[3]
     
-    # 1. Delete the current text-only message
+    # Get the original user message ID again
+    original_user_msg_id = callback.message.reply_to_message.message_id if callback.message.reply_to_message else None
+
+    # 1. Delete the text message
     await callback.message.delete()
     
-    # 2. Re-send the original Photo + Menu (Just like the /compare command)
-    # Note: You may need to re-generate the buffer or store the file_id 
-    # to avoid re-generating the image every time they click back.
+    # 2. Re-generate photo
     photo_buffer = await create_masked_showcase(my_uid, target_uid)
     photo = BufferedInputFile(photo_buffer.read(), filename="compare.png")
 
@@ -1785,12 +1794,15 @@ async def back_to_compare_prep(callback: types.CallbackQuery):
     builder.row(types.InlineKeyboardButton(text="𓊝 Compare Exploration", callback_data=f"comp_expl_{uids}"))
     builder.row(types.InlineKeyboardButton(text="𖨆 Compare Profile Stats", callback_data=f"comp_prof_{uids}"))
 
-    await callback.message.reply_photo(
+    # 3. Answer with photo as a reply to the original user command
+    await callback.message.answer_photo(
         photo=photo,
         caption="⚔️ <b>Comparison Menu</b>\nChoose what to compare:",
         reply_markup=builder.as_markup(),
-        parse_mode="HTML"
+        parse_mode="HTML",
+        reply_to_message_id=original_user_msg_id # <--- Keeps the thread alive
     )
+    await callback.answer()
 async def clear_old_polls():
     """Removes crashed or forgotten polls from memory every hour"""
     while True:
