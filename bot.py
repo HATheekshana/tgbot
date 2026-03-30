@@ -1610,7 +1610,7 @@ async def cmd_compare_reply(message: types.Message):
         return await message.reply("Both users must be /login-ed to compare.")
 
     # Show a "Loading" message so the user knows the image is being generated
-    status_msg = await message.answer("Generating comparison showcase...")
+    status_msg = await message.reply("Generating comparison showcase...")
 
     try:
         # 1. Generate the image buffer using your previous function
@@ -1630,7 +1630,7 @@ async def cmd_compare_reply(message: types.Message):
         builder.row(types.InlineKeyboardButton(text="𖨆 Compare Profile Stats", callback_data=f"comp_prof_{uids}"))
 
         # 4. Send the photo with the menu as a caption
-        await message.answer_photo(
+        await message.reply_photo(
             photo=photo,
             caption=f"⚔ <b>Comparison Menu</b>\nComparing with <b>{message.reply_to_message.from_user.first_name}</b>",
             reply_markup=builder.as_markup(),
@@ -1656,7 +1656,7 @@ def to_int(val):
 async def execute_profile_comparison(callback: types.CallbackQuery):
     parts = callback.data.split("_")
     my_uid, target_uid = parts[2], parts[3]
-    await callback.answer("⚔ Comparing Profiles...")
+    await callback.reply("⚔ Comparing Profiles...")
 
     try:
         me = await get_player_full_data(my_uid)
@@ -1685,12 +1685,19 @@ async def execute_profile_comparison(callback: types.CallbackQuery):
             icon = "←--" if v1 > v2 else "--→" if v2 > v1 else "-𔓘-"
             msg += f"<b>{label}:</b>\n<code>{v1:>5}</code> {icon} <code>{v2:>5}</code>\n\n"
 
-        builder = InlineKeyboardBuilder()
-        builder.row(types.InlineKeyboardButton(text="◀ Back", callback_data=f"back_comp_{my_uid}_{target_uid}"))
-        await callback.message.edit_caption(msg, reply_markup=builder.as_markup(), parse_mode="HTML")
+        await callback.message.delete()
 
+        # 2. Send the new Comparison Battle as a Text Message
+        builder = InlineKeyboardBuilder()
+        builder.row(types.InlineKeyboardButton(text="Back to Menu", callback_data=f"back_comp_{my_uid}_{target_uid}"))
+        
+        await callback.message.reply(
+            msg, 
+            reply_markup=builder.as_markup(), 
+            parse_mode="HTML"
+        )
     except Exception as e:
-        await callback.message.edit_caption(f"❌ Profile Error: {e}")
+        await callback.message.reply(f"❌ Profile Error: {e}")
 
 @dp.callback_query(F.data.startswith("comp_expl_"))
 async def execute_exploration_comparison(callback: types.CallbackQuery):
@@ -1746,30 +1753,44 @@ async def execute_exploration_comparison(callback: types.CallbackQuery):
             msg += f"<code>{p1:>5.1f}%</code> {icon} <code>{p2:>5.1f}%</code>\n\n"
 
         # 6. Navigation
-        builder = InlineKeyboardBuilder()
-        builder.row(types.InlineKeyboardButton(text="◀ Back", callback_data=f"back_comp_{my_uid}_{target_uid}"))
-        
-        await callback.message.edit_caption(msg, reply_markup=builder.as_markup(), parse_mode="HTML")
+        await callback.message.delete()
 
+        # 2. Send the new Comparison Battle as a Text Message
+        builder = InlineKeyboardBuilder()
+        builder.row(types.InlineKeyboardButton(text="Back to Menu", callback_data=f"back_comp_{my_uid}_{target_uid}"))
+        
+        await callback.message.reply(
+            msg, 
+            reply_markup=builder.as_markup(), 
+            parse_mode="HTML"
+        )
     except Exception as e:
-        await callback.message.edit_caption(f"❌ Comparison Error: {e}")
+        await callback.message.reply(f"❌ Profile Error: {e}")
 @dp.callback_query(F.data.startswith("back_comp_"))
 async def back_to_compare_prep(callback: types.CallbackQuery):
     parts = callback.data.split("_")
     my_uid, target_uid = parts[2], parts[3]
     
-    # Rebuild the menu with BOTH buttons, just like the original command
+    # 1. Delete the current text-only message
+    await callback.message.delete()
+    
+    # 2. Re-send the original Photo + Menu (Just like the /compare command)
+    # Note: You may need to re-generate the buffer or store the file_id 
+    # to avoid re-generating the image every time they click back.
+    photo_buffer = await create_masked_showcase(my_uid, target_uid)
+    photo = BufferedInputFile(photo_buffer.read(), filename="compare.png")
+
     builder = InlineKeyboardBuilder()
     uids = f"{my_uid}_{target_uid}"
     builder.row(types.InlineKeyboardButton(text="𓊝 Compare Exploration", callback_data=f"comp_expl_{uids}"))
     builder.row(types.InlineKeyboardButton(text="𖨆 Compare Profile Stats", callback_data=f"comp_prof_{uids}"))
 
-    await callback.message.edit_caption(
-        "⚔️ <b>Comparison Menu</b>\nChoose what to compare:",
+    await callback.message.reply_photo(
+        photo=photo,
+        caption="⚔️ <b>Comparison Menu</b>\nChoose what to compare:",
         reply_markup=builder.as_markup(),
         parse_mode="HTML"
     )
-    await callback.answer()
 async def clear_old_polls():
     """Removes crashed or forgotten polls from memory every hour"""
     while True:
