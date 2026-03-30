@@ -1656,7 +1656,7 @@ def to_int(val):
 async def execute_profile_comparison(callback: types.CallbackQuery):
     parts = callback.data.split("_")
     my_uid, target_uid = parts[2], parts[3]
-    await callback.reply("⚔ Comparing Profiles...")
+    await callback.answer("⚔ Comparing Profiles...")
 
     try:
         me = await get_player_full_data(my_uid)
