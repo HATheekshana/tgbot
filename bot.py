@@ -317,7 +317,7 @@ async def cmd_redeem_code(message: types.Message, command: CommandObject):
         # 1. Decrypt Cookies
         decrypted_data = cipher.decrypt(user["hoyolab_data"].encode()).decode()
         cookies = json.loads(decrypted_data)
-        
+        print(f"DEBUG: Tokens found for user {user_id}: {list(cookies.keys())}")
         # 2. Setup Client
         client = genshin.Client() # Start clean
         client.set_cookies(cookies) # This correctly maps all tokens (ltoken, ltuid, cookie_token)
