@@ -321,31 +321,26 @@ async def cmd_redeem_code(message: types.Message, command: CommandObject):
         client = genshin.Client(cookies)
         client.region = genshin.Region.OVERSEAS
 
-        # 2. Identify the Account & Server
-        # We MUST get the server string (e.g., 'os_asia')
-        accounts = await client.get_game_accounts()
-        genshin_acc = next((acc for acc in accounts if acc.game == genshin.Game.GENSHIN), None)
-        
-        if not genshin_acc:
-            return await message.reply("❌ <b>Error:</b> No Genshin account found.")
+        # 2. IMPORTANT: Refresh the session for the redemption service
+        # This clears the [-1071] "Login First" error
+        await client.login_with_cookies()
 
-        # 3. Use EXPLICIT UID and SERVER
-        # This is what stops the [-1071] error
-        await client.redeem_code(
-            code=promo_code, 
-            uid=genshin_acc.uid, 
-            server=genshin_acc.server, # <--- THIS IS THE KEY!
-            game=genshin.Game.GENSHIN
-        )
+        # 3. Get the UID
+        target_uid = user.get("genshin_uid")
+        if not target_uid:
+            accounts = await client.get_game_accounts()
+            genshin_acc = next((acc for acc in accounts if acc.game == genshin.Game.GENSHIN), None)
+            target_uid = genshin_acc.uid
+
+        # 4. Redeem (No 'server' argument needed)
+        await client.redeem_code(promo_code, uid=target_uid, game=genshin.Game.GENSHIN)
         
         await message.reply(
-            f"✅ <b>Redeemed!</b>\nCode: <code>{promo_code}</code>\n"
-            f"Sent to: <b>{genshin_acc.nickname}</b> (AR{genshin_acc.level})",
+            f"✅ <b>Redeemed!</b>\nCode: <code>{promo_code}</code>\nSent to UID: <code>{target_uid}</code>",
             parse_mode="HTML"
         )
 
     except genshin.RedemptionException as e:
-        # Catch the exact message from HoYo
         await message.reply(f"❌ <b>HoYo Error:</b> <code>{e.msg}</code>", parse_mode="HTML")
     except Exception as e:
         await message.reply(f"❌ <b>Bot Error:</b> <code>{str(e)}</code>", parse_mode="HTML")
