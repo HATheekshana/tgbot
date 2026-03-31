@@ -318,29 +318,30 @@ async def cmd_redeem_code(message: types.Message, command: CommandObject):
         decrypted_data = cipher.decrypt(user["hoyolab_data"].encode()).decode()
         cookies = json.loads(decrypted_data)
         
-        client = genshin.Client(cookies)
+        # 2. Setup Client
+        client = genshin.Client() # Start clean
+        client.set_cookies(cookies) # This correctly maps all tokens (ltoken, ltuid, cookie_token)
         client.region = genshin.Region.OVERSEAS
 
-        # 2. IMPORTANT: Refresh the session for the redemption service
-        # This clears the [-1071] "Login First" error
-        await client.login_with_cookies()
+        # 3. Explicitly Fetch the UID to bind the session
+        # This acts as the 'handshake' that confirms your login status
+        accounts = await client.get_game_accounts()
+        genshin_acc = next((acc for acc in accounts if acc.game == genshin.Game.GENSHIN), None)
+        
+        if not genshin_acc:
+            return await message.reply("❌ <b>Error:</b> No Genshin account found.")
 
-        # 3. Get the UID
-        target_uid = user.get("genshin_uid")
-        if not target_uid:
-            accounts = await client.get_game_accounts()
-            genshin_acc = next((acc for acc in accounts if acc.game == genshin.Game.GENSHIN), None)
-            target_uid = genshin_acc.uid
-
-        # 4. Redeem (No 'server' argument needed)
-        await client.redeem_code(promo_code, uid=target_uid, game=genshin.Game.GENSHIN)
+        # 4. Final Redemption
+        await client.redeem_code(promo_code, uid=genshin_acc.uid, game=genshin.Game.GENSHIN)
         
         await message.reply(
-            f"✅ <b>Redeemed!</b>\nCode: <code>{promo_code}</code>\nSent to UID: <code>{target_uid}</code>",
+            f"✅ <b>Redeemed!</b>\nCode: <code>{promo_code}</code>\n"
+            f"Sent to: <b>{genshin_acc.nickname}</b> (UID: <code>{genshin_acc.uid}</code>)",
             parse_mode="HTML"
         )
 
     except genshin.RedemptionException as e:
+        # This catches "Already Redeemed" or "Invalid Code"
         await message.reply(f"❌ <b>HoYo Error:</b> <code>{e.msg}</code>", parse_mode="HTML")
     except Exception as e:
         await message.reply(f"❌ <b>Bot Error:</b> <code>{str(e)}</code>", parse_mode="HTML")
