@@ -297,51 +297,42 @@ async def cmd_resin(message: types.Message):
         await message.reply(f"<b>Error:</b> <code>{html.escape(str(e))}</code>", parse_mode="HTML")
 @dp.message(Command("add_cookie"))
 async def cmd_add_cookie_token(message: types.Message, command: CommandObject):
-    if message.chat.type != "private":
-        return await message.reply("❌ <b>Private DMs only!</b>", parse_mode="HTML")
-
-    if not command.args:
-        return await message.reply(
-            "<b>Usage:</b> <code>/add_cookie [cookie_token_v2]</code>\n"
-            "This adds the missing token needed for <b>/redeem</b>.",
-            parse_mode="HTML"
-        )
-
-    new_token = command.args.strip()
     user_id = str(message.from_user.id)
-
-    # 1. Fetch current data
+    
+    # 1. Fetch the user's existing encrypted data
     user = await users_col.find_one({"user_id": user_id})
     
     if not user or "hoyolab_data" not in user:
-        return await message.reply("🚫 <b>Not Logged In!</b> Use <code>/cookie_login</code> first.")
+        return await message.reply("🚫 <b>Error:</b> No login found. Use <code>/cookie_login</code> first.")
+
+    if not command.args:
+        return await message.reply("<b>Usage:</b> <code>/add_cookie [cookie_token_v2]</code>")
+
+    new_token = command.args.strip()
 
     try:
-        # 2. Decrypt existing cookies
-        decrypted_data = cipher.decrypt(user["hoyolab_data"].encode()).decode()
-        cookies = json.loads(decrypted_data)
+        # 2. Decrypt the OLD data
+        old_encrypted_data = user["hoyolab_data"]
+        decrypted_str = cipher.decrypt(old_encrypted_data.encode()).decode()
+        cookies = json.loads(decrypted_str)
 
-        # 3. Add the new token to the dictionary
+        # 3. ADD the new token to the existing dictionary
+        # This keeps ltuid_v2 and ltoken_v2 safe!
         cookies["cookie_token_v2"] = new_token
 
-        # 4. Validate all tokens together
-        check_client = genshin.Client(cookies)
-        await check_client.get_reward_info(game=genshin.Game.GENSHIN)
+        # 4. Re-encrypt the UPDATED dictionary
+        updated_encrypted_str = cipher.encrypt(json.dumps(cookies).encode()).decode()
 
-        # 5. Re-encrypt and save
-        encrypted_str = cipher.encrypt(json.dumps(cookies).encode()).decode()
-        
+        # 5. Save back to MongoDB
         await users_col.update_one(
             {"user_id": user_id},
-            {"$set": {"hoyolab_data": encrypted_str}}
+            {"$set": {"hoyolab_data": updated_encrypted_str}}
         )
 
-        await message.reply("✅ <b>Success!</b> Your <code>cookie_token_v2</code> has been added. You can now use <b>/redeem</b>.", parse_mode="HTML")
+        await message.reply("✅ <b>Updated!</b> added <code>cookie_token_v2</code> while keeping your login active.", parse_mode="HTML")
 
-    except genshin.InvalidCookies:
-        await message.reply("❌ <b>Error:</b> The token you provided is invalid or your other cookies have expired.")
     except Exception as e:
-        await message.reply(f"❌ <b>Error:</b> <code>{str(e)}</code>", parse_mode="HTML")
+        await message.reply(f"❌ <b>Update Failed:</b> <code>{str(e)}</code>")
 @dp.message(Command("redeem"))
 async def cmd_redeem_code(message: types.Message, command: CommandObject):
     # 1. Check if the user provided a code
