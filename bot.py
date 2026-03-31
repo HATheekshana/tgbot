@@ -321,32 +321,34 @@ async def cmd_redeem_code(message: types.Message, command: CommandObject):
         client = genshin.Client(cookies)
         client.region = genshin.Region.OVERSEAS
 
-        # 2. Get the UID specifically (This is the most important part)
-        # If you didn't save 'genshin_uid' during login, we fetch it now
-        target_uid = user.get("genshin_uid")
+        # 2. Identify the Account & Server
+        # We MUST get the server string (e.g., 'os_asia')
+        accounts = await client.get_game_accounts()
+        genshin_acc = next((acc for acc in accounts if acc.game == genshin.Game.GENSHIN), None)
         
-        if not target_uid:
-            accounts = await client.get_game_accounts()
-            # Find the Genshin account (usually the one with the highest AR)
-            genshin_acc = next((acc for acc in accounts if acc.game == genshin.Game.GENSHIN), None)
-            if not genshin_acc:
-                return await message.reply("❌ <b>Error:</b> No Genshin account found.")
-            target_uid = genshin_acc.uid
+        if not genshin_acc:
+            return await message.reply("❌ <b>Error:</b> No Genshin account found.")
 
-        # 3. Redeem using the explicit UID
-        # Passing uid=target_uid fixes the [-1071] error
-        await client.redeem_code(promo_code, uid=target_uid, game=genshin.Game.GENSHIN)
+        # 3. Use EXPLICIT UID and SERVER
+        # This is what stops the [-1071] error
+        await client.redeem_code(
+            code=promo_code, 
+            uid=genshin_acc.uid, 
+            server=genshin_acc.server, # <--- THIS IS THE KEY!
+            game=genshin.Game.GENSHIN
+        )
         
         await message.reply(
-            f"<b>Redeemed!</b>\nCode: <code>{promo_code}</code>\nSent to UID: <code>{target_uid}</code>",
+            f"✅ <b>Redeemed!</b>\nCode: <code>{promo_code}</code>\n"
+            f"Sent to: <b>{genshin_acc.nickname}</b> (AR{genshin_acc.level})",
             parse_mode="HTML"
         )
 
     except genshin.RedemptionException as e:
-        # Handle specific HoYo errors (Already claimed, Invalid, etc.)
-        await message.reply(f"<b>HoYo Error:</b> <code>{e.msg}</code>", parse_mode="HTML")
+        # Catch the exact message from HoYo
+        await message.reply(f"❌ <b>HoYo Error:</b> <code>{e.msg}</code>", parse_mode="HTML")
     except Exception as e:
-        await message.reply(f"<b>Bot Error:</b> <code>{str(e)}</code>", parse_mode="HTML")
+        await message.reply(f"❌ <b>Bot Error:</b> <code>{str(e)}</code>", parse_mode="HTML")
 @dp.message(Command("characters"))
 async def cmd_characters(message: types.Message):
     user_data = await users_col.find_one({"user_id": str(message.from_user.id)})
