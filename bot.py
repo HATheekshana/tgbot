@@ -303,61 +303,50 @@ async def cmd_resin(message: types.Message):
 
 @dp.message(Command("redeem"))
 async def cmd_redeem_code(message: types.Message, command: CommandObject):
-    # 1. Check if the user provided a code
     if not command.args:
-        return await message.reply(
-            "❓ <b>Usage:</b> <code>/redeem [PROMO_CODE]</code>\n"
-            "Example: <code>/redeem GENSHINGIFT</code>", 
-            parse_mode="HTML"
-        )
+        return await message.reply("❓ <b>Usage:</b> <code>/redeem [CODE]</code>", parse_mode="HTML")
 
     promo_code = command.args.strip()
     user_id = str(message.from_user.id)
-
-    # 2. Fetch user data from MongoDB
     user = await users_col.find_one({"user_id": user_id})
     
     if not user or "hoyolab_data" not in user:
-        return await message.reply(
-            "<b>Not Logged In!</b>\nPlease use <code>/cookie_login</code> first to link your account.", 
-            parse_mode="HTML"
-        )
+        return await message.reply("🚫 <b>Not Logged In!</b> Use <code>/cookie_login</code> first.")
 
-    # 3. Decrypt cookies and setup client
     try:
+        # 1. Decrypt Cookies
         decrypted_data = cipher.decrypt(user["hoyolab_data"].encode()).decode()
         cookies = json.loads(decrypted_data)
         
         client = genshin.Client(cookies)
         client.region = genshin.Region.OVERSEAS
 
-        # 4. Attempt to redeem
-        # Note: HoYoverse requires the UID to target the correct character
-        uid = user.get("genshin_uid")
-        if not uid:
-            # Fallback: try to fetch accounts if UID wasn't saved during login
+        # 2. Get the UID specifically (This is the most important part)
+        # If you didn't save 'genshin_uid' during login, we fetch it now
+        target_uid = user.get("genshin_uid")
+        
+        if not target_uid:
             accounts = await client.get_game_accounts()
+            # Find the Genshin account (usually the one with the highest AR)
             genshin_acc = next((acc for acc in accounts if acc.game == genshin.Game.GENSHIN), None)
             if not genshin_acc:
-                return await message.reply("❌ <b>Error:</b> No Genshin account found for these cookies.")
-            uid = genshin_acc.uid
+                return await message.reply("❌ <b>Error:</b> No Genshin account found.")
+            target_uid = genshin_acc.uid
 
-        await client.redeem_code(promo_code, uid=uid, game=genshin.Game.GENSHIN)
+        # 3. Redeem using the explicit UID
+        # Passing uid=target_uid fixes the [-1071] error
+        await client.redeem_code(promo_code, uid=target_uid, game=genshin.Game.GENSHIN)
         
         await message.reply(
-            f"✅ <b>Redemption Successful!</b>\n"
-            f"Code <code>{promo_code}</code> has been sent to your in-game mail.",
+            f"<b>Redeemed!</b>\nCode: <code>{promo_code}</code>\nSent to UID: <code>{target_uid}</code>",
             parse_mode="HTML"
         )
 
-    except genshin.RedemptionClaimed:
-        await message.reply(f"ℹ️ <b>Already Redeemed:</b> You have already used the code <code>{promo_code}</code>.")
-    except genshin.RedemptionInvalid:
-        await message.reply(f"❌ <b>Invalid Code:</b> The code <code>{promo_code}</code> does not exist or has expired.")
-    except genshin.RedemptionCooldown:
-        await message.reply("⏳ <b>Slow Down!</b> You are redeeming codes too fast. Please wait a moment.")
+    except genshin.RedemptionException as e:
+        # Handle specific HoYo errors (Already claimed, Invalid, etc.)
+        await message.reply(f"<b>HoYo Error:</b> <code>{e.msg}</code>", parse_mode="HTML")
     except Exception as e:
-        await message.reply(f"❌ <b>Error:</b> <code>{html.escape(str(e))}</code>", parse_mode="HTML")
+        await message.reply(f"<b>Bot Error:</b> <code>{str(e)}</code>", parse_mode="HTML")
 @dp.message(Command("characters"))
 async def cmd_characters(message: types.Message):
     user_data = await users_col.find_one({"user_id": str(message.from_user.id)})
