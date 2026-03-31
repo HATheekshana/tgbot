@@ -88,64 +88,69 @@ if not TOKEN or not MONGO_URL or not ADMIN_VAL:
 
 @dp.message(Command("cookie_login"))
 async def cmd_cookie_login(message: types.Message, command: CommandObject):
-    # Support for 2 arguments (uid/token) or 3 arguments (uid/token/mid)
     if message.chat.type != "private":
-        return await message.reply("This command only works in Private DMs to protect your privacy.")
+        return await message.reply("❌ <b>Private DMs only!</b>", parse_mode="HTML")
+
     if not command.args or len(command.args.split()) < 2:
         return await message.reply(
-            "<b>Usage:</b>\n<code>/cookie_login [ltuid_v2] [ltoken_v2]</code>\nUse /cookiehelp for a step-by-step guide on how to get these values.\n\n"
-            "<i>(Optional: add ltmid_v2 as a third argument if login fails)</i>",
+            "<b>Usage:</b>\n<code>/cookie_login [ltuid_v2] [ltoken_v2] [cookie_token_v2]</code>\n"
+            "<i>(Third token is required for /redeem)</i>",
             parse_mode="HTML"
         )
 
     args = command.args.split()
-    ltuid = args[0]
-    ltoken = args[1]
-    # Handle optional ltmid_v2 if provided
-    ltmid = args[2] if len(args) > 2 else None
-
-    # Construct cookie dict
-    cookie_dict = {"ltuid_v2": ltuid, "ltoken_v2": ltoken}
-    if ltmid:
-        cookie_dict["ltmid_v2"] = ltmid
+    
+    # Construct the dictionary based on how many args were provided
+    cookie_dict = {
+        "ltuid_v2": args[0],
+        "ltoken_v2": args[1]
+    }
+    
+    # If they provided the third token, add it to the dict
+    if len(args) >= 3:
+        cookie_dict["cookie_token_v2"] = args[2]
 
     # Setup validation client
     check_client = genshin.Client(cookie_dict)
-    check_client.region = genshin.Region.OVERSEAS # Ensure global region
+    check_client.region = genshin.Region.OVERSEAS
     
     try:
-        # 1. First, validate the cookies are alive
+        # 1. Validate tokens are working
         await check_client.get_reward_info(game=genshin.Game.GENSHIN) 
         
-        # 2. Fetch ALL linked game accounts (Genshin, HSR, etc.)
+        # 2. Get Account Info
         all_accounts = await check_client.get_game_accounts()
+        genshin_acc = next((acc for acc in all_accounts if acc.game == genshin.Game.GENSHIN), None)
         
-        # 3. Filter specifically for Genshin Impact accounts
-        genshin_accounts = [acc for acc in all_accounts if acc.game == genshin.Game.GENSHIN]
+        if not genshin_acc:
+            return await message.reply("❌ <b>Error:</b> No Genshin accounts found.")
+
+        # 3. Encrypt the FULL dictionary (Saving all 3 tokens)
+        encrypted_str = cipher.encrypt(json.dumps(cookie_dict).encode()).decode()
         
-        if not genshin_accounts:
-            return await message.reply("❌ <b>Error:</b> No Genshin Impact accounts found.")
+        # 4. Save to MongoDB
+        await users_col.update_one(
+            {"user_id": str(message.from_user.id)},
+            {"$set": {
+                "hoyolab_data": encrypted_str,
+                "genshin_uid": genshin_acc.uid,
+                "nickname": genshin_acc.nickname,
+                "updated_at": datetime.utcnow()
+            }},
+            upsert=True
+        )
         
-        # 4. Pick the one with the highest Adventure Rank
+        status_msg = "all 3 tokens" if "cookie_token_v2" in cookie_dict else "2 tokens"
+        await message.reply(
+            f"<b>Success!</b> Logged in as <b>{genshin_acc.nickname}</b>.\n"
+            f"Saved <b>{status_msg}</b> securely.", 
+            parse_mode="HTML"
+        )
+
     except genshin.InvalidCookies:
-        return await message.reply("❌ <b>Error:</b> Cookies are invalid or expired.", parse_mode="HTML")
+        await message.reply("❌ <b>Error:</b> Tokens are invalid or expired.", parse_mode="HTML")
     except Exception as e:
-        # If this still fails, it will print the exact error type
-        return await message.reply(f"❌ <b>Validation Failed:</b> <code>{type(e).__name__}: {str(e)}</code>", parse_mode="HTML")
-    # Encrypt and save to MongoDB
-    # We save as a JSON string to include the optional ltmid
-    encrypted_str = cipher.encrypt(json.dumps(cookie_dict).encode()).decode()
-    
-    await users_col.update_one(
-        {"user_id": str(message.from_user.id)},
-        {"$set": {
-            "hoyolab_data": encrypted_str,
-            "updated_at": datetime.utcnow()
-        }},
-        upsert=True
-    )
-    
-    await message.reply("<b>Success!</b> Your cookies are encrypted and saved.", parse_mode="HTML")
+        await message.reply(f"❌ <b>Validation Failed:</b> <code>{str(e)}</code>", parse_mode="HTML")
 
 @dp.message(Command("dailylogin"))
 async def cmd_daily_login(message: types.Message):
@@ -295,44 +300,7 @@ async def cmd_resin(message: types.Message):
         )
     except Exception as e:
         await message.reply(f"<b>Error:</b> <code>{html.escape(str(e))}</code>", parse_mode="HTML")
-@dp.message(Command("add_cookie"))
-async def cmd_add_cookie_token(message: types.Message, command: CommandObject):
-    user_id = str(message.from_user.id)
-    
-    # 1. Fetch the user's existing encrypted data
-    user = await users_col.find_one({"user_id": user_id})
-    
-    if not user or "hoyolab_data" not in user:
-        return await message.reply("🚫 <b>Error:</b> No login found. Use <code>/cookie_login</code> first.")
 
-    if not command.args:
-        return await message.reply("<b>Usage:</b> <code>/add_cookie [cookie_token_v2]</code>")
-
-    new_token = command.args.strip()
-
-    try:
-        # 2. Decrypt the OLD data
-        old_encrypted_data = user["hoyolab_data"]
-        decrypted_str = cipher.decrypt(old_encrypted_data.encode()).decode()
-        cookies = json.loads(decrypted_str)
-
-        # 3. ADD the new token to the existing dictionary
-        # This keeps ltuid_v2 and ltoken_v2 safe!
-        cookies["cookie_token_v2"] = new_token
-
-        # 4. Re-encrypt the UPDATED dictionary
-        updated_encrypted_str = cipher.encrypt(json.dumps(cookies).encode()).decode()
-
-        # 5. Save back to MongoDB
-        await users_col.update_one(
-            {"user_id": user_id},
-            {"$set": {"hoyolab_data": updated_encrypted_str}}
-        )
-
-        await message.reply("✅ <b>Updated!</b> added <code>cookie_token_v2</code> while keeping your login active.", parse_mode="HTML")
-
-    except Exception as e:
-        await message.reply(f"❌ <b>Update Failed:</b> <code>{str(e)}</code>")
 @dp.message(Command("redeem"))
 async def cmd_redeem_code(message: types.Message, command: CommandObject):
     # 1. Check if the user provided a code
