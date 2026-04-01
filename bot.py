@@ -214,8 +214,11 @@ async def cmd_import_wishes(message: types.Message, command: CommandObject):
 
     # 2. Setup Client
     client = genshin.Client()
+    client.game = genshin.Game.GENSHIN
     client.set_authkey(authkey)
-    client.region = genshin.Region.OVERSEAS # Use OVERSEAS for Asia/Europe/America
+    client.region = genshin.Region.OVERSEAS
+
+    
 
     new_pulls = 0
     total_found = 0
