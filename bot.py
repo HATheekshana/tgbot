@@ -272,92 +272,96 @@ async def cmd_import_wishes(message: types.Message, command: CommandObject):
     except Exception as e:
         await status_msg.edit_text(f"<b>Bot Error:</b> <code>{str(e)}</code>", parse_mode="HTML")
 def get_diary_markup(current_month: int):
-    """Generates the 'Previous' button logic."""
     builder = InlineKeyboardBuilder()
-    
-    # Simple logic: 1 -> 12, otherwise Month - 1
+    # Calculate previous month (1 -> 12)
     prev_month = current_month - 1 if current_month > 1 else 12
     
     builder.row(types.InlineKeyboardButton(
-        text=f"View Month {prev_month}", 
+        text=f"⬅️ View Month {prev_month}", 
         callback_data=f"diary_view_{prev_month}")
     )
+    # Optional: Add a 'Home' button to return to the current month
+    builder.row(types.InlineKeyboardButton(text="🏠 Current Month", callback_data="diary_view_current"))
+    
     return builder.as_markup()
 
 def format_diary_report(diary: genshin.models.Diary) -> str:
-    """Standardizes the look of the report."""
     perc = diary.data.primogems_rate
     trend_emoji = "📈" if perc >= 0 else "📉"
     trend_text = "more" if perc >= 0 else "less"
 
-    # Build the category breakdown
     sources = ""
     for cat in diary.data.categories:
         sources += f"• {cat.name}: <b>{cat.percentage}%</b>\n"
 
     return (
-        f"<b>Traveler's Diary: {diary.month}</b>\n"
+        f"📒 <b>Traveler's Diary: {diary.month}</b>\n"
         "━━━━━━━━━━━━━━━━━━\n"
-        f"Primogems: <b>{diary.data.current_primogems}</b>\n"
-        f"Mora: <b>{diary.data.current_mora}</b>\n\n"
+        f"✨ Primogems: <b>{diary.data.current_primogems}</b>\n"
+        f"💰 Mora: <b>{diary.data.current_mora}</b>\n\n"
         
         f"{trend_emoji} <b>Monthly Change:</b>\n"
         f"You got <b>{abs(perc)}%</b> {trend_text} than last month.\n\n"
         
-        f"<b>Source Breakdown:</b>\n"
+        f"📊 <b>Source Breakdown:</b>\n"
         f"{sources}"
         "━━━━━━━━━━━━━━━━━━"
     )
 
+async def get_diary_client(user_id: str):
+    """Helper to decrypt cookies and return a genshin Client."""
+    user = await users_col.find_one({"user_id": str(user_id)})
+    if not user or "hoyolab_data" not in user:
+        return None
+    
+    # Use your exact resin decryption logic
+    decrypted_data = cipher.decrypt(user["hoyolab_data"].encode()).decode()
+    cookies = json.loads(decrypted_data)
+    
+    client = genshin.Client(cookies)
+    client.region = genshin.Region.OVERSEAS
+    return client
+
 @dp.message(Command("diary"))
 async def cmd_diary(message: types.Message):
-    user_id = str(message.from_user.id)
-    user_data = await users_col.find_one({"user_id": user_id})
-
-    if not user_data or "ltuid" not in user_data:
-        return await message.reply("❌ <b>Login required!</b> Use <code>/cookie_login</code> first.")
-
-    client = genshin.Client({"ltuid": user_data["ltuid"], "ltoken": user_data["ltoken"]})
+    client = await get_diary_client(message.from_user.id)
     
+    if not client:
+        return await message.reply("<b>Not Logged In!</b>\nUse /cookie_login first.", parse_mode="HTML")
+
+    status_msg = await message.reply("📖 <b>Opening Diary...</b>", parse_mode="HTML")
+
     try:
         diary = await client.get_genshin_diary()
-        text = format_diary_report(diary)
-        
-        await message.reply(
-            text, 
-            parse_mode="HTML", 
-            reply_markup=get_diary_markup(diary.month)
+        await status_msg.edit_text(
+            format_diary_report(diary),
+            reply_markup=get_diary_markup(diary.month),
+            parse_mode="HTML"
         )
     except Exception as e:
-        await message.reply(f"❌ <b>Error:</b> <code>{str(e)}</code>")
+        await status_msg.edit_text(f"<b>Error:</b> <code>{html.escape(str(e))}</code>", parse_mode="HTML")
 
 @dp.callback_query(F.data.startswith("diary_view_"))
 async def handle_diary_pagination(callback: types.CallbackQuery):
-    target_month = int(callback.data.split("_")[-1])
-    user_id = str(callback.from_user.id)
+    user_id = callback.from_user.id
+    data_parts = callback.data.split("_")
     
-    # 1. Show a 'loading' notification in the header
-    await callback.answer("Fetching data...")
-
-    user_data = await users_col.find_one({"user_id": user_id})
-    client = genshin.Client({"ltuid": user_data["ltuid"], "ltoken": user_data["ltoken"]})
+    # Handle 'current' vs specific month ID
+    month_val = None if data_parts[-1] == "current" else int(data_parts[-1])
+    
+    await callback.answer("Updating Diary...")
+    client = await get_diary_client(user_id)
 
     try:
-        # 2. Fetch specific month (HoYo allows current and 2 previous)
-        diary = await client.get_genshin_diary(month=target_month)
-        text = format_diary_report(diary)
-        
-        # 3. Update the message with the new month's data
+        diary = await client.get_genshin_diary(month=month_val)
         await callback.message.edit_text(
-            text, 
-            parse_mode="HTML", 
-            reply_markup=get_diary_markup(target_month)
+            format_diary_report(diary),
+            reply_markup=get_diary_markup(diary.month),
+            parse_mode="HTML"
         )
-    except genshin.GenshinException as e:
-        # Usually happens if the month is too far back (older than 3 months)
-        await callback.message.answer("<b>Notice:</b> Data for that month is no longer available on HoYoLAB.")
     except Exception as e:
-        await callback.message.answer(f"<b>Error:</b> {str(e)}")
+        # If month is too old, HoYoLAB throws an error
+        await callback.message.answer(f"⚠️ Could not load data: <code>{html.escape(str(e))}</code>", parse_mode="HTML")
 @dp.message(Command("dailylogin"))
 async def cmd_daily_login(message: types.Message):
     user = await users_col.find_one({"user_id": str(message.from_user.id)})
