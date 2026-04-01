@@ -204,17 +204,16 @@ from datetime import datetime
 async def cmd_import_wishes(message: types.Message, command: CommandObject):
     if not command.args:
         instruction_text = (
-        "❓ <b>How to Import Your Wishes</b>\n\n"
-        "1️⃣ Open <b>Genshin Impact</b> and go to your <b>Wish History</b> page.\n"
-        "2️⃣ Wait for the history to load completely.\n"
-        "3️⃣ Minimize the game, open <b>Windows PowerShell</b>.\n"
-        "4️⃣ Copy/Paste the code below into PowerShell and press <b>Enter</b>:\n\n"
-        "<pre>Set-ExecutionPolicy Bypass -Scope Process -Force; [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072; iex \"&{$((New-Object System.Net.WebClient).DownloadString('https://gist.github.com/MadeBaruna/1d75c1d37d19eca71591ec8a31178235/raw/getlink.ps1'))} global\"</pre>\n\n"
-        "5️⃣ The script will copy a URL to your clipboard. Paste it here like this:\n"
-        "<code>/import_wishes [PASTE_URL_HERE]</code>"
-    )
-    
-    await message.reply(instruction_text, parse_mode="HTML")
+            "❓ <b>How to Import Your Wishes</b>\n\n"
+            "1️⃣ Open <b>Genshin Impact</b> and go to your <b>Wish History</b> page.\n"
+            "2️⃣ Wait for the history to load completely.\n"
+            "3️⃣ Minimize the game, open <b>Windows PowerShell</b>.\n"
+            "4️⃣ Copy/Paste the code below into PowerShell and press <b>Enter</b>:\n\n"
+            "<pre>Set-ExecutionPolicy Bypass -Scope Process -Force; [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072; iex \"&{$((New-Object System.Net.WebClient).DownloadString('https://gist.github.com/MadeBaruna/1d75c1d37d19eca71591ec8a31178235/raw/getlink.ps1'))} global\"</pre>\n\n"
+            "5️⃣ The script will copy a URL to your clipboard. Paste it here like this:\n"
+            "<code>/import_wishes [PASTE_URL_HERE]</code>"
+        )
+        return await message.reply(instruction_text, parse_mode="HTML") # Added 'return' here
 
     user_id = str(message.from_user.id)
     raw_url = command.args.strip()
@@ -223,9 +222,9 @@ async def cmd_import_wishes(message: types.Message, command: CommandObject):
     try:
         authkey = genshin.utility.extract_authkey(raw_url)
     except Exception:
-        return await message.reply("<b>Error:</b> That doesn't look like a valid Wish History URL.",parse_mode="HTML")
+        return await message.reply("<b>Error:</b> That doesn't look like a valid Wish History URL.", parse_mode="HTML")
 
-    status_msg = await message.reply("<b>Syncing lifetime wishes...</b>\nThis can take 30-60 seconds.",parse_mode="HTML")
+    status_msg = await message.reply("<b>Syncing lifetime wishes...</b>\nThis can take 30-60 seconds.", parse_mode="HTML")
 
     # 2. Setup Client
     client = genshin.Client()
@@ -233,23 +232,19 @@ async def cmd_import_wishes(message: types.Message, command: CommandObject):
     client.set_authkey(authkey)
     client.region = genshin.Region.OVERSEAS
 
-    
-
-    new_pulls = 0
+    # Note: Using new_count to track actual inserts
     new_count = 0
     total_found = 0
 
     try:
         # 3. Loop through all relevant banners
-        # 301/400 (Character), 302 (Weapon), 200 (Standard)
         for banner in [301, 400, 302, 200]:
             async for wish in client.wish_history(banner):
                 total_found += 1
                 
                 # 4. Save to DB (Upsert)
-                # This ensures we don't count the same pull twice
                 result = await wish_col.update_one(
-                    {"id": wish.id}, # Unique ID provided by HoYoverse
+                    {"id": wish.id}, 
                     {"$set": {
                         "user_id": user_id,
                         "uid": wish.uid,
@@ -268,14 +263,14 @@ async def cmd_import_wishes(message: types.Message, command: CommandObject):
         await status_msg.edit_text(
             f"<b>Sync Complete!</b> ✅ \n\n"
             f"Total in Database: <b>{total_found}</b>\n"
-            f"New wishes added: <b>{new_pulls}</b>",
+            f"New wishes added: <b>{new_count}</b>", # Fixed variable name here to new_count
             parse_mode="HTML"
         )
 
     except genshin.AuthkeyException:
-        await status_msg.edit_text("<b>Error:</b> Your Authkey has expired. Please generate a new one in-game.",parse_mode="HTML")
+        await status_msg.edit_text("<b>Error:</b> Your Authkey has expired. Please generate a new one in-game.", parse_mode="HTML")
     except Exception as e:
-        await status_msg.edit_text(f"<b>Bot Error:</b> <code>{str(e)}</code>",parse_mode="HTML")
+        await status_msg.edit_text(f"<b>Bot Error:</b> <code>{str(e)}</code>", parse_mode="HTML")
 @dp.message(Command("dailylogin"))
 async def cmd_daily_login(message: types.Message):
     user = await users_col.find_one({"user_id": str(message.from_user.id)})
