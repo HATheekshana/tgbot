@@ -203,7 +203,18 @@ from datetime import datetime
 @dp.message(Command("import_wishes"))
 async def cmd_import_wishes(message: types.Message, command: CommandObject):
     if not command.args:
-        return await message.reply("<b>Usage:</b> Paste your full URL after the command.\n1.Open genshin\n2.Open wish history\n3.Open Windows powershell\n4.Copy this code and paste in powershell and click enter to get link\n<code>Set-ExecutionPolicy Bypass -Scope Process -Force; [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072; iex "&{$((New-Object System.Net.WebClient).DownloadString('https://gist.github.com/MadeBaruna/1d75c1d37d19eca71591ec8a31178235/raw/getlink.ps1'))} global"</code>",parse_mode="HTML")
+        instruction_text = (
+        "❓ <b>How to Import Your Wishes</b>\n\n"
+        "1️⃣ Open <b>Genshin Impact</b> and go to your <b>Wish History</b> page.\n"
+        "2️⃣ Wait for the history to load completely.\n"
+        "3️⃣ Minimize the game, open <b>Windows PowerShell</b>.\n"
+        "4️⃣ Copy/Paste the code below into PowerShell and press <b>Enter</b>:\n\n"
+        "<code>Set-ExecutionPolicy Bypass -Scope Process -Force; [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072; iex \"&{$((New-Object System.Net.WebClient).DownloadString('https://gist.github.com/MadeBaruna/1d75c1d37d19eca71591ec8a31178235/raw/getlink.ps1'))} global\"</code>\n\n"
+        "5️⃣ The script will copy a URL to your clipboard. Paste it here like this:\n"
+        "<code>/import_wishes [PASTE_URL_HERE]</code>"
+    )
+    
+    await message.reply(instruction_text, parse_mode="HTML")
 
     user_id = str(message.from_user.id)
     raw_url = command.args.strip()
