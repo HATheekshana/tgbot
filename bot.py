@@ -367,8 +367,6 @@ async def handle_diary_pagination(callback: types.CallbackQuery):
             return 
         raise e
         
-    except Exception as e:
-        await callback.message.answer(f"⚠️ Error: <code>{html.escape(str(e))}</code>", parse_mode="HTML")
 @dp.message(Command("dailylogin"))
 async def cmd_daily_login(message: types.Message):
     user = await users_col.find_one({"user_id": str(message.from_user.id)})
