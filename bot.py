@@ -273,21 +273,32 @@ async def cmd_import_wishes(message: types.Message, command: CommandObject):
         await status_msg.edit_text("<b>Error:</b> Your Authkey has expired. Please generate a new one in-game.", parse_mode="HTML")
     except Exception as e:
         await status_msg.edit_text(f"<b>Bot Error:</b> <code>{str(e)}</code>", parse_mode="HTML")
-def get_diary_markup(current_month: int):
+def get_diary_markup(viewing_month: int):
     builder = InlineKeyboardBuilder()
     
-    prev_month = current_month - 1 if current_month > 1 else 12
-    prev_month_name = calendar.month_name[prev_month]
+    actual_month = datetime.now().month
     
-    builder.row(types.InlineKeyboardButton(
-        text=f"{prev_month_name}", 
-        callback_data=f"diary_view_{prev_month}") # Use the NUMBER here
-    )
+    allowed_months = []
+    for i in range(3):
+        m = actual_month - i
+        if m <= 0: m += 12
+        allowed_months.append(m)
     
-    builder.row(types.InlineKeyboardButton(
-        text="Current Month", 
-        callback_data="diary_view_current")
-    )
+    prev_month = viewing_month - 1 if viewing_month > 1 else 12
+    
+    # 4. Loop Logic: If the next "previous" isn't allowed, jump to the actual current month
+    if prev_month not in allowed_months:
+        btn_text = f"Back to {calendar.month_name[actual_month]}"
+        btn_data = "diary_view_current"
+    else:
+        btn_text = f"{calendar.month_name[prev_month]}"
+        btn_data = f"diary_view_{prev_month}"
+
+    builder.row(types.InlineKeyboardButton(text=btn_text, callback_data=btn_data))
+    
+    # Optional: Always keep a "Home" button if not on the current month
+    if viewing_month != actual_month:
+        builder.row(types.InlineKeyboardButton(text="Current Month", callback_data="diary_view_current"))
     
     return builder.as_markup()
 def format_diary_report(diary: genshin.models.Diary) -> str:
