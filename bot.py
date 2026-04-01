@@ -193,7 +193,7 @@ async def cmd_wishes(message: types.Message):
         "<b>Last 10 Limited Pulls:</b>\n"
         f"{history_text}"
 
-        "\n <b>Use /import_wishes to update data</b>"
+        "\n\n <b>Use /import_wishes to update data</b>"
     )
 
     await message.reply(response, parse_mode="HTML")
