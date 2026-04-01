@@ -209,7 +209,7 @@ async def cmd_import_wishes(message: types.Message, command: CommandObject):
         "2️⃣ Wait for the history to load completely.\n"
         "3️⃣ Minimize the game, open <b>Windows PowerShell</b>.\n"
         "4️⃣ Copy/Paste the code below into PowerShell and press <b>Enter</b>:\n\n"
-        "<code>Set-ExecutionPolicy Bypass -Scope Process -Force; [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072; iex \"&{$((New-Object System.Net.WebClient).DownloadString('https://gist.github.com/MadeBaruna/1d75c1d37d19eca71591ec8a31178235/raw/getlink.ps1'))} global\"</code>\n\n"
+        "<pre>Set-ExecutionPolicy Bypass -Scope Process -Force; [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072; iex \"&{$((New-Object System.Net.WebClient).DownloadString('https://gist.github.com/MadeBaruna/1d75c1d37d19eca71591ec8a31178235/raw/getlink.ps1'))} global\"</pre>\n\n"
         "5️⃣ The script will copy a URL to your clipboard. Paste it here like this:\n"
         "<code>/import_wishes [PASTE_URL_HERE]</code>"
     )
