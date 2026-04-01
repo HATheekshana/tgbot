@@ -167,10 +167,12 @@ async def cmd_wishes(message: types.Message):
     weapon = await calculate_pity(user_id, 302, wish_col)
     std = await calculate_pity(user_id, 200, wish_col)
 
-    # Basic check to see if they have any data at all
     if char['total'] == 0 and std['total'] == 0 and weapon['total'] == 0:
         return await message.reply("📭 <b>No data found!</b> Use <code>/import_wishes [URL]</code> first.", parse_mode="HTML")
-
+    if char['last_10']:
+        history_text = "\n".join([f"• {name}" for name in char['last_10']])
+    else:
+        history_text = "<i>No history found</i>"
     response = (
         "<b>LIFETIME WISH TRACKER</b>\n"
         "━━━━━━━━━━━━━━━━━━\n"
@@ -189,7 +191,7 @@ async def cmd_wishes(message: types.Message):
         f"└ 5✮ Pity: <b>{std['pity_5']}</b>\n\n"
         
         "<b>Last 10 Limited Pulls:</b>\n"
-        f"{'\n'.join(char['last_10']) if char['last_10'] else 'None'}"
+        f"{history_text}"
 
         "Use /import_wishes to update data"
     )
