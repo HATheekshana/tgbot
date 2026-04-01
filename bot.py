@@ -5,6 +5,7 @@ import logging
 import math
 import sys
 import random
+import calendar
 import io
 import aiohttp
 from datetime import datetime
@@ -276,13 +277,13 @@ def get_diary_markup(current_month: int):
     builder = InlineKeyboardBuilder()
     # Calculate previous month (1 -> 12)
     prev_month = current_month - 1 if current_month > 1 else 12
-    
+    month_name = calendar.month_name[prev_month]
     builder.row(types.InlineKeyboardButton(
-        text=f"⬅️ View Month {prev_month}", 
-        callback_data=f"diary_view_{prev_month}")
+        text=f"View Month {month_name}", 
+        callback_data=f"diary_view_{month_name}")
     )
     # Optional: Add a 'Home' button to return to the current month
-    builder.row(types.InlineKeyboardButton(text="🏠 Current Month", callback_data="diary_view_current"))
+    builder.row(types.InlineKeyboardButton(text="Current Month", callback_data="diary_view_current"))
     
     return builder.as_markup()
 
@@ -294,19 +295,19 @@ def format_diary_report(diary: genshin.models.Diary) -> str:
     sources = ""
     for cat in diary.data.categories:
         sources += f"• {cat.name}: <b>{cat.percentage}%</b>\n"
-
+    month_name = calendar.month_name[diary.month]
     return (
-        f"<b>Traveler's Diary: {diary.month}</b>\n"
-        "━━━━━━━━━━━━━━━━━━\n"
-        f"Primogems: <b>{diary.data.current_primogems}</b>\n"
-        f"Mora: <b>{diary.data.current_mora}</b>\n\n"
+        f"<b>⋆˙⟡Traveler's Diary: {month_name}⟡˙⋆</b>\n"
+        "─────── ୨୧ ───────\n"
+        f"⚡︎ Primogems: <b>{diary.data.current_primogems}</b>\n"
+        f"⚡︎ Mora: <b>{diary.data.current_mora}</b>\n\n"
         
         f"{trend_emoji} <b>Monthly Change:</b>\n"
         f"You got <b>{abs(perc)}%</b> {trend_text} than last month.\n\n"
         
         f"<b>Source Breakdown:</b>\n"
         f"{sources}"
-        "━━━━━━━━━━━━━━━━━━"
+        "─────── ୨୧ ───────"
     )
 
 async def get_diary_client(user_id: str):
