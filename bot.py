@@ -224,7 +224,7 @@ async def cmd_import_wishes(message: types.Message, command: CommandObject):
     except Exception:
         return await message.reply("<b>Error:</b> That doesn't look like a valid Wish History URL.", parse_mode="HTML")
 
-    status_msg = await message.reply("<b>Syncing lifetime wishes...</b>\nThis can take 30-60 seconds.", parse_mode="HTML")
+    status_msg = await message.reply("<b>Syncing lifetime wishes...</b>\nThis can take 30-60 seconds or more than that depends how much pulls", parse_mode="HTML")
 
     # 2. Setup Client
     client = genshin.Client()
