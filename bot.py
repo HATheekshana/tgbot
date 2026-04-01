@@ -275,18 +275,21 @@ async def cmd_import_wishes(message: types.Message, command: CommandObject):
         await status_msg.edit_text(f"<b>Bot Error:</b> <code>{str(e)}</code>", parse_mode="HTML")
 def get_diary_markup(current_month: int):
     builder = InlineKeyboardBuilder()
-    # Calculate previous month (1 -> 12)
+    
     prev_month = current_month - 1 if current_month > 1 else 12
-    month_name = calendar.month_name[prev_month]
+    prev_month_name = calendar.month_name[prev_month]
+    
     builder.row(types.InlineKeyboardButton(
-        text=f"View Month {month_name}", 
-        callback_data=f"diary_view_{month_name}")
+        text=f"⬅️ {prev_month_name}", 
+        callback_data=f"diary_view_{prev_month}") # Use the NUMBER here
     )
-    # Optional: Add a 'Home' button to return to the current month
-    builder.row(types.InlineKeyboardButton(text="Current Month", callback_data="diary_view_current"))
+    
+    builder.row(types.InlineKeyboardButton(
+        text="Current Month", 
+        callback_data="diary_view_current")
+    )
     
     return builder.as_markup()
-
 def format_diary_report(diary: genshin.models.Diary) -> str:
     perc = diary.data.primogems_rate
     trend_emoji = "📈" if perc >= 0 else "📉"
