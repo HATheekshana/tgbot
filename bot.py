@@ -8,6 +8,7 @@ import random
 import io
 import aiohttp
 from datetime import datetime
+from aiogram.exceptions import TelegramBadRequest
 from pymongo import ReturnDocument
 from dotenv import load_dotenv
 import os
@@ -295,15 +296,15 @@ def format_diary_report(diary: genshin.models.Diary) -> str:
         sources += f"• {cat.name}: <b>{cat.percentage}%</b>\n"
 
     return (
-        f"📒 <b>Traveler's Diary: {diary.month}</b>\n"
+        f"<b>Traveler's Diary: {diary.month}</b>\n"
         "━━━━━━━━━━━━━━━━━━\n"
-        f"✨ Primogems: <b>{diary.data.current_primogems}</b>\n"
-        f"💰 Mora: <b>{diary.data.current_mora}</b>\n\n"
+        f"Primogems: <b>{diary.data.current_primogems}</b>\n"
+        f"Mora: <b>{diary.data.current_mora}</b>\n\n"
         
         f"{trend_emoji} <b>Monthly Change:</b>\n"
         f"You got <b>{abs(perc)}%</b> {trend_text} than last month.\n\n"
         
-        f"📊 <b>Source Breakdown:</b>\n"
+        f"<b>Source Breakdown:</b>\n"
         f"{sources}"
         "━━━━━━━━━━━━━━━━━━"
     )
@@ -329,7 +330,7 @@ async def cmd_diary(message: types.Message):
     if not client:
         return await message.reply("<b>Not Logged In!</b>\nUse /cookie_login first.", parse_mode="HTML")
 
-    status_msg = await message.reply("📖 <b>Opening Diary...</b>", parse_mode="HTML")
+    status_msg = await message.reply("<b>Opening Diary...</b>", parse_mode="HTML")
 
     try:
         diary = await client.get_genshin_diary()
@@ -345,8 +346,6 @@ async def cmd_diary(message: types.Message):
 async def handle_diary_pagination(callback: types.CallbackQuery):
     user_id = callback.from_user.id
     data_parts = callback.data.split("_")
-    
-    # Handle 'current' vs specific month ID
     month_val = None if data_parts[-1] == "current" else int(data_parts[-1])
     
     await callback.answer("Updating Diary...")
@@ -354,14 +353,22 @@ async def handle_diary_pagination(callback: types.CallbackQuery):
 
     try:
         diary = await client.get_genshin_diary(month=month_val)
+        new_text = format_diary_report(diary)
+        new_markup = get_diary_markup(diary.month)
+        
         await callback.message.edit_text(
-            format_diary_report(diary),
-            reply_markup=get_diary_markup(diary.month),
-            parse_mode="HTML"
+            new_text, 
+            parse_mode="HTML", 
+            reply_markup=new_markup
         )
+        
+    except TelegramBadRequest as e:
+        if "message is not modified" in str(e):
+            return 
+        raise e
+        
     except Exception as e:
-        # If month is too old, HoYoLAB throws an error
-        await callback.message.answer(f"⚠️ Could not load data: <code>{html.escape(str(e))}</code>", parse_mode="HTML")
+        await callback.message.answer(f"⚠️ Error: <code>{html.escape(str(e))}</code>", parse_mode="HTML")
 @dp.message(Command("dailylogin"))
 async def cmd_daily_login(message: types.Message):
     user = await users_col.find_one({"user_id": str(message.from_user.id)})
