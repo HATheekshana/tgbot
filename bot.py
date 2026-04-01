@@ -221,6 +221,7 @@ async def cmd_import_wishes(message: types.Message, command: CommandObject):
     
 
     new_pulls = 0
+    new_count = 0
     total_found = 0
 
     try:
