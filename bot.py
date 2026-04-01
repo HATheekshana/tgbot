@@ -168,7 +168,7 @@ async def cmd_wishes(message: types.Message):
     std = await calculate_pity(user_id, 200, wish_col)
 
     if char['total'] == 0 and std['total'] == 0 and weapon['total'] == 0:
-        return await message.reply("📭 <b>No data found!</b> Use <code>/import_wishes [URL]</code> first.", parse_mode="HTML")
+        return await message.reply("📭 <b>No data found!</b> Use \n <pre>/import_wishes [URL]</pre> first.", parse_mode="HTML")
     if char['last_10']:
         history_text = "\n".join([f"• {name}" for name in char['last_10']])
     else:
