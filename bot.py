@@ -172,24 +172,26 @@ async def cmd_wishes(message: types.Message):
         return await message.reply("📭 <b>No data found!</b> Use <code>/import_wishes [URL]</code> first.", parse_mode="HTML")
 
     response = (
-        "✨ <b>LIFETIME WISH TRACKER</b> ✨\n"
+        "<b>LIFETIME WISH TRACKER</b>\n"
         "━━━━━━━━━━━━━━━━━━\n"
-        "👤 <b>Character Banner</b>\n"
+        "<b>Character Banner</b>\n"
         f"├ Total Pulls: <b>{char['total']}</b>\n"
-        f"├ 5⭐ Pity: <b>{char['pity_5']}</b>\n"
-        f"└ 4⭐ Pity: <b>{char['pity_4']}</b>\n\n"
+        f"├ 5✮ Pity: <b>{char['pity_5']}</b>\n"
+        f"└ 4✮ Pity: <b>{char['pity_4']}</b>\n\n"
         
-        "⚔️ <b>Weapon Banner</b>\n"
+        "<b>Weapon Banner</b>\n"
         f"├ Total Pulls: <b>{weapon['total']}</b>\n"
-        f"├ 5⭐ Pity: <b>{weapon['pity_5']}</b>\n"
-        f"└ 4⭐ Pity: <b>{weapon['pity_4']}</b>\n\n"
+        f"├ 5✮ Pity: <b>{weapon['pity_5']}</b>\n"
+        f"└ 4✮ Pity: <b>{weapon['pity_4']}</b>\n\n"
         
-        "📜 <b>Standard Banner</b>\n"
+        "<b>Standard Banner</b>\n"
         f"├ Total Pulls: <b>{std['total']}</b>\n"
-        f"└ 5⭐ Pity: <b>{std['pity_5']}</b>\n\n"
+        f"└ 5✮ Pity: <b>{std['pity_5']}</b>\n\n"
         
-        "🕒 <b>Last 10 Limited Pulls:</b>\n"
-        f"<code>{', '.join(char['last_10']) if char['last_10'] else 'None'}</code>"
+        "<b>Last 10 Limited Pulls:</b>\n"
+        f"{'\n'.join(char['last_10']) if char['last_10'] else 'None'}"
+
+        "Use /import_wishes to update data"
     )
 
     await message.reply(response, parse_mode="HTML")
@@ -199,7 +201,7 @@ from datetime import datetime
 @dp.message(Command("import_wishes"))
 async def cmd_import_wishes(message: types.Message, command: CommandObject):
     if not command.args:
-        return await message.reply("❓ <b>Usage:</b> Paste your full URL after the command.")
+        return await message.reply("<b>Usage:</b> Paste your full URL after the command.\n1.Open genshin\n2.Open wish history\n3.Open Windows powershell\n4.Copy this code and paste in powershell and click enter to get link\n<code>Set-ExecutionPolicy Bypass -Scope Process -Force; [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072; iex "&{$((New-Object System.Net.WebClient).DownloadString('https://gist.github.com/MadeBaruna/1d75c1d37d19eca71591ec8a31178235/raw/getlink.ps1'))} global"</code>",parse_mode="HTML")
 
     user_id = str(message.from_user.id)
     raw_url = command.args.strip()
@@ -208,9 +210,9 @@ async def cmd_import_wishes(message: types.Message, command: CommandObject):
     try:
         authkey = genshin.utility.extract_authkey(raw_url)
     except Exception:
-        return await message.reply("❌ <b>Error:</b> That doesn't look like a valid Wish History URL.")
+        return await message.reply("<b>Error:</b> That doesn't look like a valid Wish History URL.",parse_mode="HTML")
 
-    status_msg = await message.reply("⏳ <b>Syncing lifetime wishes...</b>\nThis can take 30-60 seconds.")
+    status_msg = await message.reply("<b>Syncing lifetime wishes...</b>\nThis can take 30-60 seconds.",parse_mode="HTML")
 
     # 2. Setup Client
     client = genshin.Client()
@@ -251,16 +253,16 @@ async def cmd_import_wishes(message: types.Message, command: CommandObject):
                     new_count += 1
 
         await status_msg.edit_text(
-            f"✅ <b>Sync Complete!</b>\n\n"
-            f"📂 Total in Database: <b>{total_found}</b>\n"
-            f"📥 New wishes added: <b>{new_pulls}</b>",
+            f"<b>Sync Complete!</b> ✅ \n\n"
+            f"Total in Database: <b>{total_found}</b>\n"
+            f"New wishes added: <b>{new_pulls}</b>",
             parse_mode="HTML"
         )
 
     except genshin.AuthkeyException:
-        await status_msg.edit_text("❌ <b>Error:</b> Your Authkey has expired. Please generate a new one in-game.")
+        await status_msg.edit_text("<b>Error:</b> Your Authkey has expired. Please generate a new one in-game.",parse_mode="HTML")
     except Exception as e:
-        await status_msg.edit_text(f"❌ <b>Bot Error:</b> <code>{str(e)}</code>")
+        await status_msg.edit_text(f"<b>Bot Error:</b> <code>{str(e)}</code>",parse_mode="HTML")
 @dp.message(Command("dailylogin"))
 async def cmd_daily_login(message: types.Message):
     user = await users_col.find_one({"user_id": str(message.from_user.id)})

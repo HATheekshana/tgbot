@@ -1,6 +1,6 @@
 import genshin
 from motor.motor_asyncio import AsyncIOMotorCollection
-
+import asyncio
 # Note: We pass wish_col as an argument to the functions 
 # so this file doesn't need to know about your main DB setup.
 
@@ -12,6 +12,7 @@ async def fetch_and_save_wishes(user_id: str, authkey: str, wish_col: AsyncIOMot
     new_count = 0
     # 301=Char, 302=Weapon, 200=Standard, 400=Char2
     for banner_type in [301, 302, 200, 400]: 
+        await asyncio.sleep(1.5)
         try:
             async for wish in client.wish_history(banner_type):
                 result = await wish_col.update_one(
