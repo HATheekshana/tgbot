@@ -280,7 +280,7 @@ def get_diary_markup(current_month: int):
     prev_month_name = calendar.month_name[prev_month]
     
     builder.row(types.InlineKeyboardButton(
-        text=f"⬅️ {prev_month_name}", 
+        text=f"{prev_month_name}", 
         callback_data=f"diary_view_{prev_month}") # Use the NUMBER here
     )
     
