@@ -33,6 +33,7 @@ from genshin_utils import  get_enkadata,get_quiz_score,to_int,get_val,get_explor
 from data import weapons3, characters4, characters5, rare
 from cryptography.fernet import Fernet
 from tasks import setup_scheduler
+from paimon import fetch_and_save_wishes, calculate_pity
 
 
 quiz_track = {}
@@ -60,11 +61,17 @@ ADMIN_ID = int(ADMIN_VAL)
 cluster = AsyncIOMotorClient(MONGO_URL)
 db = cluster["genshin_bot"]
 users_col = db["user_stats"]
+wish_col = db["user_wishes"]
 
 # Add this line near the top of your file, outside of any functions
 active_polls = {}
 # ---------------- Dictionaries ----------------
-
+BANNER_NAMES = {
+    301: "Character Event",
+    400: "Character Event 2",
+    302: "Weapon Event",
+    200: "Standard"
+}
 
 CURRENT_RATE_UP_KEY = "skirk" 
 CURRENT_RATE_UP_NAME = characters5.get(CURRENT_RATE_UP_KEY, "Skirk")
@@ -151,7 +158,105 @@ async def cmd_cookie_login(message: types.Message, command: CommandObject):
         await message.reply("❌ <b>Error:</b> Tokens are invalid or expired.", parse_mode="HTML")
     except Exception as e:
         await message.reply(f"❌ <b>Validation Failed:</b> <code>{str(e)}</code>", parse_mode="HTML")
+@dp.message(Command("wishes"))
+async def cmd_wishes(message: types.Message):
+    user_id = str(message.from_user.id)
+    
+    # We pass 'wish_col' as the 3rd argument so the function can query MongoDB
+    char = await calculate_pity(user_id, 301, wish_col)
+    weapon = await calculate_pity(user_id, 302, wish_col)
+    std = await calculate_pity(user_id, 200, wish_col)
 
+    # Basic check to see if they have any data at all
+    if char['total'] == 0 and std['total'] == 0 and weapon['total'] == 0:
+        return await message.reply("📭 <b>No data found!</b> Use <code>/import_wishes [URL]</code> first.", parse_mode="HTML")
+
+    response = (
+        "✨ <b>LIFETIME WISH TRACKER</b> ✨\n"
+        "━━━━━━━━━━━━━━━━━━\n"
+        "👤 <b>Character Banner</b>\n"
+        f"├ Total Pulls: <b>{char['total']}</b>\n"
+        f"├ 5⭐ Pity: <b>{char['pity_5']}</b>\n"
+        f"└ 4⭐ Pity: <b>{char['pity_4']}</b>\n\n"
+        
+        "⚔️ <b>Weapon Banner</b>\n"
+        f"├ Total Pulls: <b>{weapon['total']}</b>\n"
+        f"├ 5⭐ Pity: <b>{weapon['pity_5']}</b>\n"
+        f"└ 4⭐ Pity: <b>{weapon['pity_4']}</b>\n\n"
+        
+        "📜 <b>Standard Banner</b>\n"
+        f"├ Total Pulls: <b>{std['total']}</b>\n"
+        f"└ 5⭐ Pity: <b>{std['pity_5']}</b>\n\n"
+        
+        "🕒 <b>Last 10 Limited Pulls:</b>\n"
+        f"<code>{', '.join(char['last_10']) if char['last_10'] else 'None'}</code>"
+    )
+
+    await message.reply(response, parse_mode="HTML")
+import genshin
+from datetime import datetime
+
+@dp.message(Command("import_wishes"))
+async def cmd_import_wishes(message: types.Message, command: CommandObject):
+    if not command.args:
+        return await message.reply("❓ <b>Usage:</b> Paste your full URL after the command.")
+
+    user_id = str(message.from_user.id)
+    raw_url = command.args.strip()
+    
+    # 1. Extract the Authkey
+    try:
+        authkey = genshin.utility.extract_authkey(raw_url)
+    except Exception:
+        return await message.reply("❌ <b>Error:</b> That doesn't look like a valid Wish History URL.")
+
+    status_msg = await message.reply("⏳ <b>Syncing lifetime wishes...</b>\nThis can take 30-60 seconds.")
+
+    # 2. Setup Client
+    client = genshin.Client()
+    client.set_authkey(authkey)
+    client.region = genshin.Region.OVERSEAS # Use OVERSEAS for Asia/Europe/America
+
+    new_pulls = 0
+    total_found = 0
+
+    try:
+        # 3. Loop through all relevant banners
+        # 301/400 (Character), 302 (Weapon), 200 (Standard)
+        for banner in [301, 400, 302, 200]:
+            async for wish in client.wish_history(banner):
+                total_found += 1
+                
+                # 4. Save to DB (Upsert)
+                # This ensures we don't count the same pull twice
+                result = await wish_col.update_one(
+                    {"id": wish.id}, # Unique ID provided by HoYoverse
+                    {"$set": {
+                        "user_id": user_id,
+                        "uid": wish.uid,
+                        "name": wish.name,
+                        "rarity": wish.rarity,
+                        "type": wish.type,
+                        "banner_type": wish.banner_type,
+                        "time": wish.time
+                    }},
+                    upsert=True
+                )
+                
+                if result.upserted_id:
+                    new_count += 1
+
+        await status_msg.edit_text(
+            f"✅ <b>Sync Complete!</b>\n\n"
+            f"📂 Total in Database: <b>{total_found}</b>\n"
+            f"📥 New wishes added: <b>{new_pulls}</b>",
+            parse_mode="HTML"
+        )
+
+    except genshin.AuthkeyException:
+        await status_msg.edit_text("❌ <b>Error:</b> Your Authkey has expired. Please generate a new one in-game.")
+    except Exception as e:
+        await status_msg.edit_text(f"❌ <b>Bot Error:</b> <code>{str(e)}</code>")
 @dp.message(Command("dailylogin"))
 async def cmd_daily_login(message: types.Message):
     user = await users_col.find_one({"user_id": str(message.from_user.id)})
