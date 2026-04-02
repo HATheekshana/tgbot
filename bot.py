@@ -98,7 +98,6 @@ async def cmd_teams_menu(message: types.Message):
             callback_data=f"selectchar:{char}"
         )
     
-    # Adjust layout: 2 buttons per row
     builder.adjust(3)
     
     await message.reply(
@@ -110,36 +109,41 @@ async def process_char_selection(callback: types.CallbackQuery):
     char_name = callback.data.split(":")[1]
     
     builder = InlineKeyboardBuilder()
-    # Get the team types for this specific character
     for team_type in TEAMS_DB[char_name].keys():
         builder.button(
             text=f"{team_type.upper()}", 
             callback_data=f"showteam:{char_name}:{team_type}"
         )
     
+    # --- FIX 1: Change to 1 button per row ---
+    builder.adjust(1) 
+    
     # Add a "Back" button to return to the character list
     builder.row(types.InlineKeyboardButton(text="Back", callback_data="back_to_chars"))
 
     await callback.message.edit_text(
         text=f"Selected: <b>{char_name.title()}</b>\nWhich team type would you like to see?",
-        reply_markup=builder.as_markup(),parse_mode="HTML"
+        reply_markup=builder.as_markup(),
+        parse_mode="HTML"
     )
     await callback.answer()
-from aiogram.types import FSInputFile
 
 @dp.callback_query(F.data.startswith("showteam:"))
 async def display_team_image(callback: types.CallbackQuery):
     _, char, team_type = callback.data.split(":")
     image_path = TEAMS_DB[char][team_type]
     
-    # Use FSInputFile for local files
     photo = FSInputFile(image_path)
     
+    # Send the photo
     await callback.message.answer_photo(
         photo=photo,
-        caption=f"<b>{char.title()} - {team_type.upper()} Build</b>\n<b>Credits: </b>\n @toki_ink (Instagram)\n@FlipMeAC(Twitter)",
+        caption=f"<b>{char.title()} - {team_type.upper()} Build</b>\n<b>Credits: </b>\n@toki_ink (Instagram)\n@FlipMeAC(Twitter)",
         parse_mode="HTML"
     )
+
+    # --- FIX 2: Delete the selection menu after sending the image ---
+    await callback.message.delete() 
     await callback.answer()
 @dp.callback_query(F.data == "back_to_chars")
 async def back_to_main(callback: types.CallbackQuery):
