@@ -87,6 +87,9 @@ except Exception as e:
 
 @dp.message(Command("teams"))
 async def cmd_teams_menu(message: types.Message):
+    Allowed_group = -1003761259335
+    if message.chat.id == Allowed_group:
+        return await message.reply("This command is restricted to the official group.")
     print(f"DEBUG: Command /teams triggered by {message.from_user.id}")
     print(f"DEBUG: TEAMS_DB contains: {list(TEAMS_DB.keys())}")
     builder = InlineKeyboardBuilder()
