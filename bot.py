@@ -84,6 +84,86 @@ try:
 except Exception as e:
     print(f"Error loading char.json: {e}")
     CHARACTER_MAP = {}
+TEAMS_DB = {
+    "Flins": {
+        "premium": "images/teams/flins_premium.jpg",
+        "f2p": "images/teams/flins_f2p.jpg",
+        "without columbina": "images/teams/flins_nc.jpg",
+        "without ineffa": "images/teams/flins_ic.jpg"
+    },
+    "nefer": {
+        "premium": "images/teams/nefer_premium.jpg",
+        
+    },
+    "zibai": {
+        "premium": "images/teams/zibai_premium.jpg"
+                }
+}
+@dp.message(Command("teams"))
+async def cmd_teams_menu(message: types.Message):
+    print(f"DEBUG: Command /teams triggered by {message.from_user.id}")
+    print(f"DEBUG: TEAMS_DB contains: {list(TEAMS_DB.keys())}")
+    builder = InlineKeyboardBuilder()
+    
+    # Create a button for every character in our DB
+    for char in TEAMS_DB.keys():
+        builder.button(
+            text=char.title(), 
+            callback_data=f"selectchar:{char}"
+        )
+    
+    # Adjust layout: 2 buttons per row
+    builder.adjust(3)
+    
+    await message.reply(
+        "<b>Genshin Team Compendium</b>\nSelect a character to see their best builds:",
+        reply_markup=builder.as_markup(),parse_mode="HTML"
+    )
+@dp.callback_query(F.data.startswith("selectchar:"))
+async def process_char_selection(callback: types.CallbackQuery):
+    char_name = callback.data.split(":")[1]
+    
+    builder = InlineKeyboardBuilder()
+    # Get the team types for this specific character
+    for team_type in TEAMS_DB[char_name].keys():
+        builder.button(
+            text=f"{team_type.upper()}", 
+            callback_data=f"showteam:{char_name}:{team_type}"
+        )
+    
+    # Add a "Back" button to return to the character list
+    builder.row(types.InlineKeyboardButton(text="Back", callback_data="back_to_chars"))
+
+    await callback.message.edit_text(
+        text=f"Selected: <b>{char_name.title()}</b>\nWhich team type would you like to see?",
+        reply_markup=builder.as_markup(),parse_mode="HTML"
+    )
+    await callback.answer()
+@dp.callback_query(F.data.startswith("showteam:"))
+async def display_team_image(callback: types.CallbackQuery):
+    _, char, team_type = callback.data.split(":")
+    image_url = TEAMS_DB[char][team_type]
+    
+    await callback.message.answer_photo(
+        photo=image_url,
+        caption=f"<b>{char.title()} - {team_type.upper()} Build</b>\n<b>Credits: </b>\n @toki_ink (Instergram)\n@FlipMeAC(Twitter)",parse_mode="HTML"
+    )
+    await callback.answer()
+
+# Simple handler for the 'Back' button
+@dp.callback_query(F.data == "back_to_chars")
+async def back_to_main(callback: types.CallbackQuery):
+    builder = InlineKeyboardBuilder()
+    for char in TEAMS_DB.keys():
+        builder.button(text=char.title(), callback_data=f"selectchar:{char}")
+    builder.adjust(3)
+    
+    await callback.message.edit_text(
+        text="<b>Genshin Team Compendium</b>\nSelect a character to see their best builds:",
+        reply_markup=builder.as_markup(),
+        parse_mode="HTML"
+    )
+    await callback.answer()
 def encrypt_cookies(ltuid, ltoken):
     data = json.dumps({"ltuid": ltuid, "ltoken": ltoken}).encode()
     return cipher.encrypt(data).decode()
@@ -2219,86 +2299,7 @@ async def handle_poll_answer(poll_answer: types.PollAnswer):
         data["winners"].append((user_name, points))
 
         print(f"✅ Saved {points} pts for {user_name} in group {chat_id}")
-TEAMS_DB = {
-    "Flins": {
-        "premium": "images/teams/flins_premium.jpg",
-        "f2p": "images/teams/flins_f2p.jpg",
-        "without columbina": "images/teams/flins_nc.jpg",
-        "without ineffa": "images/teams/flins_ic.jpg"
-    },
-    "nefer": {
-        "premium": "images/teams/nefer_premium.jpg",
-        
-    },
-    "zibai": {
-        "premium": "images/teams/zibai_premium.jpg"
-                }
-}
-@dp.message(Command("teams"))
-async def cmd_teams_menu(message: types.Message):
-    print(f"DEBUG: Command /teams triggered by {message.from_user.id}")
-    print(f"DEBUG: TEAMS_DB contains: {list(TEAMS_DB.keys())}")
-    builder = InlineKeyboardBuilder()
-    
-    # Create a button for every character in our DB
-    for char in TEAMS_DB.keys():
-        builder.button(
-            text=char.title(), 
-            callback_data=f"selectchar:{char}"
-        )
-    
-    # Adjust layout: 2 buttons per row
-    builder.adjust(3)
-    
-    await message.reply(
-        "<b>Genshin Team Compendium</b>\nSelect a character to see their best builds:",
-        reply_markup=builder.as_markup(),parse_mode="HTML"
-    )
-@dp.callback_query(F.data.startswith("selectchar:"))
-async def process_char_selection(callback: types.CallbackQuery):
-    char_name = callback.data.split(":")[1]
-    
-    builder = InlineKeyboardBuilder()
-    # Get the team types for this specific character
-    for team_type in TEAMS_DB[char_name].keys():
-        builder.button(
-            text=f"{team_type.upper()}", 
-            callback_data=f"showteam:{char_name}:{team_type}"
-        )
-    
-    # Add a "Back" button to return to the character list
-    builder.row(types.InlineKeyboardButton(text="Back", callback_data="back_to_chars"))
 
-    await callback.message.edit_text(
-        text=f"Selected: <b>{char_name.title()}</b>\nWhich team type would you like to see?",
-        reply_markup=builder.as_markup(),parse_mode="HTML"
-    )
-    await callback.answer()
-@dp.callback_query(F.data.startswith("showteam:"))
-async def display_team_image(callback: types.CallbackQuery):
-    _, char, team_type = callback.data.split(":")
-    image_url = TEAMS_DB[char][team_type]
-    
-    await callback.message.answer_photo(
-        photo=image_url,
-        caption=f"<b>{char.title()} - {team_type.upper()} Build</b>\n<b>Credits: </b>\n @toki_ink (Instergram)\n@FlipMeAC(Twitter)",parse_mode="HTML"
-    )
-    await callback.answer()
-
-# Simple handler for the 'Back' button
-@dp.callback_query(F.data == "back_to_chars")
-async def back_to_main(callback: types.CallbackQuery):
-    builder = InlineKeyboardBuilder()
-    for char in TEAMS_DB.keys():
-        builder.button(text=char.title(), callback_data=f"selectchar:{char}")
-    builder.adjust(3)
-    
-    await callback.message.edit_text(
-        text="<b>Genshin Team Compendium</b>\nSelect a character to see their best builds:",
-        reply_markup=builder.as_markup(),
-        parse_mode="HTML"
-    )
-    await callback.answer()
 async def main():
     try:
         await cluster.admin.command('ping')
