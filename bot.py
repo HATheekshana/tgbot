@@ -2219,7 +2219,21 @@ async def handle_poll_answer(poll_answer: types.PollAnswer):
         data["winners"].append((user_name, points))
 
         print(f"✅ Saved {points} pts for {user_name} in group {chat_id}")
-
+TEAMS_DB = {
+    "Flins": {
+        "premium": "images/teams/flins_premium.jpg",
+        "f2p": "images/teams/flins_f2p.jpg",
+        "without columbina": "images/teams/flins_nc.jpg",
+        "without ineffa": "images/teams/flins_ic.jpg"
+    },
+    "nefer": {
+        "premium": "images/teams/nefer_premium.jpg",
+        
+    },
+    "zibai": {
+        "premium": "images/teams/zibai_premium.jpg"
+                }
+}
 @dp.message(Command("teams"))
 async def cmd_teams_menu(message: types.Message):
     builder = InlineKeyboardBuilder()
