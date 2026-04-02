@@ -2236,7 +2236,8 @@ TEAMS_DB = {
 }
 @dp.message(Command("teams"))
 async def cmd_teams_menu(message: types.Message):
-    print(f"DEBUG: /teams received from {message.from_user.id}")
+    print(f"DEBUG: Command /teams triggered by {message.from_user.id}")
+    print(f"DEBUG: TEAMS_DB contains: {list(TEAMS_DB.keys())}")
     builder = InlineKeyboardBuilder()
     
     # Create a button for every character in our DB
@@ -2287,9 +2288,17 @@ async def display_team_image(callback: types.CallbackQuery):
 # Simple handler for the 'Back' button
 @dp.callback_query(F.data == "back_to_chars")
 async def back_to_main(callback: types.CallbackQuery):
-    # This just re-calls the main menu logic
-    await cmd_teams_menu(callback.message)
-    await callback.message.delete() # Remove the old menu
+    builder = InlineKeyboardBuilder()
+    for char in TEAMS_DB.keys():
+        builder.button(text=char.title(), callback_data=f"selectchar:{char}")
+    builder.adjust(3)
+    
+    await callback.message.edit_text(
+        text="<b>Genshin Team Compendium</b>\nSelect a character to see their best builds:",
+        reply_markup=builder.as_markup(),
+        parse_mode="HTML"
+    )
+    await callback.answer()
 async def main():
     try:
         await cluster.admin.command('ping')
