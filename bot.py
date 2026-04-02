@@ -2236,6 +2236,7 @@ TEAMS_DB = {
 }
 @dp.message(Command("teams"))
 async def cmd_teams_menu(message: types.Message):
+    print(f"DEBUG: /teams received from {message.from_user.id}")
     builder = InlineKeyboardBuilder()
     
     # Create a button for every character in our DB
