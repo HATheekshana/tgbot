@@ -138,7 +138,7 @@ async def display_team_image(callback: types.CallbackQuery):
     # Send the photo
     await callback.message.answer_photo(
         photo=photo,
-        caption=f"<b>{char.title()} - {team_type.upper()} Build</b>\n<b>Credits: </b>\n@toki_ink (Instagram)\n@FlipMeAC(Twitter)",
+        caption=f"<b>{char.title()} - {team_type.upper()} Build</b>\n<b>Credits: </b>\n@tokii_ink (Instagram)\n@FlipMeAC(Twitter)",
         parse_mode="HTML"
     )
 
