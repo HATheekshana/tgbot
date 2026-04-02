@@ -32,7 +32,7 @@ from pytz import timezone
 from wishing import combine_images
 from create_profile import create_genshin_profile
 from genshin_utils import  get_enkadata,get_quiz_score,to_int,get_val,get_exploration_data,get_abyss_data,get_player_full_data,calculate_world_level,format_abyss_info
-from data import weapons3, characters4, characters5, rare
+from data import weapons3, characters4, characters5, rare,TEAMS_DB  
 from cryptography.fernet import Fernet
 from tasks import setup_scheduler
 from paimon import fetch_and_save_wishes, calculate_pity
@@ -2220,24 +2220,70 @@ async def handle_poll_answer(poll_answer: types.PollAnswer):
 
         print(f"✅ Saved {points} pts for {user_name} in group {chat_id}")
 
-# ---------------- Main ----------------
-# ---------------- Main ----------------
+@dp.message(Command("teams"))
+async def cmd_teams_menu(message: types.Message):
+    builder = InlineKeyboardBuilder()
+    
+    # Create a button for every character in our DB
+    for char in TEAMS_DB.keys():
+        builder.button(
+            text=char.title(), 
+            callback_data=f"selectchar:{char}"
+        )
+    
+    # Adjust layout: 2 buttons per row
+    builder.adjust(3)
+    
+    await message.reply(
+        "<b>Genshin Team Compendium</b>\nSelect a character to see their best builds:",
+        reply_markup=builder.as_markup(),parse_mode="HTML"
+    )
+@dp.callback_query(F.data.startswith("selectchar:"))
+async def process_char_selection(callback: types.CallbackQuery):
+    char_name = callback.data.split(":")[1]
+    
+    builder = InlineKeyboardBuilder()
+    # Get the team types for this specific character
+    for team_type in TEAMS_DB[char_name].keys():
+        builder.button(
+            text=f"{team_type.upper()}", 
+            callback_data=f"showteam:{char_name}:{team_type}"
+        )
+    
+    # Add a "Back" button to return to the character list
+    builder.row(types.InlineKeyboardButton(text="Back", callback_data="back_to_chars"))
+
+    await callback.message.edit_text(
+        text=f"Selected: <b>{char_name.title()}</b>\nWhich team type would you like to see?",
+        reply_markup=builder.as_markup(),parse_mode="HTML"
+    )
+    await callback.answer()
+@dp.callback_query(F.data.startswith("showteam:"))
+async def display_team_image(callback: types.CallbackQuery):
+    _, char, team_type = callback.data.split(":")
+    image_url = TEAMS_DB[char][team_type]
+    
+    await callback.message.answer_photo(
+        photo=image_url,
+        caption=f"<b>{char.title()} - {team_type.upper()} Build</b>\n<b>Credits: </b>\n @toki_ink (Instergram)\n@FlipMeAC(Twitter)",parse_mode="HTML"
+    )
+    await callback.answer()
+
+# Simple handler for the 'Back' button
+@dp.callback_query(F.data == "back_to_chars")
+async def back_to_main(callback: types.CallbackQuery):
+    # This just re-calls the main menu logic
+    await cmd_teams_menu(callback.message)
+    await callback.message.delete() # Remove the old menu
 async def main():
-    # 1. Test MongoDB connection first
     try:
         await cluster.admin.command('ping')
         print("✅ Successfully connected to MongoDB!")
     except Exception as e:
         print(f"❌ MongoDB Connection Error: {e}")
         return 
-
-    # 2. Create the Bot object
     bot = Bot(token=TOKEN)
-
-    # 3. Setup Timezone and Schedulers
     lk_timezone = timezone("Asia/Colombo")
-    
-    # Start the HoYoLAB tasks from your separate tasks.py file
     setup_scheduler(bot, users_col, cipher)
     
     # Setup the local scheduler for wishes and cooldowns
