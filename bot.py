@@ -102,8 +102,8 @@ async def cmd_cookie_login(message: types.Message, command: CommandObject):
 
     if not command.args or len(command.args.split()) < 2:
         return await message.reply(
-            "<b>Usage:</b>\n<code>/cookie_login [ltuid_v2] [ltoken_v2] [cookie_token_v2]</code>\n"
-            "<i>(Third token is required for /redeem)</i>",
+            "<b>Usage:</b>\n<code>/cookie_login [ltuid_v2] [ltoken_v2]</code>\n"
+            "<b>Use /cookiehelp for tutorial </b>",
             parse_mode="HTML"
         )
 
