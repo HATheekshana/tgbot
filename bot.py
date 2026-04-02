@@ -84,21 +84,7 @@ try:
 except Exception as e:
     print(f"Error loading char.json: {e}")
     CHARACTER_MAP = {}
-TEAMS_DB = {
-    "Flins": {
-        "premium": "images/teams/flins_premium.jpg",
-        "f2p": "images/teams/flins_f2p.jpg",
-        "without columbina": "images/teams/flins_nc.jpg",
-        "without ineffa": "images/teams/flins_ic.jpg"
-    },
-    "nefer": {
-        "premium": "images/teams/nefer_premium.jpg",
-        
-    },
-    "zibai": {
-        "premium": "images/teams/zibai_premium.jpg"
-                }
-}
+
 @dp.message(Command("teams"))
 async def cmd_teams_menu(message: types.Message):
     print(f"DEBUG: Command /teams triggered by {message.from_user.id}")
@@ -139,18 +125,22 @@ async def process_char_selection(callback: types.CallbackQuery):
         reply_markup=builder.as_markup(),parse_mode="HTML"
     )
     await callback.answer()
+from aiogram.types import FSInputFile
+
 @dp.callback_query(F.data.startswith("showteam:"))
 async def display_team_image(callback: types.CallbackQuery):
     _, char, team_type = callback.data.split(":")
-    image_url = TEAMS_DB[char][team_type]
+    image_path = TEAMS_DB[char][team_type]
+    
+    # Use FSInputFile for local files
+    photo = FSInputFile(image_path)
     
     await callback.message.answer_photo(
-        photo=image_url,
-        caption=f"<b>{char.title()} - {team_type.upper()} Build</b>\n<b>Credits: </b>\n @toki_ink (Instergram)\n@FlipMeAC(Twitter)",parse_mode="HTML"
+        photo=photo,
+        caption=f"<b>{char.title()} - {team_type.upper()} Build</b>\n<b>Credits: </b>\n @toki_ink (Instagram)\n@FlipMeAC(Twitter)",
+        parse_mode="HTML"
     )
     await callback.answer()
-
-# Simple handler for the 'Back' button
 @dp.callback_query(F.data == "back_to_chars")
 async def back_to_main(callback: types.CallbackQuery):
     builder = InlineKeyboardBuilder()
