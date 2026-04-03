@@ -20,4 +20,4 @@ async def migrate_streaks():
 
 # You can call this inside your main() function once
 if __name__ == "__main__":
-    asyncio.run(migrate())
+    asyncio.run(migrate_streaks())
