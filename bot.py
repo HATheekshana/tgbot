@@ -1534,62 +1534,77 @@ async def gamble_wishes(message: types.Message, command: CommandObject):
 async def daily_wish(message: types.Message):
     user_id = str(message.from_user.id)
     user = await users_col.find_one({"user_id": user_id})
-    
     now = datetime.utcnow()
     
-    # 1. Check for 24-hour cooldown
+    # Defaults
+    streak = 1
+    streak_u = 1
+    wishes_to_add = 5
+    bonus_msg = ""
+
     if user and "last_daily_wish" in user:
         last = user["last_daily_wish"]
+        
+        # 1. Cooldown Check
         if now - last < timedelta(days=1):
             remaining = timedelta(days=1) - (now - last)
             hours = remaining.seconds // 3600
             minutes = (remaining.seconds % 3600) // 60
-            await message.answer(f"⏳ Already claimed! Come back in {hours}h {minutes}m.")
-            return
+            # Get existing streaks for the message
+            s_val = user.get("daily_streak", 0)
+            u_val = user.get("streak_new", 0)
+            return await message.answer(
+                f"⏳ Already claimed!\n"
+                f"Come back in: <b>{hours}h {minutes}m</b>\n"
+                f"Current Streak: <b>{u_val} Days</b>",
+                parse_mode="HTML"
+            )
 
-        # 2. Update Streak Logic
-        # If last claim was more than 48 hours ago, reset to 1. Otherwise, +1.
+        # 2. Streak Update Logic
         if now - last > timedelta(days=2):
+            # Missed more than 48 hours: Reset both
             streak = 1
+            streak_u = 1
         else:
+            # Within 48 hours: Increment both
             streak = user.get("daily_streak", 0) + 1
-    else:
-        streak = 1
-
-    # 3. Calculate Rewards & Milestone Messages
-    wishes_to_add = 5
-    bonus_msg = ""
-
+            streak_u = user.get("streak_new", 0) + 1
+    
+    # 3. Milestone Rewards (using the 'streak' that resets)
     if streak == 7:
         wishes_to_add += 10
-        bonus_msg = "\n🔥 WEEKLY BONUS: +10 Wishes!"
+        bonus_msg = "\n🔥 <b>WEEKLY BONUS: +10 Wishes!</b>"
     elif streak == 14:
         wishes_to_add += 20
-        bonus_msg = "\n🔥 FORTNIGHT BONUS: +20 Wishes!"
+        bonus_msg = "\n🔥 <b>FORTNIGHT BONUS: +20 Wishes!</b>"
     elif streak == 21:
         wishes_to_add += 30
-        bonus_msg = "\n🔥 ULTIMATE BONUS: +30 Wishes!\n*(Streak reset to 0)*"
-        # Reset streak after hitting the max milestone
-        streak = 0 
+        bonus_msg = "\n🔥 <b>ULTIMATE BONUS: +30 Wishes!</b>\n<i>(Milestone streak reset!)</i>"
+        streak = 0 # This resets the reward cycle, but streak_u keeps climbing
 
     # 4. Update Database
     await users_col.update_one(
         {"user_id": user_id},
         {
-            "$set": {"last_daily_wish": now, "daily_streak": streak ,"notification_sent": False},
+            "$set": {
+                "last_daily_wish": now,
+                "daily_streak": streak,
+                "streak_new": streak_u,
+                "notification_sent": False
+            },
             "$inc": {"wish_count": wishes_to_add}
         },
         upsert=True
     )
 
-    # 5. Send Response with Current Streak
+    # 5. Final Message
     await message.answer(
-        f"🎁 Daily Reward Claimed!\n"
+        f"<b>Daily Reward Claimed! 🎁</b>\n"
         f"⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯\n"
-        f"🎫 Added: +{wishes_to_add} Wish(es)\n"
-        f"🔥 Current Streak: {streak} Days"
+        f"Added: <b>+{wishes_to_add} Wishes</b> 🎫\n"
+        f"Current Streak: <b>{streak_u} Days</b> 🔥"
         f"{bonus_msg}",
-        parse_mode="Markdown"
+        parse_mode="HTML"
     )
 async def check_individual_dailies(bot: Bot):
     now = datetime.utcnow()
