@@ -1,23 +1,25 @@
 import asyncio
 from motor.motor_asyncio import AsyncIOMotorClient
 
+# Your MongoDB Connection String
 MONGO_URL = "mongodb+srv://zerorenx_db_user:theekshana@tgbot.yuowvp8.mongodb.net/?appName=Tgbot"
 
-async def migrate_streaks():
+async def gift_wishes():
     cluster = AsyncIOMotorClient(MONGO_URL)
     db = cluster["genshin_bot"]
     users_col = db["user_stats"]
-    print("Starting migration...")
     
-    # We use a pipeline to set the new field based on the old field
-    await users_col.update_many(
-        {"streak_new": {"$exists": False}}, # Only update users who don't have it yet
-        [
-            {"$set": {"streak_new": {"$ifNull": ["$daily_streak", 0]}}}
-        ]
-    )
-    print("✅ Migration complete: All users now have streak_new!")
+    print("🎁 Preparing to send 1000 wishes to all users...")
 
-# You can call this inside your main() function once
+    # $inc adds the value to the existing wish_count
+    # If a user doesn't have a wish_count field, MongoDB will create it starting at 1000
+    result = await users_col.update_many(
+        {}, # Empty filter matches everyone
+        {"$inc": {"wish_count": 1000}}
+    )
+    
+    print(f"✅ Success! Updated {result.modified_count} users.")
+    print("Everyone just got +1000 wishes.")
+
 if __name__ == "__main__":
-    asyncio.run(migrate_streaks())
+    asyncio.run(gift_wishes())
