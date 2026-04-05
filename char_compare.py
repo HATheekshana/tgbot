@@ -156,7 +156,6 @@ async def get_rank(uid, char_id, session): # Add session here
 async def compare_characters(uid, uid2, char_id):
     try:
         me, them = await get_enkadata(uid), await get_enkadata(uid2)
-        me_g, them_g = await get_genshindata(uid), await get_genshindata(uid2)
         me_data, them_data, t_icons, c_icons = await fetch_build_assets(uid, uid2, char_id)
     except Exception as e:
         print("--- CRITICAL ERROR IN IMAGE GENERATION ---")
