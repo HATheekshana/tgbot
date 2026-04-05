@@ -38,15 +38,20 @@ client.region = genshin.Region.OVERSEAS
 
 async def get_genshindata(uid):
     try:
-        # This will fail if the user's Battle Chronicle is private
+        # Use the client to fetch data
         raw_data = await client.get_genshin_user(uid)
-        data = raw_data.dict()
-        # Return the actual avatar URL from HoYoLAB
-        return {
-            "in_game_avatar": data.get("info", {}).get("in_game_avatar", "Unknown"),
-        }
-    except Exception:
-        # If private, we return "Unknown" so the next step knows to use the default
+        
+        # Access the avatar URL directly from the info object
+        # raw_data.info.avatar_url is the standard for the genshin library
+        avatar_url = raw_data.info.avatar_url
+        
+        if avatar_url:
+            return {"in_game_avatar": avatar_url}
+        return {"in_game_avatar": "Unknown"}
+        
+    except Exception as e:
+        # If HoYoLAB is private, this block catches the error
+        print(f"Error fetching HoYoLAB for {uid}: {e}")
         return {"in_game_avatar": "Unknown"}
 
 async def get_enkadata(uid):
@@ -168,16 +173,18 @@ async def get_rank(uid, char_id, session): # Add session here
 ENKA_DEFAULT_AVATAR = "https://enka.network/ui/UI_AvatarIcon_PlayerBoy.png"
 
 async def safe_fetch_avatar(session, url):
-    # 1. Try the HoYoLAB avatar only if it's a valid URL
-    if url and url != "Unknown" and str(url).startswith("http"):
+    # 1. Check if the URL is valid and not "Unknown"
+    if url and url != "Unknown":
+        # Ensure it's a full URL
+        full_url = url if str(url).startswith("http") else f"https://enka.network/ui/{url}.png"
         try:
-            img = await fetch_image(session, url)
+            img = await fetch_image(session, full_url)
             if img:
                 return img
         except Exception:
-            pass # Move to the default if the link fails
+            pass 
 
-    # 2. If HoYoLAB was private (url was "Unknown") or the fetch failed:
+    # 2. Fallback to Default PlayerBoy if HoYoLAB was private or link failed
     try:
         default_img = await fetch_image(session, ENKA_DEFAULT_AVATAR)
         if default_img:
@@ -185,7 +192,6 @@ async def safe_fetch_avatar(session, url):
     except Exception:
         pass
 
-    # 3. Last resort blank square (prevents Pillow from crashing)
     return Image.new("RGBA", (128, 128), (0, 0, 0, 0))
 async def compare_characters(uid, uid2, char_id):
     try:
