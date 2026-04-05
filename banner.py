@@ -12,8 +12,8 @@ CURRENT_END = {
 # NEXT BANNER START TIMES (Usually 1 hour after old one ends)
 NEXT_START = {
     "Asia": datetime(2026, 4, 8, 3, 0, tzinfo=timezone.utc),
-    "EU": datetime(2026, 4, 8, 10, 0, tzinfo=timezone.utc),   # +7 hours from Asia
-    "NA": datetime(2026, 4, 8, 15, 0, tzinfo=timezone.utc),   # +12 hours from Asia
+    "EU": datetime(2026, 4, 8, 3, 0, tzinfo=timezone.utc),   # +7 hours from Asia
+    "NA": datetime(2026, 4, 8, 3, 0, tzinfo=timezone.utc),   # +12 hours from Asia
 }
 
 # Image paths (Local VPS paths)

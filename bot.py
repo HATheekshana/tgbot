@@ -89,12 +89,12 @@ def get_banner_keyboard(mode="current", char_index=0):
     
     # Button 1: Switch between Character 1 and Character 2
     next_char = 1 if char_index == 0 else 0
-    char_label = "👤 View 2nd Character" if char_index == 0 else "👤 View 1st Character"
+    char_label = "View 2nd Character" if char_index == 0 else "View 1st Character"
     builder.row(types.InlineKeyboardButton(text=char_label, callback_data=f"swap:{mode}:{next_char}"))
     
     # Button 2: Switch between Current and Next Banner sets
     other_mode = "next" if mode == "current" else "current"
-    mode_label = "➡️ Upcoming Banners" if mode == "current" else "⬅️ Current Banners"
+    mode_label = "Upcoming Banners" if mode == "current" else "Current Banners"
     builder.row(types.InlineKeyboardButton(text=mode_label, callback_data=f"swap:{other_mode}:0"))
     
     return builder.as_markup()
