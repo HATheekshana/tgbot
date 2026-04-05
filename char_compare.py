@@ -39,7 +39,6 @@ async def get_genshindata(uid):
     data = raw_data.dict()
     return {
         "in_game_avatar": data.get("info", {}).get("in_game_avatar", "Unknown"),
-        "spiral_abyss": data.get("stats", {}).get("spiral_abyss", "Unknown"),
     }
 
 async def get_enkadata(uid):
