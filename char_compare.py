@@ -37,11 +37,19 @@ client = genshin.Client(COOKIES)
 client.region = genshin.Region.OVERSEAS
 
 async def get_genshindata(uid):
-    raw_data = await client.get_genshin_user(uid)
-    data = raw_data.dict()
-    return {
-        "in_game_avatar": data.get("info", {}).get("in_game_avatar", "Unknown"),
-    }
+    try:
+        # This is the part that fails if HoYoLAB is private
+        raw_data = await client.get_genshin_user(uid)
+        data = raw_data.dict()
+        
+        # Extract the avatar if successful
+        avatar_icon = data.get("info", {}).get("in_game_avatar", "Unknown")
+        return {"in_game_avatar": avatar_icon}
+        
+    except Exception as e:
+        # If HoYoLAB is private or cookies expire, we return "Unknown"
+        print(f"HoYoLAB Data Private for {uid}. Falling back to default.")
+        return {"in_game_avatar": "Unknown"}
 
 async def get_enkadata(uid):
     url = f"https://enka.network/api/uid/{uid}"
@@ -162,24 +170,22 @@ async def get_rank(uid, char_id, session): # Add session here
 ENKA_DEFAULT_AVATAR = "https://enka.network/ui/UI_AvatarIcon_PlayerBoy.png"
 
 async def safe_fetch_avatar(session, url):
-    # 1. Try the user's specific avatar first
+    # 1. Try the user's specific avatar (only if url is a valid link)
     if url and url != "Unknown" and url.startswith("http"):
         try:
             img = await fetch_image(session, url)
-            if img:
-                return img
-        except Exception as e:
-            print(f"Failed to fetch user avatar: {e}")
+            if img: return img
+        except Exception:
+            pass
 
-    # 2. Fallback: Fetch the default Enka Traveler icon
+    # 2. Fallback: This is where it uses your PlayerBoy icon
     try:
         default_img = await fetch_image(session, ENKA_DEFAULT_AVATAR)
-        if default_img:
-            return default_img
-    except Exception as e:
-        print(f"Failed to fetch Enka default: {e}")
+        if default_img: return default_img
+    except Exception:
+        pass
 
-    # 3. Ultimate Emergency: Create a blank RGBA square so Pillow doesn't crash
+    # 3. Ultimate Emergency: Blank square
     return Image.new("RGBA", (128, 128), (0, 0, 0, 0))
 async def compare_characters(uid, uid2, char_id):
     try:
