@@ -1,5 +1,5 @@
 import traceback
-
+from genshin_utils import get_player_full_data
 from PIL import Image, ImageDraw, ImageOps, ImageFilter, ImageFont
 import asyncio
 import aiohttp
@@ -35,24 +35,6 @@ ELEMENT_BG_MAP = {
 
 client = genshin.Client(COOKIES)
 client.region = genshin.Region.OVERSEAS
-
-async def get_genshindata(uid):
-    try:
-        # Use the client to fetch data
-        raw_data = await client.get_genshin_user(uid)
-        
-        # Access the avatar URL directly from the info object
-        # raw_data.info.avatar_url is the standard for the genshin library
-        avatar_url = raw_data.info.avatar_url
-        
-        if avatar_url:
-            return {"in_game_avatar": avatar_url}
-        return {"in_game_avatar": "Unknown"}
-        
-    except Exception as e:
-        # If HoYoLAB is private, this block catches the error
-        print(f"Error fetching HoYoLAB for {uid}: {e}")
-        return {"in_game_avatar": "Unknown"}
 
 async def get_enkadata(uid):
     url = f"https://enka.network/api/uid/{uid}"
@@ -170,29 +152,7 @@ async def get_rank(uid, char_id, session): # Add session here
             return "No Rank Found"
     except Exception as e:
         return f"Error: {e}"
-ENKA_DEFAULT_AVATAR = "https://enka.network/ui/UI_AvatarIcon_PlayerBoy.png"
 
-async def safe_fetch_avatar(session, url):
-    # 1. Check if the URL is valid and not "Unknown"
-    if url and url != "Unknown":
-        # Ensure it's a full URL
-        full_url = url if str(url).startswith("http") else f"https://enka.network/ui/{url}.png"
-        try:
-            img = await fetch_image(session, full_url)
-            if img:
-                return img
-        except Exception:
-            pass 
-
-    # 2. Fallback to Default PlayerBoy if HoYoLAB was private or link failed
-    try:
-        default_img = await fetch_image(session, ENKA_DEFAULT_AVATAR)
-        if default_img:
-            return default_img
-    except Exception:
-        pass
-
-    return Image.new("RGBA", (128, 128), (0, 0, 0, 0))
 async def compare_characters(uid, uid2, char_id):
     try:
         me, them = await get_enkadata(uid), await get_enkadata(uid2)
@@ -243,10 +203,26 @@ async def compare_characters(uid, uid2, char_id):
         fetch_image(session, url_me),
         fetch_image(session, url_them)
         )
-        avatar_me = await safe_fetch_avatar(session, me_g.get('in_game_avatar'))
-        avatar_them = await safe_fetch_avatar(session, them_g.get('in_game_avatar'))
-        splash_art = await fetch_image(session, splash_url)
-        char_icon = await fetch_image(session, char_url)
+        
+    async with aiohttp.ClientSession() as session:
+        try:
+            user_info_me = await get_player_full_data(uid)
+            avatar_url_me = user_info_me.get('in_game_avatar')
+        except:
+            avatar_url_me = "https://enka.network/ui/UI_AvatarIcon_PlayerBoy.png"
+
+        try:
+            user_info_them = await get_player_full_data(uid2)
+            avatar_url_them = user_info_them.get('in_game_avatar')
+        except:
+            avatar_url_them = "https://enka.network/ui/UI_AvatarIcon_PlayerBoy.png"
+
+        avatar_me, avatar_them, splash_art, char_icon = await asyncio.gather(
+            fetch_image(session, avatar_url_me),
+            fetch_image(session, avatar_url_them),
+            fetch_image(session, splash_url),
+            fetch_image(session, char_url)
+        )
         
     target_size = (1875, 890)
     bg_path = ELEMENT_BG_MAP.get(element, "asstests/backgrounds/anemo.jpg")
