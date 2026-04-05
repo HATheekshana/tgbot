@@ -1909,69 +1909,66 @@ async def logout_uid(message: types.Message):
 # --- MyProfile Command ---
 @dp.message(Command("myprofile"))
 async def my_profile(message: types.Message):
-    # Initialize variables to avoid UnboundLocalError
-    image_buffer = None
-    
     # 1. Get UID from MongoDB
     user_data = await users_col.find_one({"user_id": str(message.from_user.id)})
     if not user_data or "genshin_uid" not in user_data:
-        return await message.answer("Please /login <uid> first.")
+        return await message.answer("❌ Please /login <uid> first.")
 
     db_uid = str(user_data["genshin_uid"]).strip()
-    status = await message.answer("<b>Creating Profile...</b>", parse_mode="HTML")
     
-    try:
-        # Fetching all data concurrently would be faster, but keeping your sequence:
-        user_info = await get_player_full_data(db_uid)
-        user_info_enka = await get_enkadata(db_uid)
-        image_buffer = await create_genshin_profile(db_uid)    
-        exploration_data = await get_exploration_data(db_uid)
-        abyss_data = await get_abyss_data(db_uid)
+    # 2. Loading State
+    status = await message.answer("🔄 <b>Creating Profile...</b>", parse_mode="HTML")
+    
+    # 3. Fetch Data (Exploration and Abyss functions assumed to be defined elsewhere)
+    user_info = await get_player_full_data(db_uid)
+    user_info_enka = await get_enkadata(db_uid)
+    image_buffer = await create_genshin_profile(db_uid)    
+    exploration_data = await get_exploration_data(db_uid)
+    abyss_data = await get_abyss_data(db_uid)
+    
+    
 
-        if not user_info:
-            await status.edit_text("❌ Data hidden. Is your 'Battle Chronicle' public in HoYoLAB?")
-            return
+    if not user_info:
+        return await message.reply("❌ Data hidden. Is your 'Battle Chronicle' public in HoYoLAB?")
 
-        # Escape HTML to prevent crashing on weird nicknames/signatures
-        nickname = html.quote(user_info_enka.get('nickname', 'Traveler'))
-        signature = html.quote(user_info_enka.get('signature', ''))
-
-        msg = "<b>PLAYER INFO</b>\n"
-        msg += "─────────୨ৎ─────────\n"
-        msg += f"𖹭 <b>{nickname}</b> | UID: <code>{db_uid}</code>\n"
-        msg += f"𖹭 <b>AR {user_info_enka.get('level', '??')}</b> | WL : {user_info_enka.get('worldLevel', '?')}\n"
-        msg += f"𖹭 <b>Achievements:</b> {user_info_enka.get('achievements', '0')}\n"
-        msg += f"𖹭 <b>Days Active:</b> {user_info.get('days_active', 'N/A')}\n"   
+    msg = "<b>PLAYER INFO</b>\n"
+    msg += "─────────୨ৎ─────────\n"
+    msg += f"𖹭 <b>{user_info_enka['nickname']}</b> | UID: <code>{db_uid}</code>\n"
+    msg += f"𖹭 <b>AR {user_info_enka['level']}</b> | WL : {user_info_enka['worldLevel']}\n"
+    msg += f"𖹭 <b>Achievements:</b> {user_info_enka['achievements']}\n"
+    msg += f"𖹭 <b>Days Active:</b> {user_info.get('days_active', 'N/A')}\n"   
+    if user_info_enka['signature']:
+     msg += f"<i>\"{user_info_enka['signature']}\"</i>\n"
         
-        if signature:
-            msg += f"<i>\"{signature}\"</i>\n"
-            
-        msg += "────────────────────\n\n"
+    msg += "────────────────────\n\n"
 
-        # Exploration Section
-        msg += "<b> EXPLORATION</b>\n"
-        msg += "⊹ ࣪ ﹏﹏﹏﹏𓊝﹏𓂁﹏﹏﹏﹏⊹ ࣪ ˖\n\n"
-        for area in exploration_data:
-            msg += f"❀ <code>{area['name']:15}</code>: {area['percent']}%\n"
-
-        # Abyss Section
-        if abyss_data:
-            msg += f"\n<b>⚔︎ SPIRAL ABYSS</b>\n{abyss_data}"
-
-        # 4. Final Output Logic
-        if image_buffer:
-            photo = BufferedInputFile(image_buffer.getvalue(), filename=f"{db_uid}.png")
-            await message.answer_photo(photo=photo, caption=msg, parse_mode="HTML")
-            image_buffer.close() # Free memory
-        else:
-            await message.answer(msg, parse_mode="HTML")
-
-        # Cleanup loading message
-        await status.delete()
-
-    except Exception as e:
-        logging.error(f"Error fetching data for UID {db_uid}: {e}")
-        await status.edit_text("⚠️ An error occurred while generating your profile.")
+    # Exploration Section
+    msg += "<b> EXPLORATION</b>\n"
+    msg += "⊹ ࣪ ﹏﹏﹏﹏𓊝﹏𓂁﹏﹏﹏﹏⊹ ࣪ ˖\n\n"
+    for area in exploration_data:
+        # :15 ensures the percentages stay aligned in a column
+        msg += f"❀ <code>{area['name']:15}</code>: {area['percent']}%\n"
+    await status.delete()
+    # Abyss Section
+    if abyss_data:
+        msg += f"\n<b>⚔︎ SPIRAL ABYSS</b>\n{abyss_data}"
+    if image_buffer:
+        # Create the file object from buffer
+        photo = BufferedInputFile(image_buffer.getvalue(), filename=f"{db_uid}.png")
+    # 5. Send final text message
+        await message.answer_photo(
+            photo=photo,
+            caption=msg,
+            parse_mode="HTML"
+        )
+        
+        # 6. CRITICAL: Close the buffer to free RAM
+        image_buffer.close()
+    else:
+        # Fallback if image generation fails
+        await message.answer(msg, parse_mode="HTML")
+from aiogram import types, F
+from aiogram.utils.keyboard import InlineKeyboardBuilder
 
 # 1. THE COMMAND HANDLER
 @dp.message(F.text.startswith("/comparechar"))
