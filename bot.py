@@ -1948,8 +1948,9 @@ async def my_profile(message: types.Message):
             "3. Switch <b>'Public Character Showcase'</b> to ON.\n"
             "4. Disable <b>'Hide Battle Chronicle'</b>."
         )
-        return await message.reply(private_msg, parse_mode="HTML")
-
+        return await message.answer(private_msg, parse_mode="HTML")
+    
+    
     msg = "<b>PLAYER INFO</b>\n"
     msg += "─────────୨ৎ─────────\n"
     msg += f"𖹭 <b>{user_info_enka['nickname']}</b> | UID: <code>{db_uid}</code>\n"
@@ -1975,7 +1976,7 @@ async def my_profile(message: types.Message):
         # Create the file object from buffer
         photo = BufferedInputFile(image_buffer.getvalue(), filename=f"{db_uid}.png")
     # 5. Send final text message
-        await message.reply_photo(
+        await message.answer_photo(
             photo=photo,
             caption=msg,
             parse_mode="HTML"
@@ -1985,7 +1986,7 @@ async def my_profile(message: types.Message):
         image_buffer.close()
     else:
         # Fallback if image generation fails
-        await message.reply(msg, parse_mode="HTML")
+        await message.answer(msg, parse_mode="HTML")
 from aiogram import types, F
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 
