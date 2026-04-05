@@ -38,7 +38,6 @@ async def get_genshindata(uid):
     raw_data = await client.get_genshin_user(uid)
     data = raw_data.dict()
     return {
-        "achievements": data.get("stats", {}).get("achievements", 0),
         "in_game_avatar": data.get("info", {}).get("in_game_avatar", "Unknown"),
         "spiral_abyss": data.get("stats", {}).get("spiral_abyss", "Unknown"),
     }
@@ -51,6 +50,7 @@ async def get_enkadata(uid):
                 data = await response.json()
                 player_info = data.get("playerInfo", {})
                 return {
+                    "achievements" : player_info.get("finishAchievementNum",""),
                     "level" : player_info.get("level",""),
                     "nickname" : player_info.get("nickname",""),
                     "worldLevel": player_info.get("worldLevel", 0),
@@ -59,7 +59,7 @@ async def get_enkadata(uid):
                     "avatarInfoList": data.get("avatarInfoList", []),
                     "showAvatarInfoList": player_info.get("showAvatarInfoList", [])
                 }
-            return {"level":"", "nickname":"", "worldLevel": 0, "signature": "", "nameCardId": "" ,"showAvatarInfoList": []}
+            return {"finishAchievementNum":"","level":"", "nickname":"", "worldLevel": 0, "signature": "", "nameCardId": "" ,"showAvatarInfoList": []}
 def get_prop(stats_dict, prop_id):
     """Handles Enka's mix of string and integer keys for stats."""
     return stats_dict.get(str(prop_id), stats_dict.get(int(prop_id), 0))
@@ -158,11 +158,36 @@ async def get_rank(uid, char_id, session): # Add session here
             return "No Rank Found"
     except Exception as e:
         return f"Error: {e}"
+ENKA_DEFAULT_AVATAR = "https://enka.network/ui/UI_AvatarIcon_PlayerBoy.png"
 
+async def safe_fetch_avatar(session, url):
+    # 1. Try the user's specific avatar first
+    if url and url != "Unknown" and url.startswith("http"):
+        try:
+            img = await fetch_image(session, url)
+            if img:
+                return img
+        except Exception as e:
+            print(f"Failed to fetch user avatar: {e}")
+
+    # 2. Fallback: Fetch the default Enka Traveler icon
+    try:
+        default_img = await fetch_image(session, ENKA_DEFAULT_AVATAR)
+        if default_img:
+            return default_img
+    except Exception as e:
+        print(f"Failed to fetch Enka default: {e}")
+
+    # 3. Ultimate Emergency: Create a blank RGBA square so Pillow doesn't crash
+    return Image.new("RGBA", (128, 128), (0, 0, 0, 0))
 async def compare_characters(uid, uid2, char_id):
-    me, them = await get_enkadata(uid), await get_enkadata(uid2)
-    me_g, them_g = await get_genshindata(uid), await get_genshindata(uid2)
-    me_data, them_data, t_icons, c_icons = await fetch_build_assets(uid, uid2, char_id)
+    try:
+        me, them = await get_enkadata(uid), await get_enkadata(uid2)
+        me_g, them_g = await get_genshindata(uid), await get_genshindata(uid2)
+        me_data, them_data, t_icons, c_icons = await fetch_build_assets(uid, uid2, char_id)
+    except Exception as e:
+        print(f"Error occurred while fetching data: {e}")
+        return None # In bot.py, check: if result is None: await message.answer("Error...")
     try: 
         font = ImageFont.truetype("Genshin_Impact.ttf", 23)
         font_big = ImageFont.truetype("Genshin_Impact.ttf", 28)
@@ -202,8 +227,8 @@ async def compare_characters(uid, uid2, char_id):
         fetch_image(session, url_me),
         fetch_image(session, url_them)
         )
-        avatar_me = await fetch_image(session, me_g['in_game_avatar'])
-        avatar_them = await fetch_image(session, them_g['in_game_avatar'])
+        avatar_me = await safe_fetch_avatar(session, me_g.get('in_game_avatar'))
+        avatar_them = await safe_fetch_avatar(session, them_g.get('in_game_avatar'))
         splash_art = await fetch_image(session, splash_url)
         char_icon = await fetch_image(session, char_url)
 
@@ -408,7 +433,8 @@ async def compare_characters(uid, uid2, char_id):
         
     buffer = BytesIO()
     final_img = Image.alpha_composite(background, ui_layer)
-    final_img.convert("RGB").save(buffer, format="PNG") # Convert to RGB to reduce file size
+    # Convert to RGB (required for JPEG) and save with high quality
+    final_img.convert("RGB").save(buffer, format="JPEG", quality=90) 
     buffer.seek(0)
     return buffer
 
