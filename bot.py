@@ -1948,12 +1948,7 @@ async def my_profile(message: types.Message):
             "3. Switch <b>'Public Character Showcase'</b> to ON.\n"
             "4. Disable <b>'Hide Battle Chronicle'</b>."
         )
-        return await message.answer(private_msg, parse_mode="HTML")
-    
-    
-
-    if not user_info:
-        return await message.reply("❌ Data hidden. Is your 'Battle Chronicle' public in HoYoLAB?")
+        return await message.reply(private_msg, parse_mode="HTML")
 
     msg = "<b>PLAYER INFO</b>\n"
     msg += "─────────୨ৎ─────────\n"
@@ -1980,7 +1975,7 @@ async def my_profile(message: types.Message):
         # Create the file object from buffer
         photo = BufferedInputFile(image_buffer.getvalue(), filename=f"{db_uid}.png")
     # 5. Send final text message
-        await message.answer_photo(
+        await message.reply_photo(
             photo=photo,
             caption=msg,
             parse_mode="HTML"
@@ -1990,7 +1985,7 @@ async def my_profile(message: types.Message):
         image_buffer.close()
     else:
         # Fallback if image generation fails
-        await message.answer(msg, parse_mode="HTML")
+        await message.reply(msg, parse_mode="HTML")
 from aiogram import types, F
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 
