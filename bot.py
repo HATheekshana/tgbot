@@ -36,7 +36,7 @@ from data import weapons3, characters4, characters5, rare,TEAMS_DB
 from cryptography.fernet import Fernet
 from tasks import setup_scheduler
 from paimon import fetch_and_save_wishes, calculate_pity
-
+from banner import get_banner_text, CURRENT_IMAGES, NEXT_IMAGES
 
 quiz_track = {}
 group_message_counts = {}
@@ -84,7 +84,51 @@ try:
 except Exception as e:
     print(f"Error loading char.json: {e}")
     CHARACTER_MAP = {}
+@dp.message(Command("banner"))
+async def cmd_banner(message: types.Message):
+    # 1. Create the Media Group (The 2 character photos)
+    media = [InputMediaPhoto(media=FSInputFile(path)) for path in CURRENT_IMAGES]
+    
+    # 2. Send the photos as a reply to the user
+    await message.reply_media_group(media=media)
+    
+    # 3. Send the countdown and button as a follow-up message
+    builder = InlineKeyboardBuilder()
+    builder.button(text="➡️ Next Banners", callback_data="toggle_banner:next")
+    
+    await message.answer(
+        text=get_banner_text("current"), # Using the helper function from earlier
+        reply_markup=builder.as_markup(),
+        parse_mode="HTML"
+    )
+@dp.callback_query(F.data.startswith("toggle_banner:"))
+async def handle_banner_toggle(callback: types.CallbackQuery):
+    mode = callback.data.split(":")[1]
+    
+    # Logic for switching
+    new_mode = "next" if mode == "current" else "current"
+    btn_label = "➡️ Next Banners" if mode == "next" else "⬅️ Current Banners"
+    images_to_send = CURRENT_IMAGES if mode == "next" else NEXT_IMAGES
+    
+    # 1. Delete the previous 2 photos to prevent clutter
+    # (Optional: only if you want the chat to stay very clean)
+    # await callback.message.delete() 
 
+    # 2. Update the Text and Button
+    builder = InlineKeyboardBuilder()
+    builder.button(text=btn_label, callback_data=f"toggle_banner:{new_mode}")
+    
+    await callback.message.edit_text(
+        text=get_banner_text(mode),
+        reply_markup=builder.as_markup(),
+        parse_mode="HTML"
+    )
+    
+    # 3. Send the new set of 2 photos
+    media = [InputMediaPhoto(media=FSInputFile(path)) for path in images_to_send]
+    await callback.message.answer_media_group(media=media)
+    
+    await callback.answer()
 @dp.message(Command("teams"))
 async def cmd_teams_menu(message: types.Message):
     Allowed_group = -1001756907542
