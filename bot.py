@@ -1920,11 +1920,35 @@ async def my_profile(message: types.Message):
     status = await message.answer("🔄 <b>Creating Profile...</b>", parse_mode="HTML")
     
     # 3. Fetch Data (Exploration and Abyss functions assumed to be defined elsewhere)
-    user_info = await get_player_full_data(db_uid)
-    user_info_enka = await get_enkadata(db_uid)
-    image_buffer = await create_genshin_profile(db_uid)    
-    exploration_data = await get_exploration_data(db_uid)
-    abyss_data = await get_abyss_data(db_uid)
+    try:
+        # 2. Fetch Data
+        # We wrap these because if Battle Chronicle is private, these usually fail
+        user_info = await get_player_full_data(db_uid)
+        exploration_data = await get_exploration_data(db_uid)
+        abyss_data = await get_abyss_data(db_uid)
+        
+        # Enka usually works even if HoYoLAB is private (it uses the in-game showcase)
+        user_info_enka = await get_enkadata(db_uid)
+        image_buffer = await create_genshin_profile(db_uid)    
+
+        # 3. Check if HoYoLAB data is actually there
+        if not user_info or not exploration_data:
+            raise ValueError("PrivateProfile")
+
+    except Exception as e:
+        logging.error(f"Data fetch failed for {db_uid}: {e}")
+        await status.delete()
+        
+        # The "Private Profile" Message
+        private_msg = (
+            "<b>⚠️ Profile is Private</b>\n\n"
+            "I couldn't fetch your exploration data. Please follow these steps:\n"
+            "1. Open <b>HoYoLAB</b> app/website.\n"
+            "2. Go to <b>Settings</b> > <b>Privacy Settings</b>.\n"
+            "3. Switch <b>'Public Character Showcase'</b> to ON.\n"
+            "4. Disable <b>'Hide Battle Chronicle'</b>."
+        )
+        return await message.answer(private_msg, parse_mode="HTML")
     
     
 
