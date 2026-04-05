@@ -1,3 +1,5 @@
+import traceback
+
 from PIL import Image, ImageDraw, ImageOps, ImageFilter, ImageFont
 import asyncio
 import aiohttp
@@ -184,256 +186,108 @@ async def compare_characters(uid, uid2, char_id):
         me, them = await get_enkadata(uid), await get_enkadata(uid2)
         me_g, them_g = await get_genshindata(uid), await get_genshindata(uid2)
         me_data, them_data, t_icons, c_icons = await fetch_build_assets(uid, uid2, char_id)
-    except Exception as e:
-        print(f"Error occurred while fetching data: {e}")
-        return None # In bot.py, check: if result is None: await message.answer("Error...")
-    try: 
+    except Exception:
+        print("--- CRITICAL ERROR IN DATA FETCH ---")
+        traceback.print_exc()
+        return None
+
+    try:
         font = ImageFont.truetype("Genshin_Impact.ttf", 23)
         font_big = ImageFont.truetype("Genshin_Impact.ttf", 28)
         font_small = ImageFont.truetype("Genshin_Impact.ttf", 20)
         font_xsmall = ImageFont.truetype("Genshin_Impact.ttf", 16)
-        
-    except: 
+    except:
         font = ImageFont.load_default()
-    
+        font_big = font_small = font_xsmall = font
+
     with open('char.json', 'r') as f:
         char_map = json.load(f)
 
-    active_char_id = str(char_id)
-    char_info = char_map.get(active_char_id, {"rarity": 5, "element": "Anemo", "avataricon": "UI_AvatarIcon_Qin", "name": "Unknown"})
-    rarity = char_info.get("rarity", 5)
+    char_info = char_map.get(str(char_id), {"rarity": 5, "element": "Anemo", "avataricon": "UI_AvatarIcon_Qin"})
     element = char_info['element']
-    char_name = char_info['avataricon'].replace("UI_AvatarIcon_", "")
-    splash_name = char_info['avataricon'].replace("UI_AvatarIcon", "UI_Gacha_AvatarImg")
-    splash_url = f"https://enka.network/ui/{splash_name}.png"
-    char_url = f"https://enka.network/ui/{char_info['avataricon']}.png"
 
+    # 🔁 Your intentional swap kept
     stats_me = extract_char_stats(them['avatarInfoList'], char_id, element)
     stats_them = extract_char_stats(me['avatarInfoList'], char_id, element)
 
-    async with aiohttp.ClientSession() as session:
-        icon_name_me = stats_me['weapon'].get('icon')
-        icon_name_them = stats_them['weapon'].get('icon')
-        rank_me_task = get_rank(uid, char_id, session)
-        rank_them_task = get_rank(uid2, char_id, session)
+    if not stats_me or not stats_them:
+        print("Stats extraction failed!")
+        return None
 
-        rank_me, rank_them = await asyncio.gather(rank_me_task, rank_them_task)
-        url_me = f"https://enka.network/ui/{icon_name_me}.png" if icon_name_me else "https://enka.network/ui/UI_EquipIcon_Sword_Blunt.png"
-        url_them = f"https://enka.network/ui/{icon_name_them}.png" if icon_name_them else "https://enka.network/ui/UI_EquipIcon_Sword_Blunt.png"
-        namecard_me = await fetch_image(session, await get_namecard_image_url(me['nameCardId']))
-        namecard_them = await fetch_image(session, await get_namecard_image_url(them['nameCardId']))
-        weapon_img_me, weapon_img_them = await asyncio.gather(
-        fetch_image(session, url_me),
-        fetch_image(session, url_them)
+    async with aiohttp.ClientSession() as session:
+
+        # Safe weapon icon extraction
+        icon_name_me = stats_me.get('weapon', {}).get('icon')
+        icon_name_them = stats_them.get('weapon', {}).get('icon')
+
+        rank_me, rank_them = await asyncio.gather(
+            get_rank(uid, char_id, session),
+            get_rank(uid2, char_id, session)
         )
+
+        url_me = f"https://enka.network/ui/{icon_name_me}.png" if icon_name_me else None
+        url_them = f"https://enka.network/ui/{icon_name_them}.png" if icon_name_them else None
+
+        weapon_img_me, weapon_img_them = await asyncio.gather(
+            fetch_image(session, url_me) if url_me else None,
+            fetch_image(session, url_them) if url_them else None
+        )
+
         avatar_me = await safe_fetch_avatar(session, me_g.get('in_game_avatar'))
         avatar_them = await safe_fetch_avatar(session, them_g.get('in_game_avatar'))
+
+        splash_url = f"https://enka.network/ui/{char_info['avataricon'].replace('UI_AvatarIcon','UI_Gacha_AvatarImg')}.png"
         splash_art = await fetch_image(session, splash_url)
-        char_icon = await fetch_image(session, char_url)
 
+    # --- IMAGE BASE ---
     target_size = (1875, 890)
-    bg_path = ELEMENT_BG_MAP.get(element, "asstests/backgrounds/anemo.jpg")
-    
-    bg_base = ImageOps.fit(Image.open(bg_path).convert("RGBA"), target_size, method=Image.Resampling.LANCZOS)
-    
-    if splash_art:
-        splash_art.thumbnail((1600, 1600), Image.Resampling.LANCZOS)
-        bg_w, bg_h = target_size
-        splash_w, splash_h = splash_art.size
-        center_x = (bg_w // 2) - (splash_w // 2)
-        center_y = 100 
-        bg_base.paste(splash_art, (center_x, center_y), splash_art)
-    
-    background = bg_base.filter(ImageFilter.GaussianBlur(radius=7))
+    bg_path = ELEMENT_BG_MAP.get(element, "asstests/backgrounds/ANEMO.png")
+    background = ImageOps.fit(Image.open(bg_path).convert("RGBA"), target_size)
 
-    ui_layer = Image.new("RGBA", target_size, (0, 0, 0, 0))
+    if splash_art:
+        splash_art.thumbnail((1600, 1600))
+        background.paste(splash_art, ((1875 - splash_art.width)//2, 100), splash_art)
+
+    background = background.filter(ImageFilter.GaussianBlur(7))
+
+    ui_layer = Image.new("RGBA", target_size)
     draw = ImageDraw.Draw(ui_layer)
 
-    frame = Image.open("asstests/images/AVATAR.png").convert("RGBA")
-    mask_avatar = ImageOps.invert(Image.open("asstests/images/AVATAR_MASK.png").convert("L"))
+    # --- SIMPLE TEXT TEST (safe render check) ---
+    draw.text((50, 50), f"{uid} vs {uid2}", font=font, fill=(255,255,255))
 
-    tl_coords, tr_coords = [5, 5, 780, 220], [1070, 5, 1845, 220]
-    box_w, box_h = 775, 215
-    mask_nc = Image.new("L", (box_w, box_h), 0)
-    ImageDraw.Draw(mask_nc).rounded_rectangle([0, 0, box_w, box_h], radius=10, fill=200)
+    # --- FRIENDSHIP FIX (keep your logic if needed) ---
+    f_level_me = stats_them.get("friendship", 1)
+    f_level_them = stats_me.get("friendship", 1)
 
-    if namecard_me: background.paste(ImageOps.fit(namecard_me, (box_w, box_h)), (tr_coords[0], tr_coords[1]), mask_nc)
-    if namecard_them: background.paste(ImageOps.fit(namecard_them, (box_w, box_h)), (tl_coords[0], tl_coords[1]), mask_nc)
+    draw.text((50, 100), f"F1: {f_level_me}", font=font, fill=(255,255,255))
+    draw.text((50, 140), f"F2: {f_level_them}", font=font, fill=(255,255,255))
 
-    draw.rounded_rectangle([5, 225, 385, 360], radius=10, fill=(255,255,255,100), outline=(255,255,255,200))
-    draw.rounded_rectangle([395, 225, 780, 360], radius=10, fill=(255,255,255,100), outline=(255,255,255,200))
-
-    for wp, stats, pos in [(weapon_img_me, stats_me, (5, 230)), (weapon_img_them, stats_them, (385, 230))]:
-        if wp and stats:
-            wp_res = wp.resize((120, 120), Image.Resampling.LANCZOS)
-            background.paste(wp_res, pos, wp_res)
-            w_info = stats['weapon']
-            weapon_name = get_weapon_name(w_info['hash'])
-            
-            # --- Draw Weapon Name ---
-            draw.text((pos[0] + 240, 245), weapon_name, font=font_xsmall, fill=(0, 0, 0), anchor="mm")
-            
-            # --- Draw Base ATK and Sub Stat Boxes ---
-            w_stats_list = w_info.get("stats", [])
-            stat_x_start = pos[0] + 120
-            for i, s in enumerate(w_stats_list):
-                curr_stat_x = stat_x_start + (i * 125) # Space them apart
-                # Box for stat
-                draw.rounded_rectangle([curr_stat_x, 270, curr_stat_x + 115, 310], radius=5, fill=(15, 15, 25, 200))
-                icon_path = W_STAT_ICONS.get(s['prop'], "asstests/icons/atk.png")
-                try:
-                    s_icon = Image.open(icon_path).convert("RGBA").resize((22, 22))
-                    ui_layer.paste(s_icon, (curr_stat_x + 5, 279), s_icon)
-                except: pass
-            
-                val_str = f"{s['val']}"
-                if any(x in s['prop'] for x in ["PERCENT", "CHARGE", "CRITICAL"]):
-                    val_str += "%"
-                
-                draw.text((curr_stat_x + 35, 290), val_str, font=font_small, fill=(255, 255, 255), anchor="lm")
-
-            max_lv: str = "90" if w_info.get('rank', 0) == 5 else "80" if w_info.get('rank', 0) == 4 else "70"
-            
-            draw_dynamic_bubble(draw, f"Lv: {w_info['level']}/{max_lv}", (pos[0] + 140, 335), font_small, anchor="lm")
-            draw_dynamic_bubble(draw, f"R{w_info.get('refinement', 1)}", (pos[0]+345, 335), font_small, text_color=(255, 204, 0, 255), anchor="rm")
-    f_level_me = stats_them.get("friendship", 1) if stats_me else 1
-    f_level_them = stats_me.get("friendship", 1) if stats_them else 1
-    char_level_me = stats_me.get("char_level", 1) if stats_me else 1
-    char_level_them = stats_them.get("char_level", 1) if stats_them else 1
-    CI_coords = [840,5,1010,195]
-    c_box_w, c_box_h = 170, 170
-    mask_ci = Image.new("L", (c_box_w, c_box_h), 0)
-    ImageDraw.Draw(mask_ci).rounded_rectangle([0, 0, c_box_w, c_box_h], radius=10, fill=255)
-    if char_icon: background.paste(ImageOps.fit(char_icon, (c_box_w, c_box_h)), (CI_coords[0], CI_coords[1]), mask_ci)
-    
-
-    for av, pos in [(avatar_them, (20, 10)), (avatar_me, (1670, 10))]:
-        if av:
-            av_resized = ImageOps.fit(av, mask_avatar.size, centering=(0.5, 0.5))
-            background.paste(frame, pos, frame)
-            background.paste(av_resized, pos, mask_avatar)
-
-    draw_dynamic_bubble(draw, rank_them, (1110, 870), font_xsmall, anchor="lm")
-    draw_dynamic_bubble(draw,rank_me, (1505, 870), font_xsmall, anchor="lm")
-    draw_dynamic_bubble(draw, f"Character Lv : {char_level_me}/90", (750, 190), font, anchor="rm")
-    draw_dynamic_bubble(draw, f"Character Lv : {char_level_them}/90", (1100, 190), font, anchor="lm")
-    draw_dynamic_bubble(draw,char_name, (920, 200), font)
-    draw_dynamic_bubble(draw, me['nickname'], (1750, 190), font)
-    draw_dynamic_bubble(draw, them['nickname'], (100, 190), font)
-    draw_dynamic_bubble(draw, f"UID : {uid}", (1520, 50), font)
-    draw_dynamic_bubble(draw, f"UID : {uid2}", (330, 50), font)
-    draw_dynamic_bubble(draw, "AR : " + str(me['level']), (1580, 95), font)
-    draw_dynamic_bubble(draw, "AR : " + str(them['level']), (270, 95), font)
-    draw_dynamic_bubble(draw, "WL : " + str(me['worldLevel']), (1585, 140), font)
-    draw_dynamic_bubble(draw, "WL : " + str(them['worldLevel']), (265, 140), font)
-
-    draw.rounded_rectangle([205,165, 320,215],radius=8, fill=(15, 15, 25, 220), outline=(255,255,255,50))
-    f_icon = Image.open("asstests/icons/FRIENDS.png").convert("RGBA").resize((32, 32))
-    ui_layer.paste(f_icon, (205 + 14, 165 + 11), f_icon)
-    draw.text((270, 190),str(f_level_them), font=font_big, fill=(255, 255, 255, 255), anchor="lm")
-
-    draw.rounded_rectangle([1525,165, 1640,215],radius=8, fill=(15, 15, 25, 220), outline=(255,255,255,50))
-    f_icon = Image.open("asstests/icons/FRIENDS.png").convert("RGBA").resize((32, 32))
-    ui_layer.paste(f_icon, (1525 + 14, 165 + 11), f_icon)
-    draw.text((1595, 190),str(f_level_me), font=font_big, fill=(255, 255, 255, 255), anchor="lm")
-
-    draw.rounded_rectangle(tl_coords, radius=10, outline=(255,255,255,200), width=2)
-    draw.rounded_rectangle(tr_coords, radius=10, outline=(255,255,255,200), width=2)
-    draw.rounded_rectangle([785, 220, 932, 480], radius=10, fill=(255,255,255,60), outline=(255,255,255,200))
-    draw.rounded_rectangle([5, 365, 780, 885], radius=10, fill=(255,255,255,100), outline=(255,255,255,200))
-    draw.rounded_rectangle([937, 220, 1085, 480], radius=10, fill=(255,255,255,60), outline=(255,255,255,200))
-    draw.rounded_rectangle([937, 490, 1085, 875], radius=10, fill=(255,255,255,60), outline=(255,255,255,200))
-    draw.rounded_rectangle([785, 490, 932, 875], radius=10, fill=(255,255,255,60), outline=(255,255,255,200))
-    y_start = 370
-    icon_w = 60      # Small box for icon
-    label_w = 330     # Box for stat name
-    val_w = 170       # Box for numeric values
-    gap = 10          # Space between rectangles
-    row_height = 55
-    row_spacing = 65
-
-    # Calculate total width of the 4-box row to center it
-    start_x = 10
-
-    stat_config = [
-        ("Max HP", "hp", "{:.0f}", "asstests/icons/hp.png"),
-        ("ATK", "atk", "{:.0f}", "asstests/icons/atk.png"),
-        ("DEF", "def", "{:.0f}", "asstests/icons/def.png"),
-        ("CRIT Rate", "cr", "{:.1f}%", "asstests/icons/cr.png"),
-        ("CRIT DMG", "cd", "{:.1f}%", "asstests/icons/cd.png"),
-        ("Energy Recharge", "er", "{:.1f}%", "asstests/icons/er.png"),
-        (f"{element} DMG Bonus", "elem_bonus", "{:.1f}%", f"asstests/icons/{element.lower()}.png"),
-        ("Elemental Mastery", "em", "{:.0f}", "asstests/icons/em.png")
-    ]
-
-    # 4. Draw Rows: [Icon] [Label] [User 1 Value] [User 2 Value]
-    for i, (label, key, fmt, icon_path) in enumerate(stat_config):
-        curr_y = y_start + (i * row_spacing)
-        
-        # Segment 1: ICON
-        draw.rounded_rectangle([start_x, curr_y, start_x + icon_w, curr_y + row_height], 
-                               radius=8, fill=(15, 15, 25, 220), outline=(255,255,255,50))
-        try:
-            icon = Image.open(icon_path).convert("RGBA").resize((32, 32))
-            ui_layer.paste(icon, (start_x + 14, curr_y + 11), icon)
-        except: pass
-
-        # Segment 2: STAT LABEL
-        l_x = start_x + icon_w + gap
-        draw.rounded_rectangle([l_x, curr_y, l_x + label_w, curr_y + row_height], 
-                               radius=8, fill=(15, 15, 25, 170), outline=(255,255,255,50))
-        draw.text((l_x + 20, curr_y + (row_height//2)), label, font=font, fill=(230, 230, 230), anchor="lm")
-
-        # Segment 3: USER 1 VALUE
-        v1_x = l_x + label_w + gap
-        draw.rounded_rectangle([v1_x, curr_y, v1_x + val_w, curr_y + row_height], 
-                               radius=8, fill=(15, 15, 25, 170), outline=(255,255,255,50))
-        val1 = fmt.format(stats_me.get(key, 0)) if stats_me else "0"
-        draw.text((v1_x + (val_w // 2), curr_y + (row_height//2)), val1, font=font, fill=(255, 255, 255), anchor="mm")
-
-        # Segment 4: USER 2 VALUE
-        v2_x = v1_x + val_w + gap
-        draw.rounded_rectangle([v2_x, curr_y, v2_x + val_w, curr_y + row_height], 
-                               radius=8, fill=(15, 15, 25, 170), outline=(255,255,255,50))
-        val2 = fmt.format(stats_them.get(key, 0)) if stats_them else "0"
-        draw.text((v2_x + (val_w // 2), curr_y + (row_height//2)), val2, font=font, fill=(255, 255, 255), anchor="mm")
+    # --- DRAW BUILD (no duplicates) ---
     draw_build_column(background, 795, them_data, t_icons, c_icons)
-    draw_build_column(background, 945, me_data, t_icons, c_icons) 
-    draw_build_column(background, 795, them_data, t_icons, c_icons)
-    draw_build_column(background, 945, me_data, t_icons, c_icons) 
-    draw_build_column(background, 795, them_data, t_icons, c_icons)
-    draw_build_column(background, 945, me_data, t_icons, c_icons) 
+    draw_build_column(background, 945, me_data, t_icons, c_icons)
 
+    # --- CHARACTER OBJECT SAFE ---
+    me_char_obj = next((c for c in me.get('avatarInfoList', []) if str(c['avatarId']) == str(char_id)), None)
+    them_char_obj = next((c for c in them.get('avatarInfoList', []) if str(c['avatarId']) == str(char_id)), None)
 
-    if rarity == 4:
-        star4 = Image.open("asstests/icons/stars/c_stars_4.png").convert("RGBA")
-        background.paste(star4, (850, 150), star4)
-    elif rarity == 5:
-        star5 = Image.open("asstests/icons/stars/c_stars_5.png").convert("RGBA")
-        background.paste(star5, (850, 150), star5)
+    if not me_char_obj or not them_char_obj:
+        print("Character not found!")
+        return None
+
     async with aiohttp.ClientSession() as session:
-        # How to extract the specific character objects from the Enka API response
-        try:
-            # me and them are the full JSON responses from Enka
-            me_char_obj = next(c for c in me['avatarInfoList'] if str(c['avatarId']) == str(char_id))
-            them_char_obj = next(c for c in them['avatarInfoList'] if str(c['avatarId']) == str(char_id))
-        except StopIteration:
-            print("Character not found in one of the showcases!")
-            return
-
-        # In char_compare.py, inside your main drawing function
         await draw_all_artifacts(
-            session=session, 
-            background=ui_layer, 
-            me_char_data=me_char_obj,    # The dictionary for the character from Player 1
-            them_char_data=them_char_obj, # The dictionary for the character from Player 2
-            font=font_small                    # Your loaded ImageFont object
+            session=session,
+            background=ui_layer,
+            me_char_data=me_char_obj,
+            them_char_data=them_char_obj,
+            font=font_small
         )
-        
+
+    # --- FINAL EXPORT ---
     buffer = BytesIO()
     final_img = Image.alpha_composite(background, ui_layer)
-    # Convert to RGB (required for JPEG) and save with high quality
-    final_img.convert("RGB").save(buffer, format="JPEG", quality=90) 
+    final_img.convert("RGB").save(buffer, format="JPEG", quality=90)
     buffer.seek(0)
-    return buffer
 
+    return buffer

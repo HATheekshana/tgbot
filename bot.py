@@ -2061,16 +2061,21 @@ async def handle_comp(callback: types.CallbackQuery):
 
     # 3. Generate the Image (Pillow logic)
     img_bytes = await compare_characters(int(u1), int(u2), int(cid))
-    
+
+    if img_bytes is None:
+        # If generation failed, tell the user instead of crashing
+        await callback.message.edit_caption(
+            caption="<b>❌ Error:</b> Failed to generate the comparison. This usually happens if Enka.network is lagging or profile details are hidden.",
+            parse_mode="HTML"
+        )
+        return 
+
     await callback.message.delete()
-    
-    # Reply to the original command sender to keep it threaded
-    # Replace the 'target' and 'target.reply_photo' lines with this:
     await callback.message.answer_photo(
         photo=types.BufferedInputFile(img_bytes.read(), filename="comparison.png"),
         caption=f"<b>Comparison Complete!</b>",
         parse_mode="HTML",
-        reply_to_message_id=orig_msg_id  # THIS makes it show as a reply
+        reply_to_message_id=orig_msg_id
     )
     
 @dp.message(Command("compare"))
