@@ -84,50 +84,55 @@ try:
 except Exception as e:
     print(f"Error loading char.json: {e}")
     CHARACTER_MAP = {}
+def get_banner_keyboard(mode="current", char_index=0):
+    builder = InlineKeyboardBuilder()
+    
+    # Button 1: Switch between Character 1 and Character 2
+    next_char = 1 if char_index == 0 else 0
+    char_label = "👤 View 2nd Character" if char_index == 0 else "👤 View 1st Character"
+    builder.row(types.InlineKeyboardButton(text=char_label, callback_data=f"swap:{mode}:{next_char}"))
+    
+    # Button 2: Switch between Current and Next Banner sets
+    other_mode = "next" if mode == "current" else "current"
+    mode_label = "➡️ Upcoming Banners" if mode == "current" else "⬅️ Current Banners"
+    builder.row(types.InlineKeyboardButton(text=mode_label, callback_data=f"swap:{other_mode}:0"))
+    
+    return builder.as_markup()
+
 @dp.message(Command("banner"))
 async def cmd_banner(message: types.Message):
-    # 1. Create the Media Group (The 2 character photos)
-    media = [InputMediaPhoto(media=FSInputFile(path)) for path in CURRENT_IMAGES]
-    
-    # 2. Send the photos as a reply to the user
-    await message.reply_media_group(media=media)
-    
-    # 3. Send the countdown and button as a follow-up message
-    builder = InlineKeyboardBuilder()
-    builder.button(text="➡️ Next Banners", callback_data="toggle_banner:next")
-    
-    await message.answer(
-        text=get_banner_text("current"), # Using the helper function from earlier
-        reply_markup=builder.as_markup(),
-        parse_mode="HTML"
-    )
-@dp.callback_query(F.data.startswith("toggle_banner:"))
-async def handle_banner_toggle(callback: types.CallbackQuery):
-    mode = callback.data.split(":")[1]
-    
-    # Logic for switching
-    new_mode = "next" if mode == "current" else "current"
-    btn_label = "➡️ Next Banners" if mode == "next" else "⬅️ Current Banners"
-    images_to_send = CURRENT_IMAGES if mode == "next" else NEXT_IMAGES
-    
-    # 1. Delete the previous 2 photos to prevent clutter
-    # (Optional: only if you want the chat to stay very clean)
-    # await callback.message.delete() 
+    # Initial state: Current Banner, 1st Character
+    if not os.path.exists(CURRENT_IMAGES[0]):
+        return await message.reply("❌ Banner image not found on server.")
 
-    # 2. Update the Text and Button
-    builder = InlineKeyboardBuilder()
-    builder.button(text=btn_label, callback_data=f"toggle_banner:{new_mode}")
-    
-    await callback.message.edit_text(
-        text=get_banner_text(mode),
-        reply_markup=builder.as_markup(),
+    await message.reply_photo(
+        photo=FSInputFile(CURRENT_IMAGES[0]),
+        caption=get_banner_text("current"),
+        reply_markup=get_banner_keyboard("current", 0),
         parse_mode="HTML"
     )
+
+@dp.callback_query(F.data.startswith("swap:"))
+async def handle_banner_swap(callback: types.CallbackQuery):
+    # Data: swap:MODE:INDEX
+    _, mode, index = callback.data.split(":")
+    index = int(index)
     
-    # 3. Send the new set of 2 photos
-    media = [InputMediaPhoto(media=FSInputFile(path)) for path in images_to_send]
-    await callback.message.answer_media_group(media=media)
+    # Select the correct image list
+    image_list = CURRENT_IMAGES if mode == "current" else NEXT_IMAGES
     
+    if not os.path.exists(image_list[index]):
+        return await callback.answer("❌ Image file missing!", show_alert=True)
+
+    # Edit the existing message's photo and caption
+    await callback.message.edit_media(
+        media=InputMediaPhoto(
+            media=FSInputFile(image_list[index]),
+            caption=get_banner_text(mode),
+            parse_mode="HTML"
+        ),
+        reply_markup=get_banner_keyboard(mode, index)
+    )
     await callback.answer()
 @dp.message(Command("teams"))
 async def cmd_teams_menu(message: types.Message):
