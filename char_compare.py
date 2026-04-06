@@ -97,7 +97,19 @@ def extract_char_stats(avatar_list, char_id, element):
                         })
                     weapon_info["stats"] = w_stats
                     break
+            elem_bonus = 0
 
+            # Element-specific (Pyro, Hydro, etc.)
+            elem_bonus += get_prop(p, bonus_id)
+
+            # General DMG bonus (VERY important)
+            elem_bonus += get_prop(p, 26)
+
+            # Extra elemental bonus (rare but safe)
+            elem_bonus += get_prop(p, 27)
+
+            # Convert to %
+            elem_bonus *= 100
             return {
                 "char_level": char_level,
                 "friendship": friendship,
@@ -108,7 +120,7 @@ def extract_char_stats(avatar_list, char_id, element):
                 "cr": get_prop(p, 20) * 100, 
                 "cd": get_prop(p, 22) * 100,
                 "er": get_prop(p, 23) * 100, 
-                "elem_bonus": get_prop(p, bonus_id) * 100,
+                "elem_bonus": elem_bonus,
                 "weapon": weapon_info # Now includes weapon details
             }
     return None
@@ -389,10 +401,6 @@ async def compare_characters(uid, uid2, char_id):
                                radius=8, fill=(15, 15, 25, 170), outline=(255,255,255,50))
         val2 = fmt.format(stats_them.get(key, 0)) if stats_them else "0"
         draw.text((v2_x + (val_w // 2), curr_y + (row_height//2)), val2, font=font, fill=(255, 255, 255), anchor="mm")
-    draw_build_column(background, 795, them_data, t_icons, c_icons)
-    draw_build_column(background, 945, me_data, t_icons, c_icons) 
-    draw_build_column(background, 795, them_data, t_icons, c_icons)
-    draw_build_column(background, 945, me_data, t_icons, c_icons) 
     draw_build_column(background, 795, them_data, t_icons, c_icons)
     draw_build_column(background, 945, me_data, t_icons, c_icons) 
 
