@@ -37,20 +37,7 @@ from cryptography.fernet import Fernet
 from tasks import setup_scheduler
 from paimon import fetch_and_save_wishes, calculate_pity
 from banner import get_banner_text, CURRENT_IMAGES, NEXT_IMAGES
-from fastapi import FastAPI, HTTPException
-from fastapi.middleware.cors import CORSMiddleware
-import httpx
-app = FastAPI()
 
-# --- 1. ENABLE CORS ---
-# This is CRITICAL. Without this, your Web App (HTML) 
-# cannot talk to your API.
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"], # In production, replace "*" with your domain
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
 quiz_track = {}
 group_message_counts = {}
 QUIZ_THRESHOLD = 40
@@ -88,8 +75,8 @@ BANNER_NAMES = {
     200: "Standard"
 }
 
-CURRENT_RATE_UP_KEY = "flins" 
-CURRENT_RATE_UP_NAME = characters5.get(CURRENT_RATE_UP_KEY, "Flins")
+CURRENT_RATE_UP_KEY = "skirk" 
+CURRENT_RATE_UP_NAME = characters5.get(CURRENT_RATE_UP_KEY, "Skirk")
 
 try:
     with open('char.json', 'r') as file:
@@ -97,40 +84,6 @@ try:
 except Exception as e:
     print(f"Error loading char.json: {e}")
     CHARACTER_MAP = {}
-
-@app.get("/api/profile/{tg_id}")
-async def get_web_profile(tg_id: str):
-    user = await users_col.find_one({"user_id": str(tg_id)})
-    
-    if not user or "genshin_uid" not in user:
-        raise HTTPException(status_code=404, detail="User not found. Please /login in the bot.")
-
-    genshin_uid = user["genshin_uid"]
-
-    # Fetch data from Enka.Network
-    async with httpx.AsyncClient() as http_client:
-        try:
-            response = await http_client.get(
-                f"https://enka.network/api/uid/{genshin_uid}",
-                timeout=10.0
-            )
-            
-            if response.status_code != 200:
-                raise HTTPException(status_code=502, detail="Enka Network is down or UID is invalid.")
-            
-            data = response.json()
-            
-            # Return exactly what the Frontend needs
-            return {
-                "player": data.get("playerInfo", {}),
-                "characters": data.get("avatarInfoList", []),
-                "uid": genshin_uid
-            }
-            
-        except Exception as e:
-            logging.error(f"Error fetching Enka data: {e}")
-            raise HTTPException(status_code=500, detail="Internal Server Error")
-# Call this inside your main() or on_startup function
 def get_banner_keyboard(mode="current", char_index=0):
     builder = InlineKeyboardBuilder()
     
