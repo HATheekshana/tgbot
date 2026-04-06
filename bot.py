@@ -704,65 +704,66 @@ async def cmd_redeem_code(message: types.Message, command: CommandObject):
 @dp.message(Command("characters"))
 async def cmd_characters(message: types.Message):
     user_data = await users_col.find_one({"user_id": str(message.from_user.id)})
+
     if not user_data or "genshin_uid" not in user_data:
         return await message.reply("Please /login <uid> first.")
 
     db_uid = str(user_data["genshin_uid"]).strip()
-    
     msg = await message.reply("Fetching your showcase...")
-    
+
     user_info_enka = await get_enkadata(db_uid)
-    # Enka uses 'avatarInfoList' for the character data
     showcase_items = user_info_enka.get("showAvatarInfoList", [])
 
     if not showcase_items:
-        await msg.edit_text("No characters found! Make sure 'Show Character Details' is ON in-game.")
-        return
+        return await msg.edit_text(
+            "No characters found!\nMake sure 'Show Character Details' is enabled in your profile."
+        )
 
     builder = InlineKeyboardBuilder()
 
     for index, char in enumerate(showcase_items):
         char_id = str(char.get("avatarId"))
-        
-        # 2. LOOK UP THE ID AND EXTRACT THE 'name' FIELD
         char_entry = CHARACTER_MAP.get(char_id)
-        
-        if char_entry:
-            # Use the "name" field we added to the JSON
-            display_name = char_entry.get("name", "Unknown")
-        else:
-            display_name = f"ID: {char_id}"
 
-        # Add button
+        display_name = char_entry.get("name", "Unknown") if char_entry else f"ID: {char_id}"
+
         builder.button(
-            text=display_name, 
-    # Store the person who sent the command (message.from_user.id)
-            callback_data=f"gen_{db_uid}_{index}_{message.from_user.id}" 
+            text=display_name,
+            callback_data=f"gen_{db_uid}_{index}_{message.from_user.id}"
         )
-    image_buffer = await create_genshin_profile(db_uid) 
-    if image_buffer:
-        # Create the file object from buffer
-        photo = BufferedInputFile(image_buffer.getvalue(), filename=f"{db_uid}.png")
 
-    # 3x4 grid layout
     builder.adjust(3)
 
-    await msg.delete() # Remove the "Fetching..." message
+    image_buffer = await create_genshin_profile(db_uid)
+
+    if not image_buffer:
+        return await msg.edit_text("❌ Failed to generate profile image.")
+
+    photo = BufferedInputFile(image_buffer.getvalue(), filename=f"{db_uid}.png")
+
+    await msg.delete()
+
     await message.reply_photo(
         photo=photo,
         caption="Select a character:",
-        reply_markup=builder.as_markup(),
-        parse_mode="Markdown"
+        reply_markup=builder.as_markup()
     )
+
+
+# =========================
+# CHARACTER CARD HANDLER
+# =========================
 @dp.callback_query(F.data.startswith("gen_"))
 async def handle_card_generation(callback: types.CallbackQuery):
     parts = callback.data.split("_")
     uid, char_index, owner_id = parts[1], int(parts[2]), int(parts[3])
-    if callback.from_user.id != owner_id:
-        return await callback.answer("⏳ This menu isn't for you! Run /characters to see your own.", show_alert=True)
-    await callback.answer("Fetching Build & Rank...")
 
-    # 1. Loading state (Swap to your local image)
+    if callback.from_user.id != owner_id:
+        return await callback.answer("⏳ This menu isn't for you!", show_alert=True)
+
+    await callback.answer("⏳ Generating...")
+
+    # Loading screen
     try:
         loading_img = FSInputFile("Loading_Screen_Startup.webp")
         await callback.message.edit_media(
@@ -772,93 +773,125 @@ async def handle_card_generation(callback: types.CallbackQuery):
                 parse_mode="HTML"
             )
         )
-    except Exception: pass
+    except:
+        pass
 
-    # 2. Get the specific Character ID for the ranking lookup
     user_info = await get_enkadata(uid)
     showcase = user_info.get("showAvatarInfoList", [])
-    
-    # Identify the character being generated
+
+    # ✅ FIX: prevent crash
+    if char_index >= len(showcase):
+        return await callback.answer("❌ Character not found.", show_alert=True)
+
     current_char = showcase[char_index]
     char_id = str(current_char.get("avatarId"))
+
     char_entry = CHARACTER_MAP.get(char_id)
-        
-    if char_entry:
-            # Use the "name" field we added to the JSON
-        display_name = char_entry.get("name", "Unknown")
-    else:
-        display_name = f"ID: {char_id}" # e.g., "10000089"
+    display_name = char_entry.get("name", "Unknown") if char_entry else f"ID: {char_id}"
 
     card_api = "https://gi-card-api.onrender.com/character_card"
     ranking_api = f"https://test-xehj.onrender.com/get/ranking/{uid}"
 
     async with aiohttp.ClientSession() as session:
         try:
-            # Request 1: The Build Card
-            payload = {"uid": uid, "character_index": char_index, "template": 1, "img": None}
+            payload = {
+                "uid": uid,
+                "character_index": char_index,
+                "template": 1,
+                "img": None
+            }
+
             async with session.post(card_api, json=payload) as card_resp:
                 card_data = await card_resp.json()
                 card_url = card_data.get("response") or card_data.get("url")
 
-                # Request 2: The Ranking (Correctly Parsing the Dictionary)
-                ranking_text = ""
-                async with session.get(ranking_api) as rank_resp:
-                    if rank_resp.status == 200:
-                        all_ranks = await rank_resp.json()
-                        # Find the rank using the Character ID key
-                        char_rank_data = all_ranks.get(char_id)
-                        
-                        if char_rank_data:
-                            rank = char_rank_data.get("ranking")
-                            out_of = char_rank_data.get("outOf")
-                            percent = char_rank_data.get("percent")
-                            ranking_text = f"\n\n<b>ʚଓ Global Rank :</b> {rank} / {out_of}\n<b>ʚଓ Top :</b> {percent}%"
-                        else:
-                            ranking_text = ""
+            ranking_text = ""
+            async with session.get(ranking_api) as rank_resp:
+                if rank_resp.status == 200:
+                    all_ranks = await rank_resp.json()
+                    char_rank_data = all_ranks.get(char_id)
 
-                if card_url:
-                    # Final Step: Send Result
-                    back_builder = InlineKeyboardBuilder()
-                    back_builder.button(text="Back to List", callback_data=f"refresh_{uid}")
-                    await callback.message.delete()
-                    target = callback.message.reply_to_message or callback.message
-                    await target.reply_photo(
-                        photo=URLInputFile(card_url),
-                        caption=f"ʚଓ {display_name} {ranking_text}",
-                        reply_markup=back_builder.as_markup(),
-                        parse_mode="HTML"
-                    )
-                    
+                    if char_rank_data:
+                        rank = char_rank_data.get("ranking")
+                        out_of = char_rank_data.get("outOf")
+                        percent = char_rank_data.get("percent")
+
+                        ranking_text = (
+                            f"\n\n<b>ʚଓ Global Rank :</b> {rank}/{out_of}"
+                            f"\n<b>ʚଓ Top :</b> {percent}%"
+                        )
+
+            if not card_url:
+                return await callback.message.edit_caption(
+                    caption="❌ Failed to generate card.\nTry again later."
+                )
+
+            back_builder = InlineKeyboardBuilder()
+
+            # ✅ FIX: include owner_id
+            back_builder.button(
+                text="Back to List",
+                callback_data=f"refresh_{uid}_{owner_id}"
+            )
+
+            await callback.message.delete()
+
+            target = callback.message.reply_to_message or callback.message
+
+            await target.reply_photo(
+                photo=URLInputFile(card_url),
+                caption=f"✨ <b>{display_name}</b>{ranking_text}",
+                reply_markup=back_builder.as_markup(),
+                parse_mode="HTML"
+            )
 
         except Exception as e:
-            await callback.message.edit_caption(caption=f"❌ Error: {str(e)}")
+            print("ERROR:", e)
+            await callback.message.edit_caption(
+                caption="❌ Failed to generate card.\nCheck your showcase or try again later."
+            )
+
+
+# =========================
+# BACK BUTTON HANDLER
+# =========================
 @dp.callback_query(F.data.startswith("refresh_"))
 async def handle_back_button(callback: types.CallbackQuery):
     parts = callback.data.split("_")
     uid, owner_id = parts[1], int(parts[2])
 
-    # SECURITY CHECK
     if callback.from_user.id != owner_id:
         return await callback.answer("❌ You can't use this button.", show_alert=True)
 
-    # Re-fetch data for the list
     user_info = await get_enkadata(uid)
     showcase = user_info.get("showAvatarInfoList", [])
 
     builder = InlineKeyboardBuilder()
+
     for index, char in enumerate(showcase):
         char_id = str(char.get("avatarId"))
         name = CHARACTER_MAP.get(char_id, {}).get("name", f"ID: {char_id}")
-        builder.button(text=name, callback_data=f"gen_{uid}_{index}_{owner_id}")
+
+        builder.button(
+            text=name,
+            callback_data=f"gen_{uid}_{index}_{owner_id}"
+        )
+
     builder.adjust(3)
 
-    # Re-generate profile photo
     image_buffer = await create_genshin_profile(uid)
+
+    if not image_buffer:
+        return await callback.answer("❌ Failed to reload.", show_alert=True)
+
     photo = BufferedInputFile(image_buffer.getvalue(), filename=f"{uid}.png")
 
-    # EDIT the final build card BACK into the character selection menu
     await callback.message.edit_media(
-        media=InputMediaPhoto(media=photo, caption="<b>Character Showcase</b>\nSelect a character:", parse_mode="HTML"),
+        media=InputMediaPhoto(
+            media=photo,
+            caption="<b>Character Showcase</b>\nSelect a character:",
+            parse_mode="HTML"
+        ),
         reply_markup=builder.as_markup()
     )
 @dp.message(Command("topquiz"))
