@@ -58,7 +58,15 @@ def get_prop(stats_dict, prop_id):
     """Handles Enka's mix of string and integer keys for stats."""
     return stats_dict.get(str(prop_id), stats_dict.get(int(prop_id), 0))
 def extract_char_stats(avatar_list, char_id, element):
-    element_map = {"Pyro": 40, "Cryo": 41, "Electro": 42, "Hydro": 43, "Dendro": 44, "Anemo": 45, "Geo": 46}
+    element_map = {
+    "Pyro": 40,
+    "Electro": 41,
+    "Hydro": 42,
+    "Dendro": 43,
+    "Anemo": 44,
+    "Geo": 45,
+    "Cryo": 46
+    }
     bonus_id = element_map.get(element, 45)
 
     for char in avatar_list:
