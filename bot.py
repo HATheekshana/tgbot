@@ -88,8 +88,8 @@ BANNER_NAMES = {
     200: "Standard"
 }
 
-CURRENT_RATE_UP_KEY = "skirk" 
-CURRENT_RATE_UP_NAME = characters5.get(CURRENT_RATE_UP_KEY, "Skirk")
+CURRENT_RATE_UP_KEY = "flins" 
+CURRENT_RATE_UP_NAME = characters5.get(CURRENT_RATE_UP_KEY, "Flins")
 
 try:
     with open('char.json', 'r') as file:
