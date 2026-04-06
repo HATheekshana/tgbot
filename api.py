@@ -2,7 +2,8 @@ import os  # ADD THIS
 from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from motor.motor_async_engine import AsyncIOMotorClient
+import motor
+AsyncIOMotorClient = motor.motor_async_engine.AsyncIOMotorClient
 import httpx
 import logging
 load_dotenv()
