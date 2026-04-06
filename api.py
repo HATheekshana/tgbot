@@ -1,30 +1,36 @@
-import os  # ADD THIS
+import os
 from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-import motor.motor_async_engine
 import httpx
 import logging
+
+# CHANGE YOUR MOTOR IMPORT TO THIS:
+from motor.motor_async_engine import AsyncIOMotorClient
+
 load_dotenv()
+
 app = FastAPI()
 
 # --- 1. ENABLE CORS ---
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"], 
+    allow_origins=["*"],
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
 # --- 2. DATABASE SETUP ---
 MONGO_URL = os.getenv("MONGO_URL")
-client = motor.motor_async_engine.AsyncIOMotorClient(MONGO_URL)
-db = client["genshin_bot"]  # CHANGED FROM cluster TO client
+# Use the direct class name here:
+client = AsyncIOMotorClient(MONGO_URL)
+db = client["genshin_bot"]
 users_col = db["user_stats"]
 
 # --- 3. THE PROFILE ENDPOINT ---
 @app.get("/api/profile/{tg_id}")
 async def get_web_profile(tg_id: str):
+
     # Search for the user in your bot's database
     # We use str(tg_id) to ensure matching types
     user = await users_col.find_one({"user_id": str(tg_id)})
