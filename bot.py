@@ -802,6 +802,11 @@ async def handle_card_generation(callback: types.CallbackQuery):
 
     async with aiohttp.ClientSession() as session:
         try:
+            update_url = f"https://gi-card-api.onrender.com/update?uid={uid}"
+            async with session.get(update_url) as update_resp:
+                # We don't necessarily need the data from here, 
+                # we just need the server to acknowledge the update.
+                await update_resp.json()
             payload = {
                 "uid": uid,
                 "character_index": char_index,
