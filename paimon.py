@@ -40,46 +40,47 @@ async def fetch_and_save_wishes(user_id: str, authkey: str, wish_col: AsyncIOMot
     return new_count
 
 async def calculate_pity(user_id: str, banner_type: int, wish_col: AsyncIOMotorCollection):
+    # Sort by time -1 (Newest first)
     cursor = wish_col.find({"user_id": user_id, "banner_type": banner_type}).sort("time", -1)
     wishes = await cursor.to_list(length=None)
     
     if not wishes:
-        return {
-            "total": 0, 
-            "pity_5": 0, 
-            "pity_4": 0, 
-            "last_10": [], 
-            "five_star_history": []
-        }
+        return {"total": 0, "pity_5": 0, "pity_4": 0, "last_10": [], "five_star_history": []}
 
     pity_5 = 0
     pity_4 = 0
     five_star_history = []
     
-    # Current Pity
+    # 1. Calculate 5-star Pity (wishes since last 5-star)
     for wish in wishes:
-        if wish['rarity'] == 5: break
+        # Check both int and string just in case of DB type mismatch
+        if int(wish.get('rarity', 0)) == 5: 
+            break
         pity_5 += 1
+        
+    # 2. Calculate 4-star Pity
     for wish in wishes:
-        if wish['rarity'] >= 4: break
+        if int(wish.get('rarity', 0)) >= 4: 
+            break
         pity_4 += 1
 
-    # Five Star History Logic
+    # 3. Calculate 5-star history gaps
     temp_count = 0
     for wish in wishes:
         temp_count += 1
-        if wish['rarity'] == 5:
-            five_star_history.append({"name": wish['name'], "pulls": temp_count})
-            temp_count = 0
-            if len(five_star_history) == 5: break
-
-    # ADD THIS LINE BACK:
-    last_10 = [w['name'] for w in wishes[:10]]
+        if int(wish.get('rarity', 0)) == 5:
+            five_star_history.append({
+                "name": wish['name'],
+                "pulls": temp_count
+            })
+            temp_count = 0 
+            if len(five_star_history) == 5:
+                break
 
     return {
         "total": len(wishes),
         "pity_5": pity_5,
         "pity_4": pity_4,
-        "last_10": last_10, # <--- This fixes the KeyError
+        "last_10": [w['name'] for w in wishes[:10]],
         "five_star_history": five_star_history
     }
