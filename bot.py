@@ -290,9 +290,10 @@ async def cmd_cookie_login(message: types.Message, command: CommandObject):
 async def cmd_wishes(message: types.Message):
     user_id = str(message.from_user.id)
     
-    char = await calculate_pity(user_id, 301, wish_col)
-    weapon = await calculate_pity(user_id, 302, wish_col)
-    std = await calculate_pity(user_id, 200, wish_col)
+    # Group 301 and 400 as they share pity in Genshin Impact
+    char = await calculate_pity(user_id, [301, 400], wish_col)
+    weapon = await calculate_pity(user_id, [302], wish_col)
+    std = await calculate_pity(user_id, [200], wish_col)
 
     if char['total'] == 0 and std['total'] == 0 and weapon['total'] == 0:
         return await message.reply("📭 <b>No data found!</b> Use /import_wishes first.", parse_mode="HTML")

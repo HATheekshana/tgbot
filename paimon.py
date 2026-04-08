@@ -39,48 +39,48 @@ async def fetch_and_save_wishes(user_id: str, authkey: str, wish_col: AsyncIOMot
             
     return new_count
 
-async def calculate_pity(user_id: str, banner_type: int, wish_col: AsyncIOMotorCollection):
-    # Sort by time -1 (Newest first)
-    cursor = wish_col.find({"user_id": user_id, "banner_type": banner_type}).sort("time", -1)
-    wishes = await cursor.to_list(length=None)
+async def calculate_pity(user_id: str, banner_types: list, wish_col: AsyncIOMotorCollection):
+    # Pass a list [301, 400] for Character Banners to share pity
+    cursor = wish_col.find({
+        "user_id": user_id, 
+        "banner_type": {"$in": banner_types}
+    }).sort("time", -1)
     
+    wishes = await cursor.to_list(length=None)
     if not wishes:
         return {"total": 0, "pity_5": 0, "pity_4": 0, "last_10": [], "five_star_history": []}
 
+    # Calculate Current Pity
     pity_5 = 0
-    pity_4 = 0
-    five_star_history = []
-    
-    # 1. Calculate 5-star Pity (wishes since last 5-star)
     for wish in wishes:
-        # Check both int and string just in case of DB type mismatch
-        if int(wish.get('rarity', 0)) == 5: 
-            break
+        if int(wish.get('rarity', 0)) == 5: break
         pity_5 += 1
-        
-    # 2. Calculate 4-star Pity
+    pity_4 = 0
     for wish in wishes:
-        if int(wish.get('rarity', 0)) >= 4: 
+        if int(wish.get('rarity', 0)) >= 4:
             break
         pity_4 += 1
-
-    # 3. Calculate 5-star history gaps
-    temp_count = 0
-    for wish in wishes:
-        temp_count += 1
+    # Calculate History (Gaps between 5-stars)
+    five_star_history = []
+    pulls_since_prev = 0
+    
+    # We iterate chronologically (oldest to newest) to get correct gap counts
+    for wish in reversed(wishes):
+        pulls_since_prev += 1
         if int(wish.get('rarity', 0)) == 5:
             five_star_history.append({
                 "name": wish['name'],
-                "pulls": temp_count
+                "pulls": pulls_since_prev
             })
-            temp_count = 0 
-            if len(five_star_history) == 5:
-                break
+            pulls_since_prev = 0
+
+    # Reverse back to show newest 5-stars at the top of the list
+    five_star_history.reverse()
 
     return {
         "total": len(wishes),
         "pity_5": pity_5,
         "pity_4": pity_4,
-        "last_10": [w['name'] for w in wishes[:10]],
-        "five_star_history": five_star_history
+        "five_star_history": five_star_history[:5],
+        "last_10": [w['name'] for w in wishes[:10]]
     }
