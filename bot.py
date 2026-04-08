@@ -290,43 +290,50 @@ async def cmd_cookie_login(message: types.Message, command: CommandObject):
 async def cmd_wishes(message: types.Message):
     user_id = str(message.from_user.id)
     
-    # We pass 'wish_col' as the 3rd argument so the function can query MongoDB
     char = await calculate_pity(user_id, 301, wish_col)
     weapon = await calculate_pity(user_id, 302, wish_col)
     std = await calculate_pity(user_id, 200, wish_col)
 
     if char['total'] == 0 and std['total'] == 0 and weapon['total'] == 0:
-        return await message.reply("📭 <b>No data found!</b> Use \n <pre>/import_wishes [URL]</pre> first.", parse_mode="HTML")
-    if char['last_10']:
-        history_text = "\n".join([f"• {name}" for name in char['last_10']])
-    else:
-        history_text = "<i>No history found</i>"
+        return await message.reply("📭 <b>No data found!</b> Use /import_wishes first.", parse_mode="HTML")
+
+    # Helper for 5-star history formatting
+    def fmt_hist(history):
+        if not history: return "<i>No 5✮ history</i>"
+        return "\n".join([f"• {h['name']} [<b>{h['pulls']}</b>]" for h in history])
+
+    # Standard "Last 10" text for the top
+    history_text = "\n".join([f"• {name}" for name in char['last_10']]) if char['last_10'] else "<i>No history found</i>"
+
     response = (
         "<b>LIFETIME WISH TRACKER</b>\n"
         "━━━━━━━━━━━━━━━━━━\n"
+        
+        "<b>Last 10 Limited Pulls:</b>\n"
+        f"{history_text}\n"
+        "━━━━━━━━━━━━━━━━━━\n\n"
+
         "<b>Character Banner</b>\n"
         f"├ Total Pulls: <b>{char['total']}</b>\n"
         f"├ 5✮ Pity: <b>{char['pity_5']}</b>\n"
-        f"└ 4✮ Pity: <b>{char['pity_4']}</b>\n\n"
+        f"├ 4✮ Pity: <b>{char['pity_4']}</b>\n"
+        f"└ <b>Recent 5✮:</b>\n{fmt_hist(char['five_star_history'])}\n\n"
         
         "<b>Weapon Banner</b>\n"
         f"├ Total Pulls: <b>{weapon['total']}</b>\n"
         f"├ 5✮ Pity: <b>{weapon['pity_5']}</b>\n"
-        f"└ 4✮ Pity: <b>{weapon['pity_4']}</b>\n\n"
+        f"├ 4✮ Pity: <b>{weapon['pity_4']}</b>\n"
+        f"└ <b>Recent 5✮:</b>\n{fmt_hist(weapon['five_star_history'])}\n\n"
         
         "<b>Standard Banner</b>\n"
         f"├ Total Pulls: <b>{std['total']}</b>\n"
-        f"└ 5✮ Pity: <b>{std['pity_5']}</b>\n\n"
-        
-        "<b>Last 10 Limited Pulls:</b>\n"
-        f"{history_text}"
+        f"├ 5✮ Pity: <b>{std['pity_5']}</b>\n"
+        f"└ <b>Recent 5✮:</b>\n{fmt_hist(std['five_star_history'])}\n\n"
 
-        "\n\n <b>Use /import_wishes to update data</b>"
+        "<b>Use /import_wishes to update data</b>"
     )
 
     await message.reply(response, parse_mode="HTML")
-import genshin
-from datetime import datetime
 
 @dp.message(Command("import_wishes"))
 async def cmd_import_wishes(message: types.Message, command: CommandObject):
