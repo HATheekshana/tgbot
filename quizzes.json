@@ -1,531 +1,2438 @@
 [
-    {
-        "question": "Who is the Archon of Geo?",
-        "correct": "Zhongli",
-        "wrong_pool": ["Venti", "Raiden Shogun", "Nahida", "Furina", "Mavuika", "Xingqiu", "Diluc"],
-        "difficulty": "easy"
-    },
-    {
-        "question": "What is the max level for a 5-star Artifact?",
-        "correct": "20",
-        "wrong_pool": ["16", "10", "12", "15", "25", "30", "90"],
-        "difficulty": "easy"
-    },
-    {
-        "question": "Which element does Venti control?",
-        "correct": "Anemo",
-        "wrong_pool": ["Geo", "Electro", "Hydro", "Pyro", "Cryo", "Dendro"],
-        "difficulty": "easy"
-    },
-    {
-        "question": "What is the name of the Traveler’s sibling?",
-        "correct": "Aether/Lumine",
-        "wrong_pool": ["Diluc", "Kaeya", "Xiao", "Scaramouche", "Dainsleif"],
-        "difficulty": "easy"
-    },
-    {
-        "question": "Which region is inspired by Japan?",
-        "correct": "Inazuma",
-        "wrong_pool": ["Mondstadt", "Liyue", "Sumeru", "Fontaine", "Natlan"],
-        "difficulty": "easy"
-    },
-    {
-        "question": "What is the resin cap in Genshin Impact?",
-        "correct": "200",
-        "wrong_pool": ["120", "180", "100", "240", "300"],
-        "difficulty": "easy"
-    },
-    {
-        "question": "Which weapon type does Diluc use?",
-        "correct": "Claymore",
-        "wrong_pool": ["Sword", "Polearm", "Bow", "Catalyst"],
-        "difficulty": "easy"
-    },
-    {
-        "question": "What boss drops 'Everflame Seed'?",
-        "correct": "Pyro Regisvine",
-        "wrong_pool": ["Cryo Regisvine", "Electro Hypostasis", "Oceanid", "Maguu Kenki"],
-        "difficulty": "medium"
-    },
-    {
-        "question": "Which character uses a puppet body created by Ei?",
-        "correct": "Scaramouche",
-        "wrong_pool": ["Kazuha", "Thoma", "Itto", "Ayato", "Gorou"],
-        "difficulty": "medium"
-    },
-    {
-        "question": "What is the name of the main currency used for wishes?",
-        "correct": "Primogems",
-        "wrong_pool": ["Mora", "Genesis Crystals", "Stardust", "Starglitter"],
-        "difficulty": "easy"
-    },
-    {
-        "question": "What is the highest Adventure Rank?",
-        "correct": "60",
-        "wrong_pool": ["50", "55", "70", "80", "90"],
-        "difficulty": "easy"
-    },
-    {
-        "question": "Which boss is a dragon in Mondstadt?",
-        "correct": "Stormterror (Dvalin)",
-        "wrong_pool": ["Azhdaha", "Andrius", "Signora", "Boreas", "Dvalin's Shadow"],
-        "difficulty": "easy"
-    },
-    {
-        "question": "Which of these weapons is exclusively available via limited-time event or wish banners?",
-        "correct": "Skyward Blade",
-        "wrong_pool": ["Prototype Crescent", "Favonius Lance", "Blackcliff Pole", "Iron Sting", "Whiteblind"],
-        "difficulty": "medium"
-    },
-    {
-        "question": "Which Archon is also referred to as the 'God of Eternity'?",
-        "correct": "Raiden Shogun",
-        "wrong_pool": ["Venti", "Zhongli", "Kusanali", "Murata", "Focalors"],
-        "difficulty": "easy"
-    },
-    {
-        "question": "Who ruled the world in the earliest era?",
-        "correct": "Dragons (Vishaps)",
-        "wrong_pool": ["Humans", "Archons", "Adepti", "The Fatui", "Seelie"],
-        "difficulty": "medium"
-    },
-    {
-        "question": "What did the Heavenly Principles create after winning?",
-        "correct": "A false sky",
-        "wrong_pool": ["A new element", "The Abyss", "New Sovereigns", "The Ley Lines", "Celestia"],
-        "difficulty": "hard"
-    },
-    {
-        "question": "The current world exists under whose rule?",
-        "correct": "The Heavenly Principles",
-        "wrong_pool": ["The Sovereigns", "The Vishaps", "Humans", "The Abyss Order", "The Seven Archons"],
-        "difficulty": "medium"
-    },
-    {
-        "question": "What was the original world of Teyvat called?",
-        "correct": "Light Realm",
-        "wrong_pool": ["Abyss Realm", "Human Realm", "Sky Realm", "Void Realm", "Celestial Realm"],
-        "difficulty": "hard"
-    },
-    {
-        "question": "Which element reacts with Pyro to create Vaporize?",
-        "correct": "Hydro",
-        "wrong_pool": ["Electro", "Cryo", "Anemo", "Dendro", "Geo"],
-        "difficulty": "easy"
-    },
-    {
-        "question": "What major event caused dragons to regress into smaller, weaker forms?",
-        "correct": "Destruction of Holy Soil by human agriculture",
-        "wrong_pool": ["The Cataclysm", "War with the Abyss Order", "Loss of ley line energy", "The Archon War", "The fall of Khaenri'ah"],
-        "difficulty": "hard"
-    },
-    {
-        "question": "Which ancient dragon leader encountered Seutervoinen before the Heavenly Principles arrived?",
-        "correct": "Nibelung",
-        "wrong_pool": ["Morax", "Orobashi", "Xiuhcoatl", "Apep", "Dvalin"],
-        "difficulty": "hard"
-    },
-    {
-        "question": "What major event caused dragons to regress into smaller, weaker forms?",
-        "correct": "Destruction of Holy Soil by human agriculture",
-        "wrong_pool": ["The Cataclysm", "War with the Abyss Order", "Loss of ley line energy", "The Archon War", "The fall of Khaenri'ah"],
-        "difficulty": "hard"
-    },
-    {
-        "question": "Which ancient dragon leader encountered Seutervoinen before the Heavenly Principles arrived?",
-        "correct": "Nibelung",
-        "wrong_pool": ["Morax", "Orobashi", "Xiuhcoatl", "Apep", "Dvalin"],
-        "difficulty": "hard"
-    },
-    {
-        "question": "Which of the Three Moon sisters transformed into the baleful 'Crimson Moon' after fusing with the Abyss?",
-        "correct": "Sonnet",
-        "wrong_pool": ["Aria", "Canon", "Columbina", "Zibai", "Nichole"],
-        "difficulty": "hard"
-    },
-    {
-        "question": "What was the 'Moon's Reflection' created by Nibelung used for during the Funerary Year?",
-        "correct": "A specialized lunar prison of warped space-time",
-        "wrong_pool": ["A gateway to the Sea of Stars", "A weapon to shatter the False Sky", "A sanctuary for the Seelie race", "A laboratory for ancient dragon tech", "A palace for the Heavenly Principles"],
-        "difficulty": "hard"
-    },
-    {
-        "question": "Which moon remained intact but was flung beyond the False Sky, becoming darkened and lifeless?",
-        "correct": "The Frost Moon",
-        "wrong_pool": ["The Eternal Moon", "The Iridescent Moon", "The Shadow Moon", "The Crimson Moon", "The Abyssal Moon"],
-        "difficulty": "hard"
-    },
-    {
-        "question": "Whose remains coalesced into the 'Moon Marrow' kept by the Frostmoon Scions?",
-        "correct": "Aria",
-        "wrong_pool": ["Sonnet", "Canon", "Columbina", "Nibelung", "Xiuhcoatl"],
-        "difficulty": "hard"
-    },
-    {
-        "question": "Who served as the envoy between the Lunar Palace and Celestia, riding the Lunar Chariot?",
-        "correct": "Zibai",
-        "wrong_pool": ["Istaroth", "Skirk", "Nicole", "Mavuika", "Sandrone"],
-        "difficulty": "hard"
-    },
-    {
-        "question": "How did Columbina eventually acquire the status of the 'Trilune Goddess'?",
-        "correct": "The original sisters abdicated their authorities to her",
-        "wrong_pool": ["She defeated Dottore in the Moon's Reflection", "She absorbed the stardust of the Eternal Moon", "She was born from the Primordial Sea with full power", "She stole the Moon Marrow from Arlecchino", "She made a contract with the Heavenly Principles"],
-        "difficulty": "hard"
-    },
-    {
-        "question": "What is the recurring phenomenon in the Spiral Abyss where the lunar phase shifts twice a month?",
-        "correct": "Moment of Syzygy",
-        "wrong_pool": ["Funerary Year", "Moon-Prayer Night", "Palestar Edict", "The Ashen-White Order", "Ripples of the Welkin"],
-        "difficulty": "hard"
-    },
-    {
-        "question": "What was the intended fourth moon, which failed to materialize and formed the region of Nod-Krai?",
-        "correct": "The project by the Thirteen Sovereign Lords",
-        "wrong_pool": ["The Solar Chariot", "The Shadow Moon", "The False Sky", "The Abyssal Spire", "The Kuuvahki Cannon"],
-        "difficulty": "hard"
-    },
   {
-    "question": "Which Fatui Harbinger is the 'Father' of the House of the Hearth in Fontaine?",
-    "correct": "Arlecchino",
-    "wrong_pool": ["Sandrone", "Pulcinella", "Signora", "Childe", "Dottore"],
-    "difficulty": "easy"
-  },
-  {
-    "question": "In which nation did the Fatui mastermind the 'Vision Hunt Decree' to destabilize the local government?",
-    "correct": "Inazuma",
-    "wrong_pool": ["Mondstadt", "Liyue", "Sumeru", "Fontaine", "Natlan"],
-    "difficulty": "easy"
-  },
-  {
-    "question": "Hailing from Snezhnaya, what is the Fatui's public-facing role in foreign nations?",
-    "correct": "A political department representing the goodwill of the Tsaritsa",
-    "wrong_pool": ["A purely mercenary group for hire", "A religious sect worshipping the Abyss", "An international trade guild", "A neutral scientific research team"],
-    "difficulty": "medium"
-  },
-  {
-    "question": "What was the fate of the Fatui's Ninth Company in The Chasm after the Jade Chamber incident?",
-    "correct": "They were abandoned by the Millelith and declared criminals",
-    "wrong_pool": ["They were promoted for their exploration efforts", "They successfully extracted the mysterious sludge", "They were rescued by Childe", "They joined the Treasure Hoarders officially"],
-    "difficulty": "medium"
-  },
-  {
-    "question": "Which Harbinger oversaw the 'Kuuvahki Experimental Design Bureau' in Nod-Krai?",
-    "correct": "Sandrone",
-    "wrong_pool": ["Pantalone", "Capitano", "Dottore", "Scaramouche", "Pierro"],
-    "difficulty": "medium"
-  },
-  {
-    "question": "In Sumeru, what specific creatures was Dottore interested in due to their power to manipulate dreams?",
-    "correct": "Aranara",
-    "wrong_pool": ["Saurians", "Pari", "Fungus", "Riftwolves", "Eremites"],
-    "difficulty": "medium"
-  },
-  {
-    "question": "What was the 'Palestar Edict' issued by the Fatui in Snezhnaya?",
-    "correct": "An order to retrieve Columbina after her resignation",
-    "wrong_pool": ["A declaration of war against the Abyss", "A plan to assassinate the Pyro Archon", "An order to dissolve the House of the Hearth", "A decree to replace the Cryo Archon"],
-    "difficulty": "hard"
-  },
-  {
-    "question": "In Natlan, which Fatui group was responsible for experimenting on Saurians regarding Phlogiston?",
-    "correct": "The Polychrome Tri-Stars",
-    "wrong_pool": ["The 34th Independent Investigative Squad", "The Ninth Company", "The Oprichniki", "The Landcruisers", "The House of the Hearth"],
-    "difficulty": "hard"
-  },
-  {
-    "question": "According to the records of the 'Apocalypse Bunker' in Nod-Krai, what was the facility actually used for?",
-    "correct": "A dangerous experiment involving abyssal energy",
-    "wrong_pool": ["A storage unit for the Tsaritsa's Gnoses", "A training ground for the Eleven Harbingers", "A secret meeting place for the Hexenzirkel", "A production line for the Solar Chariot"],
-    "difficulty": "hard"
-  },
-  {
-    "question": "What did Arlecchino do with the cores of Sandrone and Pulonia after the battle with Dottore?",
-    "correct": "Sent them to the Fontaine Research Institute",
-    "wrong_pool": ["Returned them to the Tsaritsa", "Buried them in the Frostmoon ruins", "Used them to power the Kuuvahki Cannon", "Crushed them to end their suffering"],
-    "difficulty": "hard"
-  },
-  {
-    "question": "Which Fatui agent was ordered to assassinate Elchingen after his fungus army plot failed?",
-    "correct": "Yurochka",
-    "wrong_pool": ["Viktor", "Javert", "Oleg", "Kasim", "Efim"],
-    "difficulty": "hard"
-  },
-  {
-    "question": "Which Harbinger was responsible for the experiment to turn Scaramouche into an artificial god in Sumeru?",
-    "correct": "Il Dottore",
-    "wrong_pool": ["Pierro", "Capitano", "Arlecchino", "Tartaglia", "Pantalone"],
-    "difficulty": "easy"
-  },
-  {
-    "question": "What is the name of the Snezhnayan national bank used by the Fatui to fund their international operations?",
-    "correct": "Northland Bank",
-    "wrong_pool": ["Bank of Goth", "Snezhnaya Central", "The Tsaritsa's Vault", "Liyue Qixing Exchange", "Mondstadt Monetary"],
-    "difficulty": "easy"
-  },
-  {
-    "question": "In Fontaine, which Harbinger was falsely accused and sentenced to the Fortress of Meropide?",
-    "correct": "Tartaglia",
-    "wrong_pool": ["Sandrone", "Arlecchino", "Pulcinella", "Signora", "Scaramouche"],
-    "difficulty": "medium"
-  },
-  {
-    "question": "What are the specialized Fatui personnel in Nod-Krai called, who utilize local kuuvahki for their equipment?",
-    "correct": "Oprichniki and Landcruisers",
-    "wrong_pool": ["Skirmishers and Agents", "Cicin Mages and Mirror Maidens", "The 34th Investigative Squad", "The Ninth Company", "House of the Hearth Infiltrators"],
-    "difficulty": "medium"
-  },
-  {
-    "question": "Which Fatui agent in Inazuma planned to poison Watatsumi Island to raise Arlecchino's prestige?",
-    "correct": "Efim Snezhevich",
-    "wrong_pool": ["Borenka", "Lyudochka", "Javert", "Viktor", "Anton"],
-    "difficulty": "medium"
-  },
-  {
-    "question": "What 'diplomatic gift' did Neuvillette give to Arlecchino after the Fontaine prophecy was averted?",
-    "correct": "The Hydro Gnosis",
-    "wrong_pool": ["A seat in the Palais Mermonia", "The Holy Lyre der Himmel", "A Moon Wheel", "A Proof of the Cognoscenti", "Control over the Fortress of Meropide"],
-    "difficulty": "medium"
-  },
-  {
-    "question": "What was the purpose of the 'Nilotpala Cup Beast Tamers Tournament' plot led by Elchingen?",
-    "correct": "To overthrow Sumeru with a controlled army of fungus",
-    "wrong_pool": ["To extract energy from the Withering Zones", "To capture Aranara for study", "To replace the Dendro Archon", "To steal the Electro Gnosis", "To find the Solar Chariot"],
-    "difficulty": "hard"
-  },
-  {
-    "question": "Which project thrust Arlecchino and her organization into the spotlight after acquiring the Hydro Gnosis?",
-    "correct": "Project Stuzha",
-    "wrong_pool": ["The Tatarasuna Incident", "The Palestar Edict", "The Funerary Year", "The Moment of Syzygy", "The Kuuvahki Initiative"],
-    "difficulty": "hard"
-  },
-  {
-    "question": "In Natlan, which Fatui officer led an elite force into the Temple of Cascading Colors but was revealed to be an artificial creation of Sandrone?",
-    "correct": "Velimiru",
-    "wrong_pool": ["Grudoc", "Malinovskyi", "Shumilov", "Markozov", "Oleg"],
-    "difficulty": "hard"
-  },
-  {
-    "question": "Who is the manager of the Northland Bank branch located in Nod-Krai?",
-    "correct": "Jarosznski",
-    "wrong_pool": ["Ekaterina", "Andrei", "Vsevolod", "Javert", "Henri"],
-    "difficulty": "hard"
-  },
-  {
-    "question": "What did Arlecchino sacrifice or lose while saving the Traveler and Columbina from Riftwolves in Nod-Krai?",
-    "correct": "Her hands were corroded by the wolves",
-    "wrong_pool": ["Her Vision was shattered", "Her Delusion was stolen by Dottore", "She lost her status as a Harbinger", "She lost her memories of the House", "Her Moon Wheel was destroyed"],
-    "difficulty": "hard"
-  },
-  {
-    "question": "Which Harbinger was involved in the death of Diluc's father, Crepus, in Mondstadt?",
-    "correct": "Il Dottore",
-    "wrong_pool": ["Signora", "Capitano", "Pantalone", "Pierro", "Sandrone"],
-    "difficulty": "hard"
-  },
-  {
-    "question": "What is the true identity of the 'First Descender' who originally hailed from the sea of stars?",
-    "correct": "The Primordial One (Phanes)",
-    "wrong_pool": ["Nibelung", "The Second Who Came", "The Third Descender", "Seutervoinen", "The Fourth Descender"],
-    "difficulty": "easy"
-  },
-  {
-    "question": "How many 'Shades' did the Primordial One create to help administer the laws of Teyvat?",
-    "correct": "Four",
-    "wrong_pool": ["Three", "Seven", "Eleven", "Twelve", "Six"],
-    "difficulty": "easy"
-  },
-  {
-    "question": "What was the primary purpose for the creation of the Gnoses according to ancient history?",
-    "correct": "To compensate for the Primordial One's injuries after the war",
-    "wrong_pool": ["To grant the Archons infinite elemental energy", "To seal the Abyss away forever", "To transform humans into gods", "To create a map of the Sea of Stars", "To store the memories of the Seelie"],
-    "difficulty": "medium"
-  },
-  {
-    "question": "Which era predates the arrival of the Heavenly Principles and the reshaped Human Realm?",
-    "correct": "The era of the ancient dragons and Seven Sovereigns",
-    "wrong_pool": ["The era of the Seven Archons", "The Cataclysm", "The Archon War", "The era of the Unified Civilization", "The Khaenri'ah Dynasty"],
-    "difficulty": "medium"
-  },
-  {
-    "question": "What event 500 years ago caused the Heavenly Principles to enter a dormant, sleeping state?",
-    "correct": "Intervening to stop the Abyssal power during the Cataclysm",
-    "wrong_pool": ["The battle against the Dragon King Nibelung", "The end of the Archon War", "The destruction of the Three Moons", "The arrival of the Traveler", "A betrayal by the Four Shades"],
-    "difficulty": "medium"
-  },
-  {
-    "question": "What did the Primordial One steal from the Seven Sovereigns to establish the seats in Celestia?",
-    "correct": "Their Authorities",
-    "wrong_pool": ["Their Gnoses", "Their physical hearts", "Their wings", "The Holy Soil", "The Primordial Sea"],
-    "difficulty": "medium"
-  },
-  {
-    "question": "Who was the voyager from beyond Teyvat whose arrival interrupted the reign of the ruler of the firmament?",
-    "correct": "Seutervoinen",
-    "wrong_pool": ["Phanes", "Istaroth", "The Tsaritsa", "Dottore", "Skirk"],
-    "difficulty": "hard"
-  },
-  {
-    "question": "The Seven Archons' seats in Celestia are specifically noted to contain what stolen power?",
-    "correct": "Dragon Authorities",
-    "wrong_pool": ["Abyssal Energy", "Light Realm Phlogiston", "Lunar Marrow", "The breath of the Anemo Archon", "The souls of the Four Shades"],
-    "difficulty": "hard"
-  },
-  {
-    "question": "Following the War of Funerary Flame, what did the Heavenly Principles do to maintain their control?",
-    "correct": "Banned all knowledge of history predating the war",
-    "wrong_pool": ["Executed all surviving dragons immediately", "Created the Spiral Abyss as a library", "Appointed the Fatui as world police", "Destroyed the Northland Bank", "Merged the Human and Light Realms"],
-    "difficulty": "hard"
-  },
-  {
-    "question": "Which two major organizations are currently exploiting the Heavenly Principles' dormant state to attempt a coup?",
-    "correct": "The Abyss Order and the Fatui",
-    "wrong_pool": ["The Knights of Favonius and Liyue Qixing", "The Sumeru Akademiya and the Fontaine Research Institute", "The Watatsumi Resistance and the Shogunate", "The Hexenzirkel and the Narzissenkreuz Ordo", "The Frostmoon Scions and the Tanit Tribe"],
-    "difficulty": "hard"
-  },
-  {
-    "question": "What is the name of the food-loving companion who travels with the Traveler?",
+    "question": "Who does the Traveler fish out from the sea near Cape Oath?",
     "correct": "Paimon",
-    "wrong_pool": ["Guoba", "Oz", "Ushi", "Taroumaru", "Baron Bunny"],
+    "wrong_pool": ["Venti", "Amber", "Kazuha", "Beidou", "Guoba", "Aether", "Lumine"],
     "difficulty": "easy"
   },
   {
-    "question": "Which city is known as the 'City of Freedom'?",
+    "question": "Which city is known as the City of Freedom?",
     "correct": "Mondstadt",
-    "wrong_pool": ["Liyue Harbor", "Inazuma City", "Sumeru City", "Court of Fontaine"],
+    "wrong_pool": ["Liyue Harbor", "Inazuma City", "Sumeru City", "Fontaine Court", "Snezhnaya", "Natlan", "Khaenri'ah"],
     "difficulty": "easy"
   },
   {
-    "question": "What is the name of the red-clad Spark Knight of the Knights of Favonius?",
-    "correct": "Klee",
-    "wrong_pool": ["Amber", "Yanfei", "Hu Tao", "Yoimiya", "Xiangling"],
-    "difficulty": "easy"
-  },
-  {
-    "question": "Which element reacts with Hydro to create the 'Frozen' status?",
-    "correct": "Cryo",
-    "wrong_pool": ["Pyro", "Electro", "Geo", "Anemo", "Dendro"],
-    "difficulty": "easy"
-  },
-  {
-    "question": "What is the name of the funeral parlor where Hu Tao and Zhongli work?",
-    "correct": "Wangsheng Funeral Parlor",
-    "wrong_pool": ["Bubu Pharmacy", "Yanshang Teahouse", "Northland Bank", "Wanmin Restaurant"],
-    "difficulty": "easy"
-  },
-  {
-    "question": "Which character is the Acting Grand Master of the Knights of Favonius?",
-    "correct": "Jean",
-    "wrong_pool": ["Lisa", "Kaeya", "Eula", "Albedo", "Diluc"],
-    "difficulty": "easy"
-  },
-  {
-    "question": "What is the name of the mysterious organization Dainsleif belongs to?",
-    "correct": "Khaenri'ah",
-    "wrong_pool": ["The Fatui", "The Abyss Order", "The Adepti", "The Hexenzirkel"],
-    "difficulty": "easy"
-  },
-  {
-    "question": "Which giant tree serves as the center of Sumeru City?",
-    "correct": "Irminsul",
-    "wrong_pool": ["Windrise Tree", "Frostbearing Tree", "Sacred Sakura", "The Elder Tree"],
-    "difficulty": "easy"
-  },
-  {
-    "question": "What kind of creature is Ganyu?",
-    "correct": "Half-Qilin",
-    "wrong_pool": ["Half-Dragon", "Half-Fox", "Pure Human", "Zombie", "Adeptus bird"],
-    "difficulty": "easy"
-  },
-  {
-    "question": "What item do you use to level up a character's talents?",
-    "correct": "Talent Books",
-    "wrong_pool": ["Character EXP Materials", "Weapon Enhancement Ore", "Artifacts", "Mora only"],
-    "difficulty": "easy"
-  },
-  {
-    "question": "Which character is the idol of Mondstadt and works as a deaconess at the Cathedral?",
-    "correct": "Barbara",
-    "wrong_pool": ["Jean", "Rosaria", "Lisa", "Noelle", "Amber"],
-    "difficulty": "easy"
-  },
-  {
-    "question": "What is the name of the receptionist at the Adventurers' Guild found in every major city?",
-    "correct": "Katheryne",
-    "wrong_pool": ["Sara", "Marjorie", "Flora", "Donna", "Wagner"],
-    "difficulty": "easy"
-  },
-  {
-    "question": "Which city is known as the 'City of Contracts'?",
-    "correct": "Liyue Harbor",
-    "wrong_pool": ["Mondstadt", "Inazuma City", "Sumeru City", "Court of Fontaine"],
-    "difficulty": "easy"
-  },
-  {
-    "question": "How many Daily Commissions can you complete for rewards each day?",
-    "correct": "4",
-    "wrong_pool": ["3", "5", "6", "8", "10"],
-    "difficulty": "easy"
-  },
-  {
-    "question": "What is the name of Xiangling's bear companion who breathes fire?",
-    "correct": "Guoba",
-    "wrong_pool": ["Oz", "Ushi", "Yuegui", "Baron Bunny", "Taroumaru"],
-    "difficulty": "easy"
-  },
-  {
-    "question": "Which character is known for having incredibly bad luck and leading 'Benny's Adventure Team'?",
-    "correct": "Bennett",
-    "wrong_pool": ["Razor", "Chongyun", "Xingqiu", "Kaveh", "Itto"],
-    "difficulty": "easy"
-  },
-  {
-    "question": "What is the name of the winery owned by Diluc in Mondstadt?",
-    "correct": "Dawn Winery",
-    "wrong_pool": ["Springvale Spirits", "Goth Grand Hotel", "Cat's Tail", "Angel's Share"],
-    "difficulty": "easy"
-  },
-  {
-    "question": "Which element creates the 'Swirl' reaction when it comes into contact with other elements?",
-    "correct": "Anemo",
-    "wrong_pool": ["Geo", "Hydro", "Electro", "Dendro", "Cryo"],
-    "difficulty": "easy"
-  },
-  {
-    "question": "Who is the 'Outrider' of the Knights of Favonius who helps the Traveler at the start of the game?",
+    "question": "Who is the Outrider of the Knights of Favonius?",
     "correct": "Amber",
-    "wrong_pool": ["Eula", "Kaeya", "Albedo", "Sucrose", "Mona"],
+    "wrong_pool": ["Kaeya", "Noelle", "Eula", "Jean", "Lisa", "Klee", "Albedo"],
     "difficulty": "easy"
   },
   {
-    "question": "What is the name of the bird companion that fights alongside Fischl?",
-    "correct": "Oz",
-    "wrong_pool": ["Guoba", "Ushi", "Dvalin", "Paimon", "Hanachirusato"],
+    "question": "What is Stormterror's true name?",
+    "correct": "Dvalin",
+    "wrong_pool": ["Andrius", "Durin", "Osial", "Azhdaha", "Orobashi", "Morax", "Barbatos"],
     "difficulty": "easy"
   },
   {
-    "question": "Which element does the character Noelle use?",
-    "correct": "Geo",
-    "wrong_pool": ["Anemo", "Cryo", "Hydro", "Pyro", "Electro"],
+    "question": "Who is the Acting Grand Master of the Knights of Favonius?",
+    "correct": "Jean",
+    "wrong_pool": ["Varka", "Diluc", "Barbara", "Kaeya", "Lisa", "Mona", "Rosaria"],
     "difficulty": "easy"
   },
   {
-    "question": "What is the name of the system used to decorate your own personal home world?",
-    "correct": "Serenitea Pot",
-    "wrong_pool": ["Adventurer's Handbook", "TCG Invokation", "Battle Pass", "Paimon Menu"],
-    "difficulty": "easy"
-  },
-  {
-    "question": "Which character is the librarian of the Knights of Favonius?",
+    "question": "Who is Mondstadt's librarian?",
     "correct": "Lisa",
-    "wrong_pool": ["Jean", "Eula", "Mona", "Ningguang", "Nahida"],
+    "wrong_pool": ["Sucrose", "Jean", "Amber", "Noelle", "Eula", "Barbara", "Fischl"],
     "difficulty": "easy"
   },
   {
-    "question": "Which major region is inspired by the nation of France?",
-    "correct": "Fontaine",
-    "wrong_pool": ["Mondstadt", "Liyue", "Inazuma", "Sumeru", "Natlan"],
+    "question": "What is Venti's true Archon identity?",
+    "correct": "Barbatos",
+    "wrong_pool": ["Morax", "Baal", "Beelzebul", "Buer", "Focalors", "Murata", "Tsaritsa"],
     "difficulty": "easy"
+  },
+  {
+    "question": "What item does Venti seek from Favonius Cathedral?",
+    "correct": "Holy Lyre der Himmel",
+    "wrong_pool": ["Gnosis", "Vision", "Aquila Favonia", "Song of Broken Pines", "Dragon-Spinning Flute", "Dvalin's Tear", "Anemonculus"],
+    "difficulty": "easy"
+  },
+  {
+    "question": "Who owns Angel's Share tavern?",
+    "correct": "Diluc",
+    "wrong_pool": ["Kaeya", "Diona", "Charles", "Venti", "Jean", "Ningguang", "Zhongli"],
+    "difficulty": "easy"
+  },
+  {
+    "question": "Which Fatui Harbinger steals Venti's Gnosis?",
+    "correct": "Signora",
+    "wrong_pool": ["Childe", "Scaramouche", "Dottore", "Arlecchino", "Pulcinella", "Pierro", "Pantalone"],
+    "difficulty": "easy"
+  },
+  {
+    "question": "Which nation do Venti and Paimon urge the Traveler to visit after Mondstadt?",
+    "correct": "Liyue",
+    "wrong_pool": ["Inazuma", "Sumeru", "Fontaine", "Snezhnaya", "Natlan", "Khaenri'ah", "Enkanomiya"],
+    "difficulty": "easy"
+  },
+  {
+    "question": "Who appears dead at the Rite of Descension?",
+    "correct": "Rex Lapis",
+    "wrong_pool": ["Barbatos", "Ningguang", "Zhongli", "Xiao", "Keqing", "Ganyu", "Tartaglia"],
+    "difficulty": "easy"
+  },
+  {
+    "question": "Which Harbinger first helps the Traveler in Liyue Harbor?",
+    "correct": "Childe",
+    "wrong_pool": ["Signora", "Scaramouche", "Dottore", "Pantalone", "Arlecchino", "Sandrone", "Capitano"],
+    "difficulty": "easy"
+  },
+  {
+    "question": "What is Childe's real title among the Fatui?",
+    "correct": "Eleventh Harbinger",
+    "wrong_pool": ["First Harbinger", "Sixth Harbinger", "Eighth Harbinger", "The Jester", "The Doctor", "The Captain", "The Balladeer"],
+    "difficulty": "easy"
+  },
+  {
+    "question": "Who is the consultant of Wangsheng Funeral Parlor?",
+    "correct": "Zhongli",
+    "wrong_pool": ["Hu Tao", "Baizhu", "Qiqi", "Xiao", "Ganyu", "Childe", "Xingqiu"],
+    "difficulty": "easy"
+  },
+  {
+    "question": "Who is the deaconess of Mondstadt Cathedral?",
+    "correct": "Barbara",
+    "wrong_pool": ["Jean", "Rosaria", "Lisa", "Venti", "Noelle", "Amber", "Eula"],
+    "difficulty": "easy"
+  },
+  {
+    "question": "Which adeptus is known as the Conqueror of Demons?",
+    "correct": "Xiao",
+    "wrong_pool": ["Cloud Retainer", "Mountain Shaper", "Moon Carver", "Madame Ping", "Ganyu", "Zhongli", "Yanfei"],
+    "difficulty": "easy"
+  },
+  {
+    "question": "Who invites the Traveler to the Jade Chamber?",
+    "correct": "Ningguang",
+    "wrong_pool": ["Keqing", "Ganyu", "Zhongli", "Childe", "Xiao", "Beidou", "Hu Tao"],
+    "difficulty": "easy"
+  },
+  {
+    "question": "Who is the emissary that brings Ningguang's invitation?",
+    "correct": "Ganyu",
+    "wrong_pool": ["Keqing", "Yanfei", "Shenhe", "Yelan", "Qiqi", "Xiangling", "Xingqiu"],
+    "difficulty": "easy"
+  },
+  {
+    "question": "What ancient god does Childe unleash?",
+    "correct": "Osial",
+    "wrong_pool": ["Azhdaha", "Andrius", "Decarabian", "Orobashi", "Guizhong", "Havria", "Marchosias"],
+    "difficulty": "easy"
+  },
+  {
+    "question": "Who sacrifices the Jade Chamber to stop Osial?",
+    "correct": "Ningguang",
+    "wrong_pool": ["Keqing", "Zhongli", "Xiao", "Childe", "The Traveler", "Ganyu", "Beidou"],
+    "difficulty": "easy"
+  },
+  {
+    "question": "Who is revealed to be the Geo Archon?",
+    "correct": "Zhongli",
+    "wrong_pool": ["Ningguang", "Xiao", "Childe", "Albedo", "Itto", "Noelle", "Gorou"],
+    "difficulty": "easy"
+  },
+  {
+    "question": "What nation is sealed off by the Sakoku Decree?",
+    "correct": "Inazuma",
+    "wrong_pool": ["Mondstadt", "Liyue", "Sumeru", "Fontaine", "Natlan", "Snezhnaya", "Khaenri'ah"],
+    "difficulty": "easy"
+  },
+  {
+    "question": "Who helps the Traveler enter Inazuma at Ritou?",
+    "correct": "Thoma",
+    "wrong_pool": ["Ayaka", "Kazuha", "Beidou", "Yoimiya", "Sayu", "Tohma", "Ayato"],
+    "difficulty": "easy"
+  },
+  {
+    "question": "Who is the Shirasagi Himegimi?",
+    "correct": "Kamisato Ayaka",
+    "wrong_pool": ["Raiden Shogun", "Yae Miko", "Sangonomiya Kokomi", "Kujou Sara", "Yoimiya", "Sayu", "Shinobu"],
+    "difficulty": "easy"
+  },
+  {
+    "question": "Who is the captain of the Crux who brings the Traveler to Inazuma?",
+    "correct": "Beidou",
+    "wrong_pool": ["Kazuha", "Ningguang", "Thoma", "Ayaka", "Childe", "Jean", "Kaeya"],
+    "difficulty": "easy"
+  },
+  {
+    "question": "Who is the Raiden Shogun's close shrine maiden ally?",
+    "correct": "Yae Miko",
+    "wrong_pool": ["Kujou Sara", "Sangonomiya Kokomi", "Kamisato Ayaka", "Yoimiya", "Sayu", "Shinobu", "Thoma"],
+    "difficulty": "easy"
+  },
+  {
+    "question": "Who is the general of the Watatsumi Resistance?",
+    "correct": "Gorou",
+    "wrong_pool": ["Kujou Sara", "Thoma", "Ayato", "Itto", "Heizou", "Sayu", "Kazuha"],
+    "difficulty": "easy"
+  },
+  {
+    "question": "What is Teppei's faction in Inazuma?",
+    "correct": "Watatsumi Resistance",
+    "wrong_pool": ["Tenryou Commission", "Kanjou Commission", "Yashiro Commission", "Shogunate Army", "Fatui", "Abyss Order", "Crux Fleet"],
+    "difficulty": "easy"
+  },
+  {
+    "question": "Which Harbinger runs the Delusion factory in Inazuma?",
+    "correct": "Scaramouche",
+    "wrong_pool": ["Signora", "Childe", "Dottore", "Arlecchino", "Pulcinella", "Pierro", "Pantalone"],
+    "difficulty": "easy"
+  },
+  {
+    "question": "Why does Venti say he is the weakest among The Seven?",
+    "correct": "He has been absent too long",
+    "wrong_pool": ["He lost his Gnosis", "Anemo is the weakest", "He doesn't rule", "He is just a bard", "He was injured", "He spent his power", "The Traveler is stronger"],
+    "difficulty": "medium"
+  },
+  {
+    "question": "Why do the adepti become angry after hearing of Rex Lapis' death?",
+    "correct": "They believe Liyue failed to protect him",
+    "wrong_pool": ["They wanted to be Archons", "They hated the Qixing", "Abyss control", "Loss of immortality", "Broken contract", "Framed for crime", "Missing tribute"],
+    "difficulty": "medium"
+  },
+  {
+    "question": "Why does Ayaka ask the Traveler to meet three Vision bearers?",
+    "correct": "To show the suffering caused by the Vision Hunt Decree",
+    "wrong_pool": ["To find her brother", "Recruitment", "Test strength", "Gather intel", "Protect from Fatui", "Learn skills", "Host festival"],
+    "difficulty": "medium"
+  },
+  {
+    "question": "Why does Kokomi accept anonymous aid despite doubts?",
+    "correct": "Watatsumi Island lacks resources",
+    "wrong_pool": ["Fatui trust", "Fast war victory", "Blackmail", "Known source", "Traveler test", "Unknown origin", "Mora desperation"],
+    "difficulty": "medium"
+  },
+  {
+    "question": "Why does Yae Miko train the Traveler before confronting Ei?",
+    "correct": "So they can survive Ei's attacks",
+    "wrong_pool": ["Electro mastery", "Sword skills", "Infiltration", "Sakoku break", "Stop the Shogun", "Awaken Visions", "Kitsune favor"],
+    "difficulty": "medium"
+  },
+  {
+    "question": "What allows the Traveler to purify Dvalin's corrupted tears?",
+    "correct": "Their unique elemental power",
+    "wrong_pool": ["Holy Lyre", "Venti's blessing", "Paimon's help", "Jean's healing", "Anemo Sigils", "Diluc's flames", "Gnosis"],
+    "difficulty": "medium"
+  },
+  {
+    "question": "Why does Zhongli stage his own death?",
+    "correct": "To test whether Liyue can survive without him",
+    "wrong_pool": ["Fatui escape", "Peaceful retirement", "Trick Tsaritsa", "Protect Qixing", "Awaken adepti", "Stop being Archon", "Find successor"],
+    "difficulty": "medium"
+  },
+  {
+    "question": "What is the purpose of the Defiled Statue in the Abyss Order's plan?",
+    "correct": "To create a mechanized god",
+    "wrong_pool": ["Destroy Mondstadt", "Corrupt Archons", "Revive Eclipse", "Summon Unknown God", "Seal power", "Khaenri'ah gate", "Ley Line poison"],
+    "difficulty": "medium"
+  },
+  {
+    "question": "Why is Thoma targeted as the hundredth victim?",
+    "correct": "To mark the Vision Hunt Decree ceremony",
+    "wrong_pool": ["Liyue spy", "Theft", "Resistance leader", "Ayaka ties", "Foreign status", "No Vision", "Kujou insult"],
+    "difficulty": "medium"
+  },
+  {
+    "question": "Why does Childe release Osial?",
+    "correct": "As a backup plan to force out the Geo Archon",
+    "wrong_pool": ["Destroy Liyue", "Kill Traveler", "Steal Jade Chamber", "Distract Qixing", "Bloodlust", "Impress Tsaritsa", "Break contract"],
+    "difficulty": "medium"
+  },
+  {
+    "question": "How does the Traveler first alert the green dragon in Mondstadt's forest?",
+    "correct": "Their newfound Anemo power reacts unexpectedly",
+    "wrong_pool": ["Stepped on twig", "Paimon screamed", "Aggressive attack", "Venti's call", "Dragon's scent", "Gadget use", "Hilichurl fight"],
+    "difficulty": "hard"
+  },
+  {
+    "question": "What name does Dainsleif reveal for Ruin Guards' original designation?",
+    "correct": "Field Tillers",
+    "wrong_pool": ["War Golems", "Abyss Walkers", "Iron Sentinels", "Khaenri'an Guardians", "Mechanical Titans", "Earth Breakers", "Ancient Protectors"],
+    "difficulty": "hard"
+  },
+  {
+    "question": "What curse was placed on Dainsleif?",
+    "correct": "Immortality after failing Khaenri'ah",
+    "wrong_pool": ["Memory loss", "Monster form", "Blindness", "Loss of power", "Abyss bond", "Divine hunt", "Physical pain"],
+    "difficulty": "hard"
+  },
+  {
+    "question": "What is the Plane of Euthymia?",
+    "correct": "Ei's inner world consciousness realm",
+    "wrong_pool": ["Shogun's palace", "Ley Line dream", "Fatui realm", "Sakura heart", "Inazuma afterlife", "Hidden island", "Abyss core"],
+    "difficulty": "hard"
+  },
+  {
+    "question": "What material is used to manufacture Delusions in Inazuma's factory?",
+    "correct": "Crystal Marrow",
+    "wrong_pool": ["Noctilucous Jade", "Cor Lapis", "Electro Crystals", "Magical Ore", "Starsilver", "False Fin", "Onikabuto Shells"],
+    "difficulty": "hard"
+  },
+  {
+    "question": "What does Signora call Venti before taking his Gnosis?",
+    "correct": "Rodent ruler",
+    "wrong_pool": ["Drunken god", "Weakling bard", "Fake Archon", "Windborne brat", "Useless spirit", "Petty thief", "Feathered fool"],
+    "difficulty": "hard"
+  },
+  {
+    "question": "What technique does Childe use after unleashing his Delusion?",
+    "correct": "Foul Legacy Transformation",
+    "wrong_pool": ["Abyssal Might", "Harbinger Awakening", "Overload", "Elemental Fusion", "Celestial Descent", "Riptide", "Whale Summon"],
+    "difficulty": "hard"
+  },
+  {
+    "question": "What was Old Mondstadt once ruled by before Barbatos' freedom?",
+    "correct": "Decarabian",
+    "wrong_pool": ["Andrius", "Durin", "Imunlaukr Clan", "Gunnhildr Clan", "Lawrence Clan", "Aonius", "Vennessa"],
+    "difficulty": "hard"
+  },
+  {
+    "question": "What special energy had severed Venti's connection to Dvalin?",
+    "correct": "Abyssal corrupting energy",
+    "wrong_pool": ["Delusion power", "Shogun lightning", "Rex Lapis seal", "Durin blood", "Unknown God cubes", "Ley Line disorder", "Anemo shortage"],
+    "difficulty": "hard"
+  },
+  {
+    "question": "What item stops adepti from attacking the Traveler in Jueyun Karst?",
+    "correct": "Sigil of Permission",
+    "wrong_pool": ["Gnosis", "Glaze Lily", "Cleansing Bell", "Qixing pass", "Adeptus Charm", "Golden House Key", "Mora"],
+    "difficulty": "hard"
+  },
+  {
+    "question": "What does Madame Ping hide the Cleansing Bell inside?",
+    "correct": "Her teapot realm",
+    "wrong_pool": ["Hidden cave", "Jade Chamber", "Funeral Parlor", "Painting", "Music box", "Stone lantern", "Her sleeve"],
+    "difficulty": "hard"
+  },
+  {
+    "question": "What false report does Kujou Takayuki create?",
+    "correct": "An optimistic fake war report to the Shogun",
+    "wrong_pool": ["Resistance blame", "Fatui alliance", "Spy report", "Wrong map", "Sara framing", "Death certificate", "Vision list"],
+    "difficulty": "hard"
+  },
+  {
+    "question": "What is embedded in the Statue of the Omnipresent God?",
+    "correct": "Confiscated Visions",
+    "wrong_pool": ["Electroculi", "Gnosis", "Forbidden knowledge", "Fallen souls", "Ancestral spirits", "Abyss fragments", "Ley Line branches"],
+    "difficulty": "hard"
+  },
+  {
+    "question": "Who blocks the Musou no Hitotachi outside Tenshukaku?",
+    "correct": "Kaedehara Kazuha",
+    "wrong_pool": ["Gorou", "Kokomi", "The Traveler", "Ayato", "Thoma", "Beidou", "Yae Miko"],
+    "difficulty": "hard"
+  },
+  {
+    "question": "What title does the Traveler receive in Mondstadt after helping Jean?",
+    "correct": "Honorary Knight",
+    "wrong_pool": ["Outrider", "Captain", "Hero", "Wind-Blessed", "Knight of the Realm", "Grand Master", "Dragon-Slayer"],
+    "difficulty": "hard"
+  },
+  {
+    "question": "Which inn is Xiao associated with in Liyue?",
+    "correct": "Wangshu Inn",
+    "wrong_pool": ["Harbor Inn", "Verr's Rest", "Gentry Retreat", "Mondstadt Hotel", "Embassy", "Jade Palace", "Pharmacy"],
+    "difficulty": "hard"
+  },
+  {
+    "question": "What ghost-haunted machine does the Traveler defeat near Wangshu Inn?",
+    "correct": "A possessed Ruin Hunter",
+    "wrong_pool": ["Spectral Guard", "Phantom Lawachurl", "Abyss Mage", "Cursed Grader", "Automaton", "Shadowy Samachurl", "Malicious Mitachurl"],
+    "difficulty": "hard"
+  },
+  {
+    "question": "Who is the first person to identify the inverted statue as Abyss-related with the Traveler?",
+    "correct": "Dainsleif",
+    "wrong_pool": ["Venti", "Zhongli", "Albedo", "Diluc", "Rosaria", "Kaeya", "Jean"],
+    "difficulty": "hard"
+  },
+  {
+    "question": "What is the Tsaritsa's agreement with Zhongli called?",
+    "correct": "The contract to end all contracts",
+    "wrong_pool": ["Snezhnayan Accord", "Gnosis Trade", "Eternal Truce", "Geo Covenant", "Archon Pact", "Settlement", "Final Ledger"],
+    "difficulty": "hard"
+  },
+  {
+    "question": "What phenomenon harms health on Yashiori Island after Orobashi's death?",
+    "correct": "Tatarigami",
+    "wrong_pool": ["Withering Zone", "Balethunder", "Dragon Poison", "Karma", "Abyss Mire", "Ley Line Overflow", "Cursed Fog"],
+    "difficulty": "hard"
+  },
+  {
+    "question": "Which nation do the Traveler and Paimon enter after The Chasm?",
+    "correct": "Sumeru",
+    "wrong_pool": ["Mondstadt", "Liyue", "Inazuma", "Fontaine", "Natlan", "Snezhnaya", "Khaenri'ah"],
+    "difficulty": "easy"
+  },
+  {
+    "question": "Who are the Forest Rangers that help the Traveler first?",
+    "correct": "Tighnari and Collei",
+    "wrong_pool": ["Alhaitham and Kaveh", "Cyno and Tighnari", "Dehya and Candace", "Nilou and Dunyarzad", "Amber and Eula", "Sara and Gorou", "Jean and Lisa"],
+    "difficulty": "easy"
+  },
+  {
+    "question": "What illness does Collei suffer from?",
+    "correct": "Eleazar",
+    "wrong_pool": ["The Withering", "Karma Taint", "Abyssal Corruption", "Dragonspine Frostbite", "Drought Sickness", "Forbidden Knowledge", "Ley Line Fever"],
+    "difficulty": "easy"
+  },
+  {
+    "question": "Who is the current Dendro Archon?",
+    "correct": "Lesser Lord Kusanali",
+    "wrong_pool": ["Greater Lord Rukkhadevata", "King Deshret", "The Goddess of Flowers", "Barbatos", "Morax", "Beelzebul", "Focalors"],
+    "difficulty": "easy"
+  },
+  {
+    "question": "Who was the previous Dendro Archon?",
+    "correct": "Greater Lord Rukkhadevata",
+    "wrong_pool": ["Lesser Lord Kusanali", "King Deshret", "The Goddess of Flowers", "Buer", "Marchosias", "Guizhong", "Havria"],
+    "difficulty": "easy"
+  },
+  {
+    "question": "What system gives knowledge in Sumeru?",
+    "correct": "Akasha System",
+    "wrong_pool": ["Irminsul Network", "Vision Link", "Gnosis Connection", "Delusion Drive", "Ley Line Core", "Divine Capsule", "Sage Council"],
+    "difficulty": "easy"
+  },
+  {
+    "question": "Who is Dunyarzad's bodyguard?",
+    "correct": "Dehya",
+    "wrong_pool": ["Candace", "Cyno", "Alhaitham", "Tighnari", "Nilou", "Beidou", "Kuki Shinobu"],
+    "difficulty": "easy"
+  },
+  {
+    "question": "Who performs the Dance of Sabzeruz?",
+    "correct": "Nilou",
+    "wrong_pool": ["Dunyarzad", "Dehya", "Candace", "Nahida", "Faruzan", "Layla", "Yun Jin"],
+    "difficulty": "easy"
+  },
+  {
+    "question": "What festival repeats in a loop?",
+    "correct": "Sabzeruz Festival",
+    "wrong_pool": ["Lantern Rite", "Windblume Festival", "Irodori Festival", "Moonchase Festival", "Weinlesefest", "Ludi Garpastum", "Subzeruz Day"],
+    "difficulty": "easy"
+  },
+  {
+    "question": "What is the name of the samsara cycle?",
+    "correct": "Sabzeruz samsara",
+    "wrong_pool": ["Irminsul Loop", "Akasha Reset", "Dream Cycle", "Festival Rebirth", "Sage's Harvest", "Kusanali's Dream", "Dharma Wheel"],
+    "difficulty": "easy"
+  },
+  {
+    "question": "Who is actually Nahida in disguise at times?",
+    "correct": "Katheryne",
+    "wrong_pool": ["Dunyarzad", "Paimon", "Nilou", "Setaria", "Lumine", "Aether", "The Unknown God"],
+    "difficulty": "easy"
+  },
+  {
+    "question": "Who helps investigate the Akademiya plans?",
+    "correct": "Alhaitham",
+    "wrong_pool": ["Kaveh", "Cyno", "Tighnari", "Azar", "Dottore", "Scaramouche", "Arlecchino"],
+    "difficulty": "easy"
+  },
+  {
+    "question": "Who is the General Mahamatra?",
+    "correct": "Cyno",
+    "wrong_pool": ["Alhaitham", "Kaveh", "Tighnari", "Setaria", "Azar", "Puspa", "Zubayr"],
+    "difficulty": "easy"
+  },
+  {
+    "question": "Which Harbinger is also called The Doctor?",
+    "correct": "Dottore",
+    "wrong_pool": ["Scaramouche", "Signora", "Childe", "Arlecchino", "Pulcinella", "Pierro", "Pantalone"],
+    "difficulty": "easy"
+  },
+  {
+    "question": "Who becomes a false god using a mech body?",
+    "correct": "Scaramouche",
+    "wrong_pool": ["Dottore", "Azar", "Alhaitham", "Cyno", "King Deshret", "Osial", "Azhdaha"],
+    "difficulty": "easy"
+  },
+  {
+    "question": "What giant tree stores memories in Sumeru?",
+    "correct": "Irminsul",
+    "wrong_pool": ["The Sacred Sakura", "The Frostbearing Tree", "The Windrise Oak", "The Vennessa Tree", "The Tree of Dreams", "The Elder Sapling", "The World Pillar"],
+    "difficulty": "easy"
+  },
+  {
+    "question": "What disease affects Irminsul?",
+    "correct": "The Withering",
+    "wrong_pool": ["Eleazar", "Abyssal Rot", "Forbidden Knowledge", "Drought", "Karma", "Divine Nail", "The Void"],
+    "difficulty": "easy"
+  },
+  {
+    "question": "What is used to gain forbidden knowledge?",
+    "correct": "Divine Knowledge Capsule",
+    "wrong_pool": ["Gnosis Fragment", "Cursed Sigil", "Abyss Scroll", "Ancient Tablet", "Irminsul Leaf", "Sage's Crown", "Ley Line Sprout"],
+    "difficulty": "easy"
+  },
+  {
+    "question": "Which desert god sacrificed himself?",
+    "correct": "King Deshret",
+    "wrong_pool": ["The Goddess of Flowers", "Lesser Lord Kusanali", "Greater Lord Rukkhadevata", "Amon", "Osiris", "Anubis", "Orobashi"],
+    "difficulty": "easy"
+  },
+  {
+    "question": "Who leads the Akademiya sages?",
+    "correct": "Azar",
+    "wrong_pool": ["Alhaitham", "Cyno", "Nahida", "Naphis", "Khajeh", "Vikram", "Taj Radkani"],
+    "difficulty": "easy"
+  },
+  {
+    "question": "Why does the Akasha system create a samsara?",
+    "correct": "To harvest dreams",
+    "wrong_pool": ["To find a new Archon", "To power the Jade Chamber", "To stop the Withering", "To cure Eleazar", "To rewrite history", "To summon King Deshret", "To observe the Traveler"],
+    "difficulty": "medium"
+  },
+  {
+    "question": "Why are adults in Sumeru said not to dream?",
+    "correct": "Akademiya hides truth",
+    "wrong_pool": ["They lost the ability", "They are too wise", "Dreams are for children", "Akasha consumes them", "They are cursed", "They are too stressed", "Forbidden by the Archon"],
+    "difficulty": "medium"
+  },
+  {
+    "question": "Why does Nahida need the Traveler?",
+    "correct": "They resist Irminsul corruption",
+    "wrong_pool": ["They have many elements", "They are a hero", "They can fly", "They are from another world", "They know Venti", "They are strong", "They have Paimon"],
+    "difficulty": "medium"
+  },
+  {
+    "question": "Why do sages harvest dreams?",
+    "correct": "To create a new god",
+    "wrong_pool": ["To gain eternal life", "To cure all diseases", "To control the weather", "To defeat the Fatui", "To find Rukkhadevata", "To power the city", "To store in the library"],
+    "difficulty": "medium"
+  },
+  {
+    "question": "Why does Alhaitham act like a traitor?",
+    "correct": "To execute a plan",
+    "wrong_pool": ["He hates the Akademiya", "He wants to be a Sage", "He was bribed by Fatui", "He was possessed", "He is actually evil", "He wants Nahida's power", "He was bored"],
+    "difficulty": "medium"
+  },
+  {
+    "question": "Why does Rukkhadevata need to be erased?",
+    "correct": "To cleanse Irminsul",
+    "wrong_pool": ["She committed a crime", "She wanted to die", "She was a false god", "To let Nahida rule", "To stop the Fatui", "To hide the truth", "To save the desert"],
+    "difficulty": "medium"
+  },
+  {
+    "question": "Why does Dottore create segments?",
+    "correct": "To multiply himself",
+    "wrong_pool": ["To have more friends", "To live forever", "To be in many places", "To experiment on them", "To trick the Archons", "To replace the Tsaritsa", "To win battles"],
+    "difficulty": "medium"
+  },
+  {
+    "question": "Why is the Sabzeruz Festival banned?",
+    "correct": "Akademiya laws",
+    "wrong_pool": ["It was too loud", "It was dangerous", "Nahida didn't like it", "Too much Mora spent", "Religious conflict", "The Fatui stopped it", "Historical error"],
+    "difficulty": "medium"
+  },
+  {
+    "question": "Why is Dunyarzad important in the samsara?",
+    "correct": "She anchors the dream",
+    "wrong_pool": ["She is a secret Archon", "She has the Gnosis", "She is Dehya's friend", "She is rich", "She is the dancer", "She is the host", "She is the victim"],
+    "difficulty": "medium"
+  },
+  {
+    "question": "Why do radicals follow King Deshret?",
+    "correct": "Misinformation",
+    "wrong_pool": ["He is still alive", "He promised gold", "They hate the jungle", "Nahida is weak", "They are evil", "For the Fatui", "They want to go home"],
+    "difficulty": "medium"
+  },
+  {
+    "question": "What phrase repeats from corrupted memory?",
+    "correct": "World forget me",
+    "wrong_pool": ["Save the tree", "Nahida is here", "The sun will rise", "Find the truth", "Akasha is power", "Dreams are key", "Irminsul burns"],
+    "difficulty": "hard"
+  },
+  {
+    "question": "What happens when connecting to Irminsul improperly?",
+    "correct": "Madness",
+    "wrong_pool": ["Death", "Amnesia", "Blindness", "Godhood", "Transformation", "Paralysis", "Silence"],
+    "difficulty": "hard"
+  },
+  {
+    "question": "What does Nahida threaten to destroy?",
+    "correct": "Electro Gnosis",
+    "wrong_pool": ["The Akademiya", "The Akasha", "Dendro Gnosis", "Sumeru City", "Irminsul", "Dottore's heart", "The Traveler"],
+    "difficulty": "hard"
+  },
+  {
+    "question": "What happens if a Gnosis is destroyed?",
+    "correct": "Celestia may awaken",
+    "wrong_pool": ["The Archon dies", "The world ends", "The Abyss rises", "The user gains power", "History is erased", "Ley Lines burst", "Nothing happens"],
+    "difficulty": "hard"
+  },
+  {
+    "question": "What is forbidden knowledge's effect?",
+    "correct": "Corrupts minds",
+    "wrong_pool": ["Gives eternal life", "Reveals the future", "Kills the user", "Turns people to stone", "Summons demons", "Erases memory", "Grants godhood"],
+    "difficulty": "hard"
+  },
+  {
+    "question": "What was Rukkhadevata reduced to after saving people?",
+    "correct": "A child",
+    "wrong_pool": ["A spirit", "A tree", "A memory", "A stone", "A bird", "A leaf", "A statue"],
+    "difficulty": "hard"
+  },
+  {
+    "question": "What role does Irminsul play in Teyvat?",
+    "correct": "Stores memories",
+    "wrong_pool": ["Controls weather", "Provides energy", "Is the afterlife", "Connects worlds", "Is a weapon", "Is the Archon's heart", "None of these"],
+    "difficulty": "hard"
+  },
+  {
+    "question": "What is the Akasha's hidden function?",
+    "correct": "Dream harvesting",
+    "wrong_pool": ["Mind control", "Surveillance", "Power generation", "Memory deletion", "Soul storage", "Weather control", "Communication"],
+    "difficulty": "hard"
+  },
+  {
+    "question": "What illusion traps the people?",
+    "correct": "Collective dream",
+    "wrong_pool": ["Virtual reality", "Mass hypnosis", "Time loop", "Mirror world", "Fake memories", "Elemental fog", "Divine light"],
+    "difficulty": "hard"
+  },
+  {
+    "question": "What allows Traveler to resist samsara?",
+    "correct": "Unique constitution",
+    "wrong_pool": ["Elemental mastery", "Paimon's help", "Nahida's blessing", "The Akasha", "A secret potion", "Pure luck", "Being a twin"],
+    "difficulty": "hard"
+  },
+  {
+    "question": "What happens to erased existence?",
+    "correct": "Forgotten by all",
+    "wrong_pool": ["Goes to the Abyss", "Becomes a ghost", "Lives in dreams", "Is reborn", "Becomes a star", "Is stored in Akasha", "Is never mentioned"],
+    "difficulty": "hard"
+  },
+  {
+    "question": "What organization aids Akademiya secretly?",
+    "correct": "Fatui",
+    "wrong_pool": ["Abyss Order", "Treasure Hoarders", "Eremites", "Mondstadt", "Liyue", "Inazuma", "Crux Fleet"],
+    "difficulty": "hard"
+  },
+  {
+    "question": "What does Scaramouche seek?",
+    "correct": "Godhood",
+    "wrong_pool": ["Revenge", "His mother", "His home", "Redemption", "The Gnosis", "Death", "Power"],
+    "difficulty": "hard"
+  },
+  {
+    "question": "What does Nahida use to empower Traveler?",
+    "correct": "Collected knowledge",
+    "wrong_pool": ["The Dendro Gnosis", "A new weapon", "Elemental energy", "Divine blessing", "Irminsul fruit", "Sacred Dew", "Dream energy"],
+    "difficulty": "hard"
+  },
+  {
+    "question": "What is the source of Eleazar?",
+    "correct": "Irminsul corruption",
+    "wrong_pool": ["Forbidden knowledge", "Lack of sunshine", "Bad food", "Abyss energy", "The Withering", "Old age", "A curse"],
+    "difficulty": "hard"
+  },
+  {
+    "question": "What was Kusanali created from?",
+    "correct": "Irminsul branch",
+    "wrong_pool": ["A flower", "A dream", "A memory", "Rukkhadevata's soul", "The Gnosis", "A sacred leaf", "Ancient clay"],
+    "difficulty": "hard"
+  },
+  {
+    "question": "What is the Akasha terminal?",
+    "correct": "Knowledge device",
+    "wrong_pool": ["A weapon", "A communication tool", "A medical device", "A toy", "A badge", "A key", "A map"],
+    "difficulty": "hard"
+  },
+  {
+    "question": "What is the ultimate goal of sages?",
+    "correct": "Create a god",
+    "wrong_pool": ["End the world", "Find the truth", "Rule Teyvat", "Cure Eleazar", "Stop the Fatui", "Save the tree", "Defeat Nahida"],
+    "difficulty": "hard"
+  },
+  {
+    "question": "What happens to dreams in Akasha users?",
+    "correct": "Extracted",
+    "wrong_pool": ["Deleted", "Amplified", "Shared", "Forgotten", "Blocked", "Recorded", "Improved"],
+    "difficulty": "hard"
+  },
+  {
+    "question": "What is Nahida's prison?",
+    "correct": "Sanctuary of Surasthana",
+    "wrong_pool": ["House of Daena", "The Grand Bazaar", "The Jade Chamber", "The Tenshukaku", "The Cathedral", "The Golden House", "The Spiral Abyss"],
+    "difficulty": "hard"
+  },
+  {
+    "question": "Which character takes a photo of the Traveler and Paimon before they depart for Natlan?",
+    "correct": "Charlotte",
+    "wrong_pool": ["Navia", "Furina", "Clorinde", "Mona", "Chevreuse", "Chiori", "Lyney"],
+    "difficulty": "easy"
+  },
+  {
+    "question": "Who is the first girl the Traveler meets in Natlan?",
+    "correct": "Kachina",
+    "wrong_pool": ["Mualani", "Chasca", "Iansan", "Citlali", "Xilonen", "Atea", "Chuychu"],
+    "difficulty": "easy"
+  },
+  {
+    "question": "What are the dinosaur-like companions in Natlan called?",
+    "correct": "Saurians",
+    "wrong_pool": ["Dragons", "Riftwolves", "Aranara", "Melusines", "Vishaps", "Familiars", "Eremites"],
+    "difficulty": "easy"
+  },
+  {
+    "question": "What is the name of the current Pyro Archon?",
+    "correct": "Mavuika",
+    "wrong_pool": ["Murata", "Haborym", "Aym", "Tenoch", "Pacal", "Capitano", "Xbalanque"],
+    "difficulty": "easy"
+  },
+  {
+    "question": "Which tribe does Mualani belong to?",
+    "correct": "People of the Springs",
+    "wrong_pool": ["Children of Echoes", "Scions of the Canopy", "Flower-Feather Clan", "Masters of the Night-Wind", "Collective of Plenty", "Fatui"],
+    "difficulty": "easy"
+  },
+  {
+    "question": "What is the name of the tournament held in Natlan to choose warriors?",
+    "correct": "Pilgrimage of the Return of the Sacred Flame",
+    "wrong_pool": ["Night Warden Wars", "The Sabzeruz Festival", "The Rite of Descension", "The Irodori Festival", "The Ludi Garpastum", "The Chasm Expedition", "The Trial of Fire"],
+    "difficulty": "easy"
+  },
+  {
+    "question": "Who is the 1st of the Fatui Harbingers that Mavuika fights?",
+    "correct": "Capitano",
+    "wrong_pool": ["Dottore", "Arlecchino", "Childe", "Scaramouche", "Pierro", "Pulcinella", "Pantalone"],
+    "difficulty": "easy"
+  },
+  {
+    "question": "What tribe does Kachina belong to?",
+    "correct": "Children of Echoes",
+    "wrong_pool": ["People of the Springs", "Scions of the Canopy", "Flower-Feather Clan", "Masters of the Night-Wind", "Collective of Plenty", "Abyss"],
+    "difficulty": "easy"
+  },
+  {
+    "question": "What is the name of the tiny, two-dimensional being that accompanies Kinich?",
+    "correct": "K'uhul Ajaw",
+    "wrong_pool": ["Paimon", "Ayo", "Toto", "Mallko", "Tupac", "Cival", "Wayna"],
+    "difficulty": "easy"
+  },
+  {
+    "question": "Which tribe is known for being close to the Yumkasaurus?",
+    "correct": "Scions of the Canopy",
+    "wrong_pool": ["Children of Echoes", "People of the Springs", "Flower-Feather Clan", "Masters of the Night-Wind", "Collective of Plenty", "Fatui"],
+    "difficulty": "easy"
+  },
+  {
+    "question": "What energy source is produced during battles between Natlanese to fuel the Sacred Flame?",
+    "correct": "Contending Fire",
+    "wrong_pool": ["Phlogiston", "Elemental Energy", "Abyssal Power", "Gnosis Energy", "Arkhé", "Dendro Particles", "Void Matter"],
+    "difficulty": "easy"
+  },
+  {
+    "question": "What is the name of the inn where the Traveler stays in the city?",
+    "correct": "Weary Inn",
+    "wrong_pool": ["Wangshu Inn", "Goth Grand Hotel", "Lambad's Tavern", "The Steambird", "Mermonia Hotel", "Saurian Rest", "Pyro Palace"],
+    "difficulty": "easy"
+  },
+  {
+    "question": "What surprising fact does Kachina reveal about the Pyro Archon?",
+    "correct": "The Archon is a human",
+    "wrong_pool": ["The Archon is a Saurian", "The Archon is a ghost", "The Archon is a robot", "The Archon is from another world", "The Archon is a cat", "The Archon has no power"],
+    "difficulty": "easy"
+  },
+  {
+    "question": "What do people in Natlan call the 'Ancient Name' holders who fall and return?",
+    "correct": "The Ode of Resurrection",
+    "wrong_pool": ["The Night Kingdom", "The Wayob's Choice", "The Sacred Return", "The Pyro Rebirth", "The Flame Awakening", "The Tribe's Honor"],
+    "difficulty": "easy"
+  },
+  {
+    "question": "Which element does the Traveler FAIL to resonate with at the Statue of the Seven in Natlan?",
+    "correct": "Pyro",
+    "wrong_pool": ["Anemo", "Geo", "Electro", "Dendro", "Hydro", "Cryo", "Abyss"],
+    "difficulty": "easy"
+  },
+  {
+    "question": "What is the name of the realm where the spirits of Natlan and the Wayob reside?",
+    "correct": "The Night Kingdom",
+    "wrong_pool": ["The Abyss", "The Void", "The Sacred Flame", "The Dream World", "The Phlogiston Realm", "The Shadow Lands", "The Afterlife"],
+    "difficulty": "medium"
+  },
+  {
+    "question": "What is the title of the chief of the Children of Echoes?",
+    "correct": "Pacal",
+    "wrong_pool": ["Amina", "Wayna", "Vichama", "Cival", "Tenoch", "Nkunga", "Liliuo"],
+    "difficulty": "medium"
+  },
+  {
+    "question": "Why can Atea no longer enjoy the natural hot springs?",
+    "correct": "She was impaled by an Abyssal monster",
+    "wrong_pool": ["She is allergic to the water", "She lost her Vision", "She was cursed by the Archon", "She is too old", "The water is too expensive", "She prefers the artificial ones"],
+    "difficulty": "medium"
+  },
+  {
+    "question": "What item is required to physically enter the Night Kingdom?",
+    "correct": "Spiritspeaker Stone",
+    "wrong_pool": ["Ancient Name", "Contending Spark", "Phlogiston Chisel", "Wayob Totem", "Obsidian Rope", "Gnosis Fragment", "Saurian Whistle"],
+    "difficulty": "medium"
+  },
+  {
+    "question": "Who is the 'Champion Duelist' equivalent mentioned as a veteran who never needed resurrection?",
+    "correct": "Mualani",
+    "wrong_pool": ["Kinich", "Iansan", "Chasca", "Xilonen", "Kachina", "Clorinde", "Navia"],
+    "difficulty": "medium"
+  },
+  {
+    "question": "What did Mavuika sacrifice to save the group from the Night Kingdom?",
+    "correct": "The mementos of previous Pyro Archons",
+    "wrong_pool": ["Her Gnosis", "Her own life", "The Sacred Flame", "The Ancient Names", "The Wayob", "The city of Natlan", "Her memory"],
+    "difficulty": "medium"
+  },
+  {
+    "question": "What is the name of the specialized substance used by Natlanese that the Traveler is surprisingly able to use?",
+    "correct": "Phlogiston",
+    "wrong_pool": ["Contending Fire", "Elemental Energy", "Arkhé", "Abyssal Silt", "Void Energy", "Dendro Essence", "Geo Core"],
+    "difficulty": "medium"
+  },
+  {
+    "question": "Which tribe is Chasca originally from (before being adopted)?",
+    "correct": "Flower-Feather Clan",
+    "wrong_pool": ["Huitztlan", "Masters of the Night-Wind", "Collective of Plenty", "People of the Springs", "Children of Echoes", "Scions of the Canopy"],
+    "difficulty": "medium"
+  },
+  {
+    "question": "What was the result of Mavuika's duel with Capitano?",
+    "correct": "Mavuika wounded him, but he escaped in a fog",
+    "wrong_pool": ["Capitano won and took the Gnosis", "Mavuika killed him", "It was a peaceful draw", "The Traveler intervened", "The Abyss stopped the fight", "Capitano surrendered"],
+    "difficulty": "medium"
+  },
+  {
+    "question": "Who was the legendary hero who first united the tribes during the cataclysm?",
+    "correct": "Tenoch",
+    "wrong_pool": ["Pacal", "Mavuika", "Xbalanque", "Mallko", "Tupac", "Vichama", "Amon"],
+    "difficulty": "medium"
+  },
+  {
+    "question": "Who is the Abyss Lector that taunts Kachina in the Night Kingdom?",
+    "correct": "Comonqui",
+    "wrong_pool": ["Enjou", "Mallko", "Tupac", "Vacher", "Dottore", "Atea", "Jacques"],
+    "difficulty": "hard"
+  },
+  {
+    "question": "What was the name of Vichama's friend whose memory the Traveler recovered?",
+    "correct": "Mallko",
+    "wrong_pool": ["Tupac", "Wayna", "Chuychu", "Ayo", "Nkunga", "Liliuo", "Jacques"],
+    "difficulty": "hard"
+  },
+  {
+    "question": "What is the name of the spectral entity that congratulates Mualani in the Night Kingdom?",
+    "correct": "Tupac",
+    "wrong_pool": ["Mallko", "Comonqui", "Wayob", "Mavuika", "Tenoch", "Atea", "Vigné"],
+    "difficulty": "hard"
+  },
+  {
+    "question": "Why did the Ode of Resurrection initially fail for Kachina?",
+    "correct": "The Abyss was affecting the Wayob and trapping her",
+    "wrong_pool": ["She wasn't a hero", "She didn't have an Ancient Name", "The Pyro Archon was too weak", "Mualani cheated", "The Sacred Flame went out", "She chose to stay"],
+    "difficulty": "hard"
+  },
+  {
+    "question": "Who does Mavuika plan to commission to forge an Ancient Name for the Traveler?",
+    "correct": "Xilonen",
+    "wrong_pool": ["Citlali", "Kinich", "Iansan", "Chasca", "Mualani", "Pacal", "Cival"],
+    "difficulty": "hard"
+  },
+  {
+    "question": "What is the name of the master name-engraver who is forging an Ancient Name for the Traveler?",
+    "correct": "Xilonen",
+    "wrong_pool": ["Citlali", "Mavuika", "Chasca", "Iansan", "Mualani", "Pacal", "Ifa"],
+    "difficulty": "easy"
+  },
+  {
+    "question": "Which Fatui Harbinger turns out to be a survivor of Khaenri'ah?",
+    "correct": "Capitano",
+    "wrong_pool": ["Childe", "Arlecchino", "Dottore", "Pulcinella", "Pierro", "Pantalone", "Scaramouche"],
+    "difficulty": "easy"
+  },
+  {
+    "question": "What is the name of the expert shaman from the Masters of the Night-Wind?",
+    "correct": "Citlali",
+    "wrong_pool": ["Xilonen", "Iansan", "Chuychu", "Atea", "Mualani", "Kachina", "Ororon"],
+    "difficulty": "easy"
+  },
+  {
+    "question": "Who is the member of the Masters of the Night-Wind that rescued Capitano?",
+    "correct": "Ororon",
+    "wrong_pool": ["Kinich", "Kachina", "Pacal", "Wayna", "Vichama", "Nkunga", "Liliuo"],
+    "difficulty": "easy"
+  },
+  {
+    "question": "What is the name of the Ancient Name given to Ororon?",
+    "correct": "Bidii",
+    "wrong_pool": ["Sanhaj", "Menilek", "Tupac", "Mallko", "Mavuika", "Xbalanque", "Tenoch"],
+    "difficulty": "easy"
+  },
+  {
+    "question": "Which of the six heroes is the final one to be awakened?",
+    "correct": "Chasca",
+    "wrong_pool": ["Mualani", "Kinich", "Kachina", "Iansan", "Ororon", "Xilonen", "The Traveler"],
+    "difficulty": "easy"
+  },
+  {
+    "question": "What is the name of Chasca's younger sister who tragically dies in the war?",
+    "correct": "Chuychu",
+    "wrong_pool": ["Atea", "Citlali", "Xilonen", "Mualani", "Kachina", "Rena", "Halsey"],
+    "difficulty": "easy"
+  },
+  {
+    "question": "Which tribe does Ororon belong to?",
+    "correct": "Masters of the Night-Wind",
+    "wrong_pool": ["Children of Echoes", "Scions of the Canopy", "People of the Springs", "Flower-Feather Clan", "Collective of Plenty", "Fatui"],
+    "difficulty": "easy"
+  },
+  {
+    "question": "What device does Capitano try to use to rebuild Natlan's Ley Lines?",
+    "correct": "Source Mechanism",
+    "wrong_pool": ["Oratrice", "Akasha Terminal", "Gnosis", "Spiritspeaker Stone", "Phlogiston Chisel", "Wayob Totem", "Loom of Fate"],
+    "difficulty": "easy"
+  },
+  {
+    "question": "What is the name of the parchment that records the Traveler's deeds in Natlan?",
+    "correct": "Pilgrim's Chronicle",
+    "wrong_pool": ["Adventurer's Handbook", "Ancient Name Scroll", "Sacred Flame Ledger", "Night Kingdom Map", "Wayob's Record", "Mavuika's Journal", "The Loom of Fate"],
+    "difficulty": "easy"
+  },
+  {
+    "question": "Who is the Lord of the Night revealed to be?",
+    "correct": "Yohualtecuhtin",
+    "wrong_pool": ["Mavuika", "Citlali", "Ororon", "Xbalanque", "Ronova", "Capitano", "Dainsleif"],
+    "difficulty": "easy"
+  },
+  {
+    "question": "What is the name of the entity that inhabits Kinich's companion, Ajaw?",
+    "correct": "K'uhul Ajaw",
+    "wrong_pool": ["Guthred", "Sanhaj", "Menilek", "Tupac", "Mallko", "Comonqui", "Ayo"],
+    "difficulty": "easy"
+  },
+  {
+    "question": "What does Citlali use to travel back to her tribe during the Abyss attack?",
+    "correct": "A hot air balloon",
+    "wrong_pool": ["A Saurian", "A glider", "A teleport waypoint", "A boat", "A carriage", "Magic flight", "A wave rider"],
+    "difficulty": "easy"
+  },
+  {
+    "question": "Who is the primary person in charge of distributing information at the Natlan Adventurers' Guild?",
+    "correct": "Katheryne",
+    "wrong_pool": ["Piltzin", "Pacal", "Coyopa", "Amina", "Wayna", "Vichama", "Ifa"],
+    "difficulty": "easy"
+  },
+  {
+    "question": "Which tribe was hit the hardest by the Abyssal invasion, leading the Traveler to visit them first?",
+    "correct": "Flower-Feather Clan",
+    "wrong_pool": ["Children of Echoes", "Scions of the Canopy", "People of the Springs", "Masters of the Night-Wind", "Collective of Plenty"],
+    "difficulty": "easy"
+  },
+  {
+    "question": "What is the name of the chief of the Flower-Feather Clan?",
+    "correct": "Mutota",
+    "wrong_pool": ["Pacal", "Wayna", "Ohtli", "Munay", "Izcalli", "Coyopa", "Ifa"],
+    "difficulty": "easy"
+  },
+  {
+    "question": "What was the name of Atoco's Qucusaurus companion who died four years ago?",
+    "correct": "Duarte",
+    "wrong_pool": ["Wayob", "Guthred", "Haden", "Sanhaj", "Menilek", "Ajaw"],
+    "difficulty": "easy"
+  },
+  {
+    "question": "Which Fatui Harbinger appears to help treat Ocotlan's Abyssal Corrosion Syndrome?",
+    "correct": "Capitano",
+    "wrong_pool": ["Childe", "Arlecchino", "Dottore", "Pulcinella", "Pierro", "Pantalone"],
+    "difficulty": "easy"
+  },
+  {
+    "question": "What medicine is used to treat the most severe cases of Abyssal Corrosion, despite causing chronic migraines?",
+    "correct": "Draught of Lucidity",
+    "wrong_pool": ["Holy Water", "Phlogiston Elixir", "Sacred Flame Salve", "Mist Bubble", "Irminsul Sap", "Night Kingdom Tonic"],
+    "difficulty": "easy"
+  },
+  {
+    "question": "The Traveler finds a key in a cave that belonged to their sibling. What does this key unlock?",
+    "correct": "The Hibernation Chamber on the spaceship",
+    "wrong_pool": ["The Source Mechanism", "The Gnosis Vault", "The Night Kingdom Portal", "The Stadium Gates", "Xilonen's Workshop", "The Atlas of the New World"],
+    "difficulty": "easy"
+  },
+  {
+    "question": "What is the name of the mysterious woman the Traveler meets who is looking for the 'Savior'?",
+    "correct": "Direidyth",
+    "wrong_pool": ["Atoco", "Cochitta", "Itotia", "Atossa", "Haypasia", "Rena"],
+    "difficulty": "easy"
+  },
+  {
+    "question": "Who is the 'single person' who collapses the Abyss Order's frontlines with a vengeful fighting style?",
+    "correct": "Dainsleif",
+    "wrong_pool": ["Capitano", "Mavuika", "Kinich", "Ororon", "Diluc", "Xiao"],
+    "difficulty": "easy"
+  },
+  {
+    "question": "Where was the Abyss Order's headquarters stationed in Natlan?",
+    "correct": "Ochkanatlan",
+    "wrong_pool": ["Stadium of Sacred Flame", "Sulfurous Veins", "Children of Echoes", "Ancestral Temple", "Night Kingdom"],
+    "difficulty": "easy"
+  },
+  {
+    "question": "What title did the Abyss Order use for the Traveler's sibling before the Cataclysm?",
+    "correct": "Savior",
+    "wrong_pool": ["Prince/Princess", "Loom-Weaver", "Archon", "Descender", "Lord of the Night", "King"],
+    "difficulty": "easy"
+  },
+  {
+    "question": "What did the sibling create using the Loom of Fate to re-weave Khaenri'ah's Ley Lines?",
+    "correct": "Atlas of the New World",
+    "wrong_pool": ["Gnosis", "Sacred Flame", "Source Mechanism", "Wayob Totem", "Pilgrim's Chronicle"],
+    "difficulty": "easy"
+  },
+  {
+    "question": "Which character scolds the Traveler for 'taking their time' while they were away helping the Flower-Feather Clan?",
+    "correct": "Ajaw",
+    "wrong_pool": ["Kinich", "Xilonen", "Citlali", "Mualani", "Kachina", "Iansan"],
+    "difficulty": "easy"
+  },
+  {
+    "question": "What is the nickname for the Abyssal rift 'Gosoythoth'?",
+    "correct": "Reaper of the Abyss",
+    "wrong_pool": ["Devourer of Souls", "Sky-Demon", "Corrupted Heart", "End of Days", "Night Terror"],
+    "difficulty": "easy"
+  },
+  {
+    "question": "Who was the military doctor and second-in-command under Capitano during the cataclysm?",
+    "correct": "Guthred",
+    "wrong_pool": ["Haden", "Tarko", "Kosterlitzky", "Ifa", "Ororon", "Duarte"],
+    "difficulty": "easy"
+  },
+  {
+    "question": "What competition was the Collective of Plenty about to host before the Abyss Order attacked?",
+    "correct": "Bodybuilding competition",
+    "wrong_pool": ["Saurian racing", "Cooking contest", "Chess tournament", "Ancient Name forging", "Pilgrimage"],
+    "difficulty": "easy"
+  },
+  {
+    "question": "What did Cochitta's younger brother, Cuallee, bring with him when he came to check on her?",
+    "correct": "A toy weapon",
+    "wrong_pool": ["A real spear", "A flower", "A saurian egg", "A drawing", "A Draught of Lucidity"],
+    "difficulty": "easy"
+  },
+  {
+    "question": "Who does Kinich fling away for being rude to the Traveler?",
+    "correct": "Ajaw",
+    "wrong_pool": ["Ororon", "Tumpis", "Pacal", "Paimon", "Tarko"],
+    "difficulty": "easy"
+  },
+  {
+    "question": "What is the name of Dainsleif's former master who joined the Abyss Order as an Iniquitous Baptist?",
+    "correct": "Haden",
+    "wrong_pool": ["Guthred", "Surtalogi", "Pierro", "Skirk", "Rhinedottir"],
+    "difficulty": "easy"
+  },
+  {
+    "question": "Why does Capitano take off his mask to show his true face to the Traveler?",
+    "correct": "To prove the Ruler of Death (Ronova) is responsible for his suffering",
+    "wrong_pool": ["To show he is a relative of the Traveler", "To prove he is actually Mavuika's father", "To reveal he is a dragon in human form", "To scare Paimon", "To show the effects of the Draught of Lucidity"],
+    "difficulty": "medium"
+  },
+  {
+    "question": "What was the side effect Guthred suffered while fast-tracking the development of the Draught of Lucidity?",
+    "correct": "He used himself as a test subject and died shortly after",
+    "wrong_pool": ["He lost his memory", "He became an Abyss Mage", "He turned into a saurian", "He was cursed with immortality", "He went blind"],
+    "difficulty": "medium"
+  },
+  {
+    "question": "Why was Cochitta riddled with fear and doubt before becoming a renowned fighter?",
+    "correct": "Her parents died fighting the Abyss",
+    "wrong_pool": ["She failed her Ancient Name trial", "She lost her saurian companion", "She was cursed by the Night Kingdom", "She couldn't use phlogiston"],
+    "difficulty": "medium"
+  },
+  {
+    "question": "What does Direidyth have to do for the Traveler to see the monsters she is seeing?",
+    "correct": "Hold the Traveler's hand",
+    "wrong_pool": ["Give the Traveler a key", "Perform a ritual with Citlali", "Drink the Draught of Lucidity", "Enter the Night Kingdom", "Touch the Pilgrim's Chronicle"],
+    "difficulty": "medium"
+  },
+  {
+    "question": "How many times does Dainsleif claim he killed Haden as punishment for his crimes?",
+    "correct": "A hundred deaths",
+    "wrong_pool": ["Once", "Twice", "Ten times", "He didn't kill him", "A thousand times"],
+    "difficulty": "medium"
+  },
+  {
+    "question": "What was the 'feint' the sibling used the attack on Natlan for?",
+    "correct": "To speak to Yohualtecuhtin (Lord of the Night)",
+    "wrong_pool": ["To steal the Gnosis", "To kill Mavuika", "To destroy the Stadium", "To find Direidyth", "To kidnap Xilonen"],
+    "difficulty": "medium"
+  },
+  {
+    "question": "What power of Ronova's did Mavuika use that slated her for death?",
+    "correct": "The Ruler of Death's power to interpret death or grant immortality",
+    "wrong_pool": ["The Power of the Sacred Flame", "The Wayob's Authority", "The Gnosis's resonance", "The Ancient Name forging ritual", "The Ley Line reconstruction"],
+    "difficulty": "medium"
+  },
+  {
+    "question": "What was Haden's actual goal in sacrificing his army during the battle with Dainsleif?",
+    "correct": "To acquire Dainsleif's memories of Khaenri'ah",
+    "wrong_pool": ["To kill the Traveler", "To destroy the Ley Lines", "To trap the sibling", "To find the Savior", "To awaken the Heavenly Principles"],
+    "difficulty": "medium"
+  },
+  {
+    "question": "Why does Citlali become 'jealous' during the conversation about Direidyth?",
+    "correct": "She learned the Traveler held Direidyth's hand",
+    "wrong_pool": ["She wanted the Savior title", "She wanted the sibling's key", "She wanted to visit the Collective of Plenty", "She wanted the Draught of Lucidity"],
+    "difficulty": "medium"
+  },
+  {
+    "question": "What is the reason Direidyth can see the Traveler, according to the sibling?",
+    "correct": "The sibling created a superimposition on Natlan using the new Ley Lines",
+    "wrong_pool": ["She is a ghost", "She is a Descender", "She is from the future", "She drank phlogiston", "She is the Lord of the Night in disguise"],
+    "difficulty": "medium"
+  },
+  {
+    "question": "According to Dainsleif, who else was punished for following the code of knighthood like himself?",
+    "correct": "Surtalogi",
+    "wrong_pool": ["Haden", "Guthred", "Pierro", "Capitano", "Skirk"],
+    "difficulty": "medium"
+  },
+  {
+    "question": "What does Xilonen require from Paimon before forging the Traveler's Ancient Name?",
+    "correct": "Information about the Traveler's feats",
+    "wrong_pool": ["A strand of her hair", "Her flying abilities", "The sibling's key", "A Draught of Lucidity", "Paimon's own Ancient Name"],
+    "difficulty": "medium"
+  },
+  {
+    "question": "What god or entity did the sibling realize had 'played a part' in the events surrounding Direidyth?",
+    "correct": "Istaroth",
+    "wrong_pool": ["Ronova", "Yohualtecuhtin", "The Heavenly Principles", "Phanes", "Asmoday", "The Tsaritsa"],
+    "difficulty": "hard"
+  },
+  {
+    "question": "Why does Dainsleif refer to Haden as his 'disgraced master'?",
+    "correct": "He suppressed the next generation of knights to keep his prestige",
+    "wrong_pool": ["He failed to protect the King", "He joined the Fatui", "He tried to kill the sibling", "He stole the Loom of Fate", "He created the Abyssal Corrosion Syndrome"],
+    "difficulty": "hard"
+  },
+  {
+    "question": "What was the 'condition' Yohualtecuhtin had in place for the sibling that she did not tell Citlali?",
+    "correct": "The text states she did not tell Citlali about it",
+    "wrong_pool": ["Natlan would be destroyed", "The Traveler would stay forever", "The Gnosis must be returned", "The Sacred Flame would go out", "Mavuika must die"],
+    "difficulty": "hard"
+  },
+  {
+    "question": "How does the Traveler eventually snap Atoco out of his hallucination regarding Duarte?",
+    "correct": "By slamming him back to his senses",
+    "wrong_pool": ["By using the Draught of Lucidity", "By showing him Duarte's grave", "By taking on the appearance of a Qucusaurus", "By singing a song", "By calling Iansan"],
+    "difficulty": "hard"
+  },
+  {
+    "question": "What specific term does Dainsleif use to describe the Atlas of the New World's contents?",
+    "correct": "New Khaenri'ah's Ley Lines",
+    "wrong_pool": ["The memory of the Savior", "The throne of the Heavenly Principles", "The blueprint of the Abyss", "The cure for immortality", "The map of the Night Kingdom"],
+    "difficulty": "hard"
+  },
+  {
+    "question": "What does Direidyth wonder about while watching the night sky with the Traveler?",
+    "correct": "If the starry sky was real",
+    "wrong_pool": ["Where the Savior went", "If the Abyss would return", "What the Savior's name was", "If she could become a saurian", "How to cook the ingredients left behind"],
+    "difficulty": "hard"
+  },
+  {
+    "question": "What is the name of the automaton woman washed ashore who is searching for the Traveler and Paimon?",
+    "correct": "Ineffa",
+    "wrong_pool": ["Sandrone", "Aino", "Lianca", "Citlali", "Ixquieh", "Aamu"],
+    "difficulty": "easy"
+  },
+  {
+    "question": "Which Natlan tribe is Xilonen's workshop located in?",
+    "correct": "Children of Echoes",
+    "wrong_pool": ["Flower-Feather Clan", "Collective of Plenty", "People of the Springs", "Scions of the Canopy", "Masters of the Night-Wind"],
+    "difficulty": "easy"
+  },
+  {
+    "question": "Ineffa's right arm is capable of transforming into what everyday object?",
+    "correct": "A broom",
+    "wrong_pool": ["A sword", "A gun", "A drill", "A telescope", "A umbrella"],
+    "difficulty": "easy"
+  },
+  {
+    "question": "What is the name of the traveler's merchant friend from Liyue who is revealed to be a Fatui spy?",
+    "correct": "Zhuoxin",
+    "wrong_pool": ["Velimiru", "Asimu", "Aino", "Ifa", "Chimpu"],
+    "difficulty": "easy"
+  },
+  {
+    "question": "According to Citlali, what were the 'Thirteen Sovereign Lords' originally?",
+    "correct": "Artificial Intelligences created by the Pyro Sovereign",
+    "wrong_pool": ["Ancient Human Kings", "Dragons from the Abyss", "Fatui Harbingers", "The first Archons", "Visions of the deceased"],
+    "difficulty": "easy"
+  },
+  {
+    "question": "What type of Elemental Vision does Ineffa gain during the final battle?",
+    "correct": "Electro",
+    "wrong_pool": ["Pyro", "Anemo", "Geo", "Hydro", "Cryo", "Dendro"],
+    "difficulty": "easy"
+  },
+  {
+    "question": "Who sent the encoded cryptex message that Ineffa was carrying for the Traveler?",
+    "correct": "Varka",
+    "wrong_pool": ["Jean", "Diluc", "Capitano", "Dainsleif", "The Sibling", "Mavuika"],
+    "difficulty": "easy"
+  },
+  {
+    "question": "What is the name of the eighth Sovereign Lord, known as the 'Priestess of Floral Candles'?",
+    "correct": "The Eighth Lord",
+    "wrong_pool": ["The First Lord", "The Eleventh Lord", "The Seventh Lord", "The Ninth Lord", "The Fifth Lord"],
+    "difficulty": "easy"
+  },
+  {
+    "question": "Which Fatui Harbinger is mentioned as being interested in ancient history and nicknamed 'Marionette'?",
+    "correct": "Sandrone",
+    "wrong_pool": ["Capitano", "Arlecchino", "Dottore", "Pantalone", "Pulcinella", "Pierro"],
+    "difficulty": "easy"
+  },
+  {
+    "question": "What was the name of the first 'Baraka' who dismantled machines to help humanity?",
+    "correct": "Baraka",
+    "wrong_pool": ["Xilonen", "Lianca", "Ineffa", "Aino", "Ixquieh"],
+    "difficulty": "easy"
+  },
+  {
+    "question": "What was the destination of the merchants before they were attacked by automatons?",
+    "correct": "Their respective hometowns (Liyue, etc.)",
+    "wrong_pool": ["The Night Kingdom", "Snezhnaya", "Fontaine", "The Abyss", "The Stadium of Sacred Flame"],
+    "difficulty": "easy"
+  },
+  {
+    "question": "What was the name of the flower Adieta gave to Ineffa as a memento?",
+    "correct": "The text refers to it generally as a flower/gift",
+    "wrong_pool": ["Glaze Lily", "Windwheel Aster", "Cecilia", "Naku Weed", "Silk Flower"],
+    "difficulty": "easy"
+  },
+  {
+    "question": "Which character uses guns and suggests shooting the cryptex to open it?",
+    "correct": "Chasca",
+    "wrong_pool": ["Clorinde", "Chevreuse", "Xilonen", "Kinich", "Ifa"],
+    "difficulty": "easy"
+  },
+  {
+    "question": "Where is the tavern 'The Flagship' located, as mentioned in Varka's letter?",
+    "correct": "Nod-Krai",
+    "wrong_pool": ["Mondstadt", "Liyue Harbor", "Port Ormos", "Fontaine Court", "Natlan"],
+    "difficulty": "easy"
+  },
+  {
+    "question": "What was the name of the entity that burned down the workshop to stop Och-Kan?",
+    "correct": "Ixquieh",
+    "wrong_pool": ["Lianca", "Aino", "Mavuika", "Xilonen", "Ineffa"],
+    "difficulty": "easy"
+  },
+  {
+    "question": "What does the little robot reveal about Zhuoxin by scanning a Fatui stronghold picture?",
+    "correct": "He is a spy",
+    "wrong_pool": ["He is a robot", "He is a king", "He is Ineffa's father", "He is an Archon", "He is a merchant from Mondstadt"],
+    "difficulty": "easy"
+  },
+  {
+    "question": "Who is the 'strange man' observing the group from above in the beginning?",
+    "correct": "A mysterious man (implied to be related to the Fatui or Kinich's mission)",
+    "wrong_pool": ["Capitano", "Dainsleif", "The Sibling", "Zhongli", "Venti"],
+    "difficulty": "easy"
+  },
+  {
+    "question": "What does Xilonen notice Ineffa's knee joints are made from?",
+    "correct": "Clockwork meka components",
+    "wrong_pool": ["Abyssal ore", "Phlogiston", "Secret Source metal", "Wood", "Ancient bones"],
+    "difficulty": "easy"
+  },
+  {
+    "question": "What was the curse placed on the Eighth Lord by her fellow Sovereign Lords?",
+    "correct": "Every ounce of goodwill toward humans would cause immeasurable pain",
+    "wrong_pool": ["She would turn into stone", "She would lose her memory of Lianca", "She could never leave the Temple", "She would be silenced forever", "She would attack any human she saw"],
+    "difficulty": "medium"
+  },
+  {
+    "question": "Why did the Eleventh Lord split into two personalities?",
+    "correct": "To choose between seeking revenge on humanity or finding a new home",
+    "wrong_pool": ["To hide from the Fatui", "Because of a data overload from a Vision", "To survive the burning of the workshop", "To protect Lianca from Och-Kan"],
+    "difficulty": "medium"
+  },
+  {
+    "question": "What did Ineffa's 'Moon Wheel' power source specifically replace or mimic?",
+    "correct": "A Vision",
+    "wrong_pool": ["A Gnosis", "A Delusion", "A Wayob totem", "The Sacred Flame", "An Akasha terminal"],
+    "difficulty": "medium"
+  },
+  {
+    "question": "Who created the 'Moon Wheel' according to the Eleventh Lord's horizontal dialogue?",
+    "correct": "The usurper and the three gods who abandoned them",
+    "wrong_pool": ["The Pyro Sovereign", "The Abyss Order", "The Fatui", "Lianca and the Eighth Lord", "The Second Who Came"],
+    "difficulty": "medium"
+  },
+  {
+    "question": "What is the reason Ineffa's amnesia worsened as she approached Natlan?",
+    "correct": "Proximity to the tribe/facility triggered hardwired memory modules",
+    "wrong_pool": ["The phlogiston in the air", "The influence of the Abyss", "A virus planted by the Fatui", "Her battery was low", "The Lord of the Night was blocking her"],
+    "difficulty": "medium"
+  },
+  {
+    "question": "What group in Nod-Krai was said to be angered by the Fatui 'pulling the moon down'?",
+    "correct": "Frostmoon Scions",
+    "wrong_pool": ["Abyss Order", "The Flagship Tavern", "Thirteen Sovereign Lords", "Secret Source Automatons", "Collective of Plenty"],
+    "difficulty": "medium"
+  },
+  {
+    "question": "How did Lianca attempt to save Ineffa from her internal malfunctions?",
+    "correct": "By modifying her memory module",
+    "wrong_pool": ["By giving her a Vision", "By destroying the Eleventh Lord's core", "By taking her to Fontaine", "By sealing her in the Night Kingdom", "By rebuilding her as a human"],
+    "difficulty": "medium"
+  },
+  {
+    "question": "What was the relationship between the Eighth Lord and Lianca?",
+    "correct": "The Eighth Lord raised Lianca",
+    "wrong_pool": ["Lianca built the Eighth Lord", "They were sisters", "Lianca was the Eighth Lord's master", "They were enemies who became friends", "They never met"],
+    "difficulty": "medium"
+  },
+  {
+    "question": "What was Velimiru revealed to be after the Traveler cut him down?",
+    "correct": "He was not human (implied to be an automaton/puppet)",
+    "wrong_pool": ["A member of the Abyss Order", "An illusion created by Citlali", "Zhuoxin's brother", "A transformed saurian", "A ghost from Khaenri'ah"],
+    "difficulty": "medium"
+  },
+  {
+    "question": "Why did Ixquieh burn down Baraka's workshop?",
+    "correct": "To ensure that the insane Och-Kan could not use the machines against humanity",
+    "wrong_pool": ["To hide the Moon Wheel", "To stop the Fatui from taking it", "Because she hated Baraka", "To release the Sovereign Lords", "To start the first pilgrimage"],
+    "difficulty": "medium"
+  },
+  {
+    "question": "What is the significance of 'Administrator 1' and 'Administrator 2' in the Temple of Cascading Colors?",
+    "correct": "They were the creators/controllers of the facility before Ineffa (Administrator 3)",
+    "wrong_pool": ["They are the Traveler and Sibling", "They are Mavuika and Xilonen", "They are Fatui Harbingers", "They are the two Dendro Archons"],
+    "difficulty": "medium"
+  },
+  {
+    "question": "Why does Ajaw act unusually 'timid' or in a 'stupor' upon seeing Ineffa?",
+    "correct": "He recognized Ineffa's core as a Sovereign Lord",
+    "wrong_pool": ["He was scared of Kinich", "He was low on energy", "He hated the smell of the workshop", "He was pretending to be a small robot", "He was being controlled by the Fatui"],
+    "difficulty": "medium"
+  },
+  {
+    "question": "What specifically caused the Eleventh Lord's malevolent self to perish (initially)?",
+    "correct": "She eventually perished after the split while the benevolent Ineffa survived",
+    "wrong_pool": ["Lianca killed her", "Mavuika destroyed her", "The Traveler parried her", "The Fatui deactivated her", "She was burned in the workshop"],
+    "difficulty": "hard"
+  },
+  {
+    "question": "The Eleventh Lord reveals her plan was to 'lure Ineffa and reclaim the core.' How did she manipulate the situation from the start?",
+    "correct": "She had been a hidden personality within Ineffa/the core",
+    "wrong_pool": ["She hired Kinich", "She sent the message from Varka", "She pretended to be the Eighth Lord", "She controlled Velimiru from Snezhnaya", "She used the Cryptex as a tracking device"],
+    "difficulty": "hard"
+  },
+  {
+    "question": "What is the function of the 'Configuration Device' mentioned in the ruins?",
+    "correct": "It was intended to finish the Traveler and Paimon off",
+    "wrong_pool": ["It creates the Ancient Name", "It opens the Moon Wheel", "It restores the Pyro Gnosis", "It stabilizes the Ley Lines", "It calls Varka's expedition"],
+    "difficulty": "hard"
+  },
+  {
+    "question": "What was the 'inference' the Fatui regiment was interested in while searching for ancient history?",
+    "correct": "The text describes them as having an interest in ancient history for 'inference'",
+    "wrong_pool": ["Rebuilding the Loom of Fate", "Finding the Savior", "Predicting the next Archon", "Controlling the saurians", "Destroying the Wayob"],
+    "difficulty": "hard"
+  },
+  {
+    "question": "Why did the Eighth Lord consider Ineffa to be 'reborn' in the Temple of Cascading Colors?",
+    "correct": "It was where she was stranded and split into two after being defeated in the war",
+    "wrong_pool": ["It was her original manufacturing site", "Lianca found her core there", "The Pyro Sovereign breathed life into her there", "Aino scavenged her there"],
+    "difficulty": "hard"
+  },
+  {
+    "question": "Which specific Sovereign Lord was described as being 'extremely hostile to humanity' and disappeared after Xiuhcoatl's defeat?",
+    "correct": "The Eleventh Lord",
+    "wrong_pool": ["The Eighth Lord", "The First Lord", "Och-Kan", "Ajaw", "The Ninth Lord"],
+    "difficulty": "hard"
+  },
+  {
+    "question": "What is the name of the port city in Nod-Krai where the Traveler, Paimon, and Ineffa first arrive?",
+    "correct": "Nasha Town",
+    "wrong_pool": ["Amsvartnir", "Hyperborea", "Starsand Shoal", "Hiisi Island", "Nod-Krai City"],
+    "difficulty": "easy"
+  },
+  {
+    "question": "What is 'Kuuvahki' described as by Ineffa?",
+    "correct": "A primordial form of elemental moon energy",
+    "wrong_pool": ["A type of local food", "A rank in the Adventurers' Guild", "A rare species of bird", "A martial arts style", "A legendary weapon"],
+    "difficulty": "easy"
+  },
+  {
+    "question": "What are 'Kuuhenki,' which are common in Nod-Krai?",
+    "correct": "Sprites that are familiars of the Moon Goddess",
+    "wrong_pool": ["Mechanical soldiers", "Fatui spies", "Underwater plants", "Stray cats", "Ancient coins"],
+    "difficulty": "easy"
+  },
+  {
+    "question": "What is the name of the tavern in Nasha Town where Varka arranged lodging for the group?",
+    "correct": "The Flagship",
+    "wrong_pool": ["The Cat's Tail", "Angel's Share", "Wangshu Inn", "The Moon's Glow", "The Rusty Anchor"],
+    "difficulty": "easy"
+  },
+  {
+    "question": "Which Fatui Harbinger confronts the Traveler at the Adventurers' Guild in Nasha Town?",
+    "correct": "Marionette (Sandrone)",
+    "wrong_pool": ["Childe", "Arlecchino", "Damselette", "The Knave", "The Captain", "Dottore"],
+    "difficulty": "easy"
+  },
+  {
+    "question": "What group does Lauma lead as a Moonchanter?",
+    "correct": "Frostmoon Scions",
+    "wrong_pool": ["Wild Hunt", "Ratniks", "Voynich Guild", "Curatorium of Secrets", "Eternal Moons"],
+    "difficulty": "easy"
+  },
+  {
+    "question": "What is the name of Aino’s workshop where Ineffa was created?",
+    "correct": "Clink-Clank Krumkake Craftshop",
+    "wrong_pool": ["Xilonen’s Forge", "The Clockwork Hub", "Hyperborean Tools", "Moon Marrow Works", "Aino's Artillery"],
+    "difficulty": "easy"
+  },
+  {
+    "question": "What unique physical feature appears on Lauma's head once a century?",
+    "correct": "Massive antlers",
+    "wrong_pool": ["A third eye", "Glowing wings", "Silver scales", "A halo of light", "Crystal horns"],
+    "difficulty": "easy"
+  },
+  {
+    "question": "Who is the boss of the Curatorium of Secrets?",
+    "correct": "Nefer",
+    "wrong_pool": ["Lauma", "Jahoda", "Vilemina", "Demyan", "Aino"],
+    "difficulty": "easy"
+  },
+  {
+    "question": "What is the name of the Ratnik who fends off the Wild Hunt in the northern graveyards?",
+    "correct": "Flins",
+    "wrong_pool": ["Varka", "Demyan", "Kapy", "Oiva", "Ognjen"],
+    "difficulty": "easy"
+  },
+  {
+    "question": "According to Ineffa, what did she stop detecting when she entered Natlan?",
+    "correct": "The moon's power",
+    "wrong_pool": ["Phlogiston", "The smell of flowers", "Human emotions", "Abyssal energy", "The sun's heat"],
+    "difficulty": "easy"
+  },
+  {
+    "question": "What food did Varka specifically order for Ineffa to deliver to Aino?",
+    "correct": "Berries and Fried Meat",
+    "wrong_pool": ["Sweet Madame", "Fisherman's Toast", "Mondstadt Hash Brown", "Jueyun Chili Chicken", "Moon Pies"],
+    "difficulty": "easy"
+  },
+  {
+    "question": "What is the 'Moon Marrow' used for?",
+    "correct": "A ritual performed when the moon is closest to Teyvat",
+    "wrong_pool": ["Powering Aino's cannon", "Cooking high-end meals", "Healing broken antlers", "Fueling the spaceship", "Summoning the Wild Hunt"],
+    "difficulty": "easy"
+  },
+  {
+    "question": "Which island serves as the location for the Frostmoon Enclave?",
+    "correct": "Hiisi Island",
+    "wrong_pool": ["Nasha Island", "Eternal Island", "Starsand Shoal", "Hyperborea", "The Frozen Isle"],
+    "difficulty": "easy"
+  },
+  {
+    "question": "What is the name of the sick child Lauma treats with her own silver blood?",
+    "correct": "Kaarina",
+    "wrong_pool": ["Adieta", "Vilemina", "Kapy", "Jolanta", "Ahvo"],
+    "difficulty": "easy"
+  },
+  {
+    "question": "Who is 'Columbina' revealed to be by the Frostmoon Scions?",
+    "correct": "Kuutar (The Moon Goddess)",
+    "wrong_pool": ["The Eleventh Lord", "Aino's sister", "Marionette's puppet", "The Savior", "The Tsaritsa"],
+    "difficulty": "easy"
+  },
+  {
+    "question": "What did Vilemina do to herself as a punishment for betraying the Scions?",
+    "correct": "Cut off her own antlers",
+    "wrong_pool": ["Blinded herself", "Exiled herself to the Abyss", "Drank poison", "Destroyed her Vision", "Joined the Wild Hunt"],
+    "difficulty": "easy"
+  },
+  {
+    "question": "Where is the Moon Marrow currently stored at the end of the story?",
+    "correct": "Within the Traveler's body",
+    "wrong_pool": ["In the Curatorium", "In Pulonia's core", "On the spaceship", "In Lauma's library", "In the Flagship tavern"],
+    "difficulty": "easy"
+  },
+  {
+    "question": "What historical event in Nod-Krai involved the 'Eternal Moon' and 'Iridescent Moon'?",
+    "correct": "They were shattered during the war with the Descenders",
+    "wrong_pool": ["They were stolen by the Fatui", "They merged to form the current moon", "They were created by the Archons", "They were eaten by the Wild Hunt"],
+    "difficulty": "medium"
+  },
+  {
+    "question": "Why does the Traveler realize the 'sibling' they met in the mist was an impostor?",
+    "correct": "The impostor claimed they left the ship together, but the Traveler was actually in hypersleep",
+    "wrong_pool": ["The impostor used the wrong element", "The sibling was wearing a different cape", "Paimon didn't recognize them", "The sibling didn't have a weapon"],
+    "difficulty": "medium"
+  },
+  {
+    "question": "What is the 'Luonnotar' described as by Lauma?",
+    "correct": "A being born from the Moon Goddess' blessing",
+    "wrong_pool": ["A failed Fatui experiment", "An ancient king of Hyperborea", "A shadow of the Abyss", "A type of mechanical bird"],
+    "difficulty": "medium"
+  },
+  {
+    "question": "What does the term 'Moon Wheel' refer to, as discussed between the Traveler and Ineffa?",
+    "correct": "A power source that functions similarly to a Vision",
+    "wrong_pool": ["The steering wheel of the spaceship", "The calendar of the Frostmoon Scions", "A weapon used by Marionette", "The entrance to the Night Kingdom"],
+    "difficulty": "medium"
+  },
+  {
+    "question": "What is the 'Wild Hunt' revealed to be capable of during the fog attack?",
+    "correct": "Impersonating others to deceive their targets",
+    "wrong_pool": ["Stealing Gnosis", "Controlling the weather", "Turning humans into stone", "Granting immortality"],
+    "difficulty": "medium"
+  },
+  {
+    "question": "Why did Columbina (Kuutar) eventually leave the Frostmoon Scions in the past?",
+    "correct": "She could no longer provide the answers they prayed for and felt used for her powers",
+    "wrong_pool": ["She was defeated by the Fatui", "She wanted to join the Abyss", "She lost her memory", "She was exiled by Lauma's ancestors"],
+    "difficulty": "medium"
+  },
+  {
+    "question": "What is the relationship between the 'Frostmoon Scions' and the land of 'Hyperborea'?",
+    "correct": "The Scions originally hailed from Hyperborea",
+    "wrong_pool": ["Hyperborea was their enemy", "Hyperborea is the name of their capital", "Hyperborea is a legend they don't believe in", "They were exiled to Hyperborea"],
+    "difficulty": "medium"
+  },
+  {
+    "question": "What is special about the blood of the Frostmoon Scions, particularly Lauma's?",
+    "correct": "It is silver and has medicinal/healing properties",
+    "wrong_pool": ["It is poisonous to Fatui", "It is made of liquid Phlogiston", "It is black and abyssal", "It allows them to see the future"],
+    "difficulty": "medium"
+  },
+  {
+    "question": "Why does Lauma suspect that 'Damselette' is actually their goddess Kuutar?",
+    "correct": "Based on her appearance and the Fatui's interest in the goddess's identity",
+    "wrong_pool": ["Damselette told her directly", "The Traveler recognized her", "Marionette confirmed it", "Lauma saw her birth in a vision"],
+    "difficulty": "medium"
+  },
+  {
+    "question": "What is the 'Voynich Guild' known for in Nod-Krai?",
+    "correct": "It is a guild associated with Nefer and Jahoda that handles commissions",
+    "wrong_pool": ["Manufacturing cannons", "Ruling Nasha Town", "Exorcising the Wild Hunt", "Studying the spaceship"],
+    "difficulty": "medium"
+  },
+  {
+    "question": "What warning does Columbina give the Traveler before they part ways?",
+    "correct": "That the moon can be treacherous",
+    "wrong_pool": ["To watch out for the Fatui", "To never trust Lauma", "To find the spaceship immediately", "To return to Natlan"],
+    "difficulty": "medium"
+  },
+  {
+    "question": "How did the Fatui provoke the Frostmoon Scions on Hiisi Island?",
+    "correct": "By demanding the relic and the location of Kuutar under threat of 'cleansing' the island",
+    "wrong_pool": ["By stealing their food", "By burning their library", "By killing a kuuhenki", "By kidnapping Kaarina"],
+    "difficulty": "medium"
+  },
+  {
+    "question": "In the third trial of the sanctum, how do the Traveler and Sibling collaborate?",
+    "correct": "The sibling moves statues with Abyssal power while the Traveler aligns them with Kuuvahki",
+    "wrong_pool": ["They fight a guardian together", "They solve a riddle about the Three Moons", "They use their spaceship keys", "They combine Pyro and Hydro"],
+    "difficulty": "hard"
+  },
+  {
+    "question": "What does the 'Luonnotar' symbolize in its interaction with Columbina and the Traveler?",
+    "correct": "Columbina's attachment to her past and her nature as a blessing of the moon",
+    "wrong_pool": ["The Sibling's betrayal", "The Fatui's control over the moon", "The location of the spaceship", "The death of the Frost Moon"],
+    "difficulty": "hard"
+  },
+  {
+    "question": "Why does Lauma believe her health is 'depleted' after storing the Moon Marrow isn't an option for her?",
+    "correct": "Storing it is a grueling trial of will that previous Scions only survived for a few days",
+    "wrong_pool": ["She was poisoned by the Fatui", "She gave too much blood to Kaarina", "The Wild Hunt cursed her", "Her antlers are too heavy"],
+    "difficulty": "hard"
+  },
+  {
+    "question": "What is the significance of 'The Flagship' tavern's name in the context of Nod-Krai?",
+    "correct": "It likely refers to the nautical nature of the islands and Varka's expedition",
+    "wrong_pool": ["It was the name of the Traveler's ship", "It was the first ship built in Nasha Town", "It is Marionette's base of operations", "It refers to the Moon Goddess's vessel"],
+    "difficulty": "hard"
+  },
+  {
+    "question": "What was the 'missing prologue' Columbina mentioned when asked about the fake sky?",
+    "correct": "A cryptic term referring to the origins of Teyvat and the Moon Goddess",
+    "wrong_pool": ["The first chapter of the Traveler's diary", "The period before the Archon War", "The sibling's arrival time", "The history of the Fatui"],
+    "difficulty": "hard"
+  },
+  {
+    "question": "Why does the sibling believe Lauma was 'stalling for time' at the sanctum?",
+    "correct": "They are cynical about the Scions' intentions regarding the Moon Marrow and the past",
+    "wrong_pool": ["They saw her talking to the Fatui", "She gave them the wrong map", "She refused to open the hidden staircase", "She tried to trap them in a trial"],
+    "difficulty": "hard"
+  },
+  {
+    "question": "What is the name of the 'Beep-Boopitta' variant manual used to help repair the cannon?",
+    "correct": "Birgitta",
+    "wrong_pool": ["Pulonia", "Ineffa", "Krumkake", "Ratnik", "Aino"],
+    "difficulty": "easy"
+  },
+  {
+    "question": "The 'Moon Marrow' is revealed by Columbina to be a piece of whose remains?",
+    "correct": "Aria",
+    "wrong_pool": ["Rerir", "The Pyro Sovereign", "Varka", "Lianca", "The Tsaritsa"],
+    "difficulty": "easy"
+  },
+  {
+    "question": "Which of the 'Five Sinners of Khaenri'ah' is revealed to be the mastermind behind the Wild Hunt?",
+    "correct": "Rerir (Rächer of Solnari)",
+    "wrong_pool": ["Surtalogi", "Vedrfolnir", "Dainsleif", "Gold", "The Visionary"],
+    "difficulty": "easy"
+  },
+  {
+    "question": "What title does Rerir hold among the Sinners?",
+    "correct": "Rächer of Solnari",
+    "wrong_pool": ["The Foul", "The Visionary", "The Alchemist", "The Great Sinner", "The Corrupted"],
+    "difficulty": "easy"
+  },
+  {
+    "question": "Who was the Lightkeeper (Ratnik) murdered by Rerir in his own office?",
+    "correct": "Sousi",
+    "wrong_pool": ["Flins", "Zvoni", "Sousi", "Valta", "Hintsa"],
+    "difficulty": "easy"
+  },
+  {
+    "question": "What was the 'Dark Horse' that the Traveler rolled during the banquet at The Flagship?",
+    "correct": "The signature final round drink",
+    "wrong_pool": ["A mechanical horse", "A code name for Rerir", "A weapon", "A type of kuuhenki", "A betting game"],
+    "difficulty": "easy"
+  },
+  {
+    "question": "What item did Jahoda accidentally bring to the Curatorium instead of Lauma's medicine?",
+    "correct": "Salt",
+    "wrong_pool": ["Sugar", "Poison", "Phlogiston", "Kuuvahki dust", "Sand"],
+    "difficulty": "easy"
+  },
+  {
+    "question": "How did Ineffa attempt to save Nasha Town from the cannon's malfunction?",
+    "correct": "By scaling the tower and manually pushing the barrel upwards",
+    "wrong_pool": ["By absorbing the energy", "By hacking the controls", "By shooting the Fatui", "By destroying the ammo"],
+    "difficulty": "easy"
+  },
+  {
+    "question": "Where does Columbina teleport the group to save them from Rerir's attack?",
+    "correct": "Silvermoon Hall",
+    "wrong_pool": ["Nasha Town", "Starsand Shoal", "Hiisi Island", "The Flagship", "Aino's Shop"],
+    "difficulty": "easy"
+  },
+  {
+    "question": "Which Grand Master of Mondstadt confronts Rerir in the final scene?",
+    "correct": "Varka",
+    "wrong_pool": ["Jean", "Diluc", "Capitano", "Dainsleif", "The Traveler"],
+    "difficulty": "easy"
+  },
+  {
+    "question": "What is Flins' true nature according to his confession to the Traveler?",
+    "correct": "A fae who turned his heart towards humanity",
+    "wrong_pool": ["A Fatui spy", "A mechanical robot", "A fragment of Rerir", "A Moonchanter", "A phantom"],
+    "difficulty": "easy"
+  },
+  {
+    "question": "Who is the witness that initially accused Flins of murdering Sousi?",
+    "correct": "Rerir (masquerading as a witness)",
+    "wrong_pool": ["Aino", "Sieciech", "Zvoni", "Nefer", "Jahoda"],
+    "difficulty": "easy"
+  },
+  {
+    "question": "What is the purpose of the 'Lightkeeper lantern' Nefer gives to the Traveler?",
+    "correct": "To protect them from the Wild Hunt",
+    "wrong_pool": ["To find buried treasure", "To store the Moon Marrow", "To communicate with Columbina", "To signal Varka"],
+    "difficulty": "easy"
+  },
+  {
+    "question": "What did the Traveler notice about Sousi’s mechanical arm at the crime scene?",
+    "correct": "It was flashing an error code for maintenance",
+    "wrong_pool": ["It was missing", "It was pointing north", "It was covered in silver blood", "It was holding a knife"],
+    "difficulty": "easy"
+  },
+  {
+    "question": "Where was the 'Boom and Blast Kuuvahki Cannon' pointed when it activated on its own?",
+    "correct": "Starsand Shoal",
+    "wrong_pool": ["Hiisi Island", "Nasha Town", "The Moon", "Snezhnaya", "The Abyss"],
+    "difficulty": "easy"
+  },
+  {
+    "question": "Why did Sandrone leave Silvermoon Hall without fulfilling the warrant for Columbina?",
+    "correct": "She was uninterested in fulfilling it and busy with her own matters",
+    "wrong_pool": ["She was scared of Varka", "Columbina defeated her", "The Traveler convinced her to stop", "She lost her robot Pulonia"],
+    "difficulty": "easy"
+  },
+  {
+    "question": "What happened to the 'Kuuvahki Experimental Design Bureau' during the final battle?",
+    "correct": "It was damaged by stray bolts from the cannon",
+    "wrong_pool": ["It was destroyed by Rerir", "It was stolen by the Fatui", "It was turned into a tavern", "It was protected by a shield"],
+    "difficulty": "easy"
+  },
+  {
+    "question": "What was the 'Roulette Special' drink mentioned during the banquet?",
+    "correct": "One of the drinks the Traveler prepared as a mixologist",
+    "wrong_pool": ["A healing potion", "A Fatui code name", "A dessert made by Aino", "A type of ammunition"],
+    "difficulty": "easy"
+  },
+  {
+    "question": "What is the specific weakness of Rerir's mimicry ability revealed by Hintsa?",
+    "correct": "He can only mimic the external appearance of people, not their internal status/knowledge",
+    "wrong_pool": ["He can't speak", "He can't mimic more than one person", "He can only mimic during the day", "He turns into a shadow in moonlight"],
+    "difficulty": "medium"
+  },
+  {
+    "question": "Why did Rerir want the Kuuvahki cannon to be completed and fired at him?",
+    "correct": "To use the cannon's energy to convert and restore his former body",
+    "wrong_pool": ["To destroy Nasha Town", "To kill the Traveler", "To signal the Abyss Order", "To open a portal to Khaenri'ah"],
+    "difficulty": "medium"
+  },
+  {
+    "question": "What does Columbina mean when she says she felt a 'rejection' from the Moon Goddess's core?",
+    "correct": "Two moons cannot rise at the same time without one consuming the other",
+    "wrong_pool": ["The moon is made of silver", "She is no longer the Moon Goddess", "The Fatui took her power", "She is allergic to silver blood"],
+    "difficulty": "medium"
+  },
+  {
+    "question": "What was the 'emergency brake' plan Aino suggested to stop the cannon?",
+    "correct": "Manually interfering with the cannon barrel itself",
+    "wrong_pool": ["Cutting the power", "Draining the kuuvahki", "Blowing up the ammunition", "Hacking the system"],
+    "difficulty": "medium"
+  },
+  {
+    "question": "Where was the 'heart' of Rerir found, which was being used to rebuild his form?",
+    "correct": "In Flins' lantern",
+    "wrong_pool": ["In the Moon Marrow", "In Pulonia's core", "In the Flagship tavern", "In Hiisi Island", "In Aino's shop"],
+    "difficulty": "medium"
+  },
+  {
+    "question": "How did Columbina learn about Rerir's original fate before he became the Wild Hunt?",
+    "correct": "She was told he had fallen in the moon's reflection, a point of no return",
+    "wrong_pool": ["She saw it in a memory", "Dainsleif told her", "She was his master in Khaenri'ah", "The Tsaritsa told her"],
+    "difficulty": "medium"
+  },
+  {
+    "question": "What is the relationship between 'Kuuvahki' and 'Abyssal energy' revealed in the library?",
+    "correct": "They are polar opposites, and the winner absorbs the loser's energy",
+    "wrong_pool": ["They are the same energy", "They can be mixed to create life", "They both come from the sun", "They are harmless to each other"],
+    "difficulty": "medium"
+  },
+  {
+    "question": "Why was the 'Sousi' who helped fix the cannon later revealed to be an impostor?",
+    "correct": "The real Sousi had not yet received his priority-delivered replacement parts",
+    "wrong_pool": ["He forgot how to use the arm", "He didn't like sweets", "He was acting too friendly", "He tried to kill Aino"],
+    "difficulty": "medium"
+  },
+  {
+    "question": "What does the 'Moonchanter's bloodline' mention suggest about the storage of the Moon Marrow?",
+    "correct": "It can be stored in a human body as a vessel, but it is a grueling trial of will",
+    "wrong_pool": ["It can only be stored in robots", "It makes the user immortal", "It requires silver blood to work", "It turns the user into a fae"],
+    "difficulty": "medium"
+  },
+  {
+    "question": "What was the 'mysterious dome shield' that protected Hiisi Island from the cannon fire?",
+    "correct": "The text does not explicitly identify the source, but implies a higher power/Columbina",
+    "wrong_pool": ["Aino's invention", "The Traveler's shield", "Flins' lantern", "The Fatui's defense", "The Abyss Order's wall"],
+    "difficulty": "medium"
+  },
+  {
+    "question": "How did Columbina help the Traveler with their spaceship memories?",
+    "correct": "She used a technique to conceal the marrow's presence and stabilize the memory",
+    "wrong_pool": ["She took them back in time", "She repaired the ship", "She gave them a new Vision", "She introduced them to their sibling"],
+    "difficulty": "medium"
+  },
+  {
+    "question": "What happened to Pulonia after it was upgraded by Sandrone to fight Rerir?",
+    "correct": "It was overcome by Rerir's power despite the upgrades",
+    "wrong_pool": ["It defeated Rerir", "It self-destructed", "It turned into a moon fragment", "It joined the Wild Hunt"],
+    "difficulty": "medium"
+  },
+  {
+    "question": "Why did Rerir impersonate Flins when killing Sousi?",
+    "correct": "To create chaos and turn the townspeople against the Lightkeepers",
+    "wrong_pool": ["He wanted Flins' lantern", "He hated Flins", "He wanted to frame Sandrone", "He needed Flins' blood"],
+    "difficulty": "hard"
+  },
+  {
+    "question": "What is the significance of the Moon Marrow being a piece of 'Aria's remains' in the lore of the Three Moons?",
+    "correct": "It connects the current events to the ancient Three Moons (Aria, Sonnet, Canon)",
+    "wrong_pool": ["Aria is another name for Paimon", "Aria was the first Tsaritsa", "Aria was the creator of the Fatui", "Aria is a song by Columbina"],
+    "difficulty": "hard"
+  },
+  {
+    "question": "In the memory shown by Lauma, why was it impossible for the sibling to be outside the ship?",
+    "correct": "The Traveler knew they were both in hypersleep pods until after the crash",
+    "wrong_pool": ["The sibling was in the Abyss", "The ship had no doors", "The sibling died in the crash", "The ship was under water"],
+    "difficulty": "hard"
+  },
+  {
+    "question": "What did Columbina realize about her own condition in the very last moments of Silvermoon Hall?",
+    "correct": "Her strength was not returning and her time was running out",
+    "wrong_pool": ["She had become a human", "She was the true Sinner", "She had found her home", "She was finally immortal"],
+    "difficulty": "hard"
+  },
+  {
+    "question": "Why was the 'channel' required to enter the banquet at The Flagship?",
+    "correct": "It was an exclusive event requiring specific invitations or recognition from Nefer",
+    "wrong_pool": ["It was a radio frequency", "It was a waterway", "It was a secret handshake", "It was a Fatui password"],
+    "difficulty": "hard"
+  },
+  {
+    "question": "What did Rerir mean when he said he was 'collecting fragments of his former corpse'?",
+    "correct": "He was a Sinner who had been physically destroyed and was using the Wild Hunt to rebuild",
+    "wrong_pool": ["He was a robot using spare parts", "He was a ghost possessing bodies", "He was a saurian evolving", "He was the Moon Goddess's shadow"],
+    "difficulty": "hard"
+  },
+  {
+    "question": "What is the name of the final Moon Marrow needed to restore Columbina's power?",
+    "correct": "Iridescent Marrow",
+    "wrong_pool": ["Silver Marrow", "Eternal Marrow", "Frost Marrow", "Crimson Marrow", "Abyssal Marrow"],
+    "difficulty": "easy"
+  },
+  {
+    "question": "Who is revealed to be the current owner of the Northern Intelligence Network?",
+    "correct": "Nefer",
+    "wrong_pool": ["Sandrone", "Varka", "Dori", "Alice", "Arlecchino"],
+    "difficulty": "easy"
+  },
+  {
+    "question": "Which Hexenzirkel witch is known as 'Mage N' and helps with the lunar ritual?",
+    "correct": "Nicole",
+    "wrong_pool": ["Alice", "Barbeloth", "Rhinedottir", "Andersdotter", "Mona"],
+    "difficulty": "easy"
+  },
+  {
+    "question": "What is the true name Columbina eventually chooses for herself?",
+    "correct": "Columbina Hyposelenia",
+    "wrong_pool": ["Kuutar Aria", "Aria Solnari", "Tholindis", "Luna Hyperborea", "Aria Hyposelenia"],
+    "difficulty": "easy"
+  },
+  {
+    "question": "What happens to Rerir at the end of the battle with the group?",
+    "correct": "He is flicked through a moon gate and thrown out of Teyvat",
+    "wrong_pool": ["He is killed by Varka", "He is absorbed by Columbina", "He escapes to the Abyss", "He is imprisoned in the Curatorium", "He turns into a kuuhenki"],
+    "difficulty": "easy"
+  },
+  {
+    "question": "Which Harbinger ambushes Columbina during her ritual to return to the moon?",
+    "correct": "Dottore (The Doctor)",
+    "wrong_pool": ["Arlecchino", "Sandrone", "Pierro", "Capitano", "Pantalone"],
+    "difficulty": "easy"
+  },
+  {
+    "question": "What is the name of Nefer's adoptive father in the Shimti tribe?",
+    "correct": "Sinuhe",
+    "wrong_pool": ["Anpu", "Thoth", "Irmin", "Rerir", "Jahoda"],
+    "difficulty": "easy"
+  },
+  {
+    "question": "What weapon does Varka use to rescue the group from the Wild Hunt ghouls?",
+    "correct": "Wolf's Gravestone",
+    "wrong_pool": ["Aquila Favonia", "Song of Broken Pines", "Mistsplitter Reforged", "Skyward Pride", "The Unforged"],
+    "difficulty": "easy"
+  },
+  {
+    "question": "Who does Jahoda identify as the 'shady merchant' she met?",
+    "correct": "Dori",
+    "wrong_pool": ["Liben", "Alice", "Nefer", "Sandrone", "Aino"],
+    "difficulty": "easy"
+  },
+  {
+    "question": "What does 'Hyposelenia' mean in the context of Columbina's new name?",
+    "correct": "Born beneath the moon",
+    "wrong_pool": ["Light of the moon", "Destroyer of moons", "Shadow of the moon", "Messenger of the moon", "The hidden moon"],
+    "difficulty": "easy"
+  },
+  {
+    "question": "What happened to Arlecchino's hands after she forced the Abyssal portal open?",
+    "correct": "They became corrupted by the Abyss",
+    "wrong_pool": ["They turned to stone", "They started glowing with Kuuvahki", "They disappeared", "They were healed by the Traveler", "They turned silver"],
+    "difficulty": "easy"
+  },
+  {
+    "question": "Which character from Simulanka appears alongside Albedo in Nod-Krai?",
+    "correct": "Mini Durin",
+    "wrong_pool": ["Wanderer", "Kirara", "Nilou", "Navia", "Klee"],
+    "difficulty": "easy"
+  },
+  {
+    "question": "What kind of automaton does Sandrone use to attack Rerir at the Bureau?",
+    "correct": "Pulonia",
+    "wrong_pool": ["Ineffa", "Birgitta", "Beep-Boopitta", "Katheryne", "Krumkake"],
+    "difficulty": "easy"
+  },
+  {
+    "question": "What was the result of Rerir flicking his hands at Pulonia?",
+    "correct": "The automaton was instantly incapacitated",
+    "wrong_pool": ["It exploded", "It turned against Sandrone", "It was teleported away", "It became stronger", "It started dancing"],
+    "difficulty": "easy"
+  },
+  {
+    "question": "What is the relationship between Arlecchino and the 'Crimson Moon'?",
+    "correct": "She is one of the Crimson Moon descendants",
+    "wrong_pool": ["She is the Crimson Moon goddess", "She wants to destroy it", "She created it", "She is its guardian", "She has no connection to it"],
+    "difficulty": "easy"
+  },
+  {
+    "question": "Where does Columbina leap to in order to stop Dottore's plan?",
+    "correct": "An unknown realm through a moon gate of her own creation",
+    "wrong_pool": ["Back to Snezhnaya", "Into the Abyss", "To the real moon", "Into the Traveler's body", "To Mondstadt"],
+    "difficulty": "easy"
+  },
+  {
+    "question": "What is the name of the main festival celebrated in Nod-Krai?",
+    "correct": "Moon-Prayer Night",
+    "wrong_pool": ["Sabzeruz Festival", "Lantern Rite", "Windblume Festival", "Ludi Garpastum", "Moonchase Festival"],
+    "difficulty": "easy"
+  },
+  {
+    "question": "Who was Rerir's fiancée in Khaenri'ah?",
+    "correct": "Tholindis",
+    "wrong_pool": ["Rhinedottir", "Arlecchino", "Nefer", "Columbina", "Nicole"],
+    "difficulty": "easy"
+  },
+  {
+    "question": "Why does Alice state that the world is 'rejecting' Columbina?",
+    "correct": "She has no true identity or accepted name to anchor her existence",
+    "wrong_pool": ["She is too powerful", "She is a Fatui Harbinger", "She stole the Moon Marrow", "She is an alien", "She betrayed the Tsaritsa"],
+    "difficulty": "medium"
+  },
+  {
+    "question": "What secret did Rerir discover about his mission regarding Tholindis?",
+    "correct": "He was ordered by King Irmin to eliminate her",
+    "wrong_pool": ["She was a spy for the Abyss", "She was already dead", "She was a Moon Goddess", "She was marrying Dainsleif", "She was a Descender"],
+    "difficulty": "medium"
+  },
+  {
+    "question": "How did Dottore manage to hijack the moon ritual?",
+    "correct": "By creating a false moon and manipulating the causal structure of Hyperborean phantoms",
+    "wrong_pool": ["By stealing the Iridescent Marrow", "By killing Nicole", "By using Sandrone's landcruisers", "By bribing Nefer", "By using Arlecchino's blood"],
+    "difficulty": "medium"
+  },
+  {
+    "question": "What was the purpose of the 'kuuvahki infusion' ritual Nicole required?",
+    "correct": "To make three compatible people capable of entering the Hyperborean ruins",
+    "wrong_pool": ["To turn the Traveler into a god", "To heal Lauma's antlers", "To power up Aino's cannon", "To kill Rerir", "To locate Dottore"],
+    "difficulty": "medium"
+  },
+  {
+    "question": "Why was Aino excluded from the expedition to the Hyperborean ruins?",
+    "correct": "Nicole rejected her because she is a child",
+    "wrong_pool": ["She was allergic to kuuvahki", "She had to fix the cannon", "She was too busy eating sweets", "She was afraid of ghosts", "She wasn't human"],
+    "difficulty": "medium"
+  },
+  {
+    "question": "What did the murals in the Hyperborean ruins reveal about the Three Moons?",
+    "correct": "They were created by Nibelung and weaponized against the Heavenly Principles",
+    "wrong_pool": ["They were created by the Primordial One", "They were naturally occurring planets", "They were the eyes of a giant", "They were artificial satellites from the Abyss", "They were the homes of the Archons"],
+    "difficulty": "medium"
+  },
+  {
+    "question": "What does Nefer discover about the letter her adoptive father sent to the Akademiya?",
+    "correct": "It was never even acknowledged by them",
+    "wrong_pool": ["It was a secret code", "It was stolen by the Fatui", "It contained a prophecy", "It was written in silver blood", "It was a declaration of war"],
+    "difficulty": "medium"
+  },
+  {
+    "question": "How did Rerir become a Sinner of Khaenri'ah?",
+    "correct": "He accepted the 'voice's' offer of power in despair after Tholindis fell into a portal",
+    "wrong_pool": ["He was born with the power", "He stole it from King Irmin", "He was cursed by the Moon Goddess", "He killed Dainsleif's brother", "He was transformed by Rhinedottir"],
+    "difficulty": "medium"
+  },
+  {
+    "question": "What are 'landcruisers' in the context of Sandrone’s arsenal?",
+    "correct": "Large mechanical vehicles used to repel the Wild Hunt",
+    "wrong_pool": ["Ships that sail on the moon", "Flying robots", "A type of tea set", "Submarines", "Portable cannons"],
+    "difficulty": "medium"
+  },
+  {
+    "question": "Why is Dainsleif maintaining the moon gate during the final confrontation with Rerir?",
+    "correct": "To ensure Rerir is successfully thrown out of Teyvat while the gate remains stable",
+    "wrong_pool": ["To let the Sibling in", "To steal Rerir's power", "To return to Khaenri'ah", "To protect the Traveler", "To talk to Vedrfolnir"],
+    "difficulty": "medium"
+  },
+  {
+    "question": "What does Barbeloth's divination reveal about Columbina's future?",
+    "correct": "A future of transformation, possibly ending or beginning anew",
+    "wrong_pool": ["That she will die in three days", "That she will become the Cryo Archon", "That she will marry the Traveler", "That she will destroy Teyvat", "That she will find her spaceship"],
+    "difficulty": "medium"
+  },
+  {
+    "question": "What is the significance of the 'chessbox' Nefer uses?",
+    "correct": "It was used to temporarily restrain Rerir using Dendro restraints",
+    "wrong_pool": ["It contains the Northern Intelligence Network", "It is a gift from Dori", "It holds the Moon Marrow", "It is a communication device with King Deshret", "It is where she keeps her money"],
+    "difficulty": "medium"
+  },
+  {
+    "question": "How does Durin's struggle with his 'Abyssal nature' resolve during the phantom investigation?",
+    "correct": "He concludes that the darkness inside him can be a source of strength",
+    "wrong_pool": ["He purifies himself with Kuuvahki", "He decides to return to the Abyss", "He loses his memory", "He becomes a human", "He joins the Fatui"],
+    "difficulty": "hard"
+  },
+  {
+    "question": "What was the specific prophecy that Vedrfolnir was imprisoned for?",
+    "correct": "A 'bad' prophecy given to King Irmin (specifics are not detailed beyond its impact)",
+    "wrong_pool": ["The fall of the Three Moons", "The arrival of the Traveler", "The destruction of the Abyss", "The death of Tholindis", "The end of the Crimson Moon"],
+    "difficulty": "hard"
+  },
+  {
+    "question": "Why did Nicole describe the Hyperborean ruins expedition as 'fasting'?",
+    "correct": "The participants had to undergo three days of kuuvahki infusion without food",
+    "wrong_pool": ["They had to travel quickly", "They had to avoid using magic", "They had to stay silent", "They had to wear white robes", "They had to walk backwards"],
+    "difficulty": "hard"
+  },
+  {
+    "question": "What is the 'fixed history' concept Flins explains to Durin?",
+    "correct": "History and fate are immutable; what they see in phantoms cannot be changed",
+    "wrong_pool": ["History is a lie created by Irminsul", "The past can be rewritten with enough power", "Phantoms are just dreams", "The future is predetermined but the past is fluid", "Only Descenders can change the past"],
+    "difficulty": "hard"
+  },
+  {
+    "question": "Who is the 'Lord-Artificer' Sandrone mentions to the Traveler?",
+    "correct": "Alain Guillotin",
+    "wrong_pool": ["King Irmin", "Surtalogi", "Aino", "Nibelung", "The Great Sinner"],
+    "difficulty": "hard"
+  },
+  {
+    "question": "What is the unique condition of 'Thoth' according to Nefer’s past?",
+    "correct": "He was one of the Seven Pillars of King Deshret residing in her hometown temple",
+    "wrong_pool": ["He was a god who betrayed Deshret", "He was a mechanical scribe", "He was the one who killed Sinuhe", "He was a giant snake", "He was the first Eremite"],
+    "difficulty": "hard"
+  },
+  {
+    "question": "What is the name of the Trilune-bearing object Dottore has on his back?",
+    "correct": "A Trilune",
+    "wrong_pool": ["A Gnosis", "A Moon Marrow", "A Delusion", "A Landcruiser", "A Kuuvahki Cannon"],
+    "difficulty": "easy"
+  },
+  {
+    "question": "What did Dottore use to replace the Frost Moon in the sky?",
+    "correct": "An artificial moon",
+    "wrong_pool": ["A giant mirror", "The Crimson Moon", "A Jade Chamber", "A Landcruiser", "An Abyssal portal"],
+    "difficulty": "easy"
+  },
+  {
+    "question": "Who does Nicole provide long-distance communication devices for?",
+    "correct": "Dodocommunication Devices",
+    "wrong_pool": ["Akasha Terminals", "Fatui Radios", "Kuu-Phones", "Crystal Marrow radios", "Silver Bells"],
+    "difficulty": "easy"
+  },
+  {
+    "question": "Where did Columbina find herself after leaping into the moon gate?",
+    "correct": "The moon's reflection",
+    "wrong_pool": ["The Abyss", "Snezhnaya", "The Traveler's ship", "Celestia", "Nasha Town"],
+    "difficulty": "easy"
+  },
+  {
+    "question": "Which Fatui Harbinger is tasked with escorting refugees to Snezhnaya?",
+    "correct": "Childe (Tartaglia)",
+    "wrong_pool": ["Arlecchino", "Sandrone", "Dottore", "Pulcinella", "Pantalone"],
+    "difficulty": "easy"
+  },
+  {
+    "question": "What happens to a person 'cursed' by Dottore if they try to leave Nod-Krai?",
+    "correct": "The curse kicks in (mocking them)",
+    "wrong_pool": ["They turn into a monster", "They die instantly", "They lose their memory", "They get teleported to Snezhnaya", "They become a kuuhenki"],
+    "difficulty": "easy"
+  },
+  {
+    "question": "Who did Dottore claim 'disappeared' as soon as they entered his facility?",
+    "correct": "Arlecchino",
+    "wrong_pool": ["Sandrone", "The Traveler", "Columbina", "Paimon", "Varka"],
+    "difficulty": "easy"
+  },
+  {
+    "question": "What tarot card did Columbina pull from the deck during her memory of the festival?",
+    "correct": "Death",
+    "wrong_pool": ["The Moon", "The Star", "The Tower", "The Fool", "The Empress"],
+    "difficulty": "easy"
+  },
+  {
+    "question": "What were the 'gemstones' Dottore stole from Columbina?",
+    "correct": "Moon Marrows",
+    "wrong_pool": ["Gnoses", "Elemental shards", "Abyssal stars", "Vision gems", "Kuu-crystals"],
+    "difficulty": "easy"
+  },
+  {
+    "question": "Who was revealed to be the creator of Luonnotar?",
+    "correct": "Columbina (using a part of her soul)",
+    "wrong_pool": ["The Moon Goddess", "Dottore", "Sandrone", "The Traveler", "Alice"],
+    "difficulty": "easy"
+  },
+  {
+    "question": "Which nation did Lauma decide to lead the Southern Isles refugees toward?",
+    "correct": "Natlan",
+    "wrong_pool": ["Snezhnaya", "Sumeru", "Liyue", "Mondstadt", "Inazuma"],
+    "difficulty": "easy"
+  },
+  {
+    "question": "What strange experiment did Albedo and the Wanderer find inside the energy field?",
+    "correct": "Humans' minds swapped into animals",
+    "wrong_pool": ["Humans turned into Hilichurls", "Mechanical humans", "Eternal sleeping people", "Invisible ghosts", "Talking flowers"],
+    "difficulty": "easy"
+  },
+  {
+    "question": "Which Fatui grunt warned the group that Dottore was building something ambitious?",
+    "correct": "Jotautas",
+    "wrong_pool": ["Gediminas", "Radimir", "Zvoni", "Sousi", "Valta"],
+    "difficulty": "easy"
+  },
+  {
+    "question": "How did Dottore restore his injuries during the fight with Arlecchino and the Traveler?",
+    "correct": "Using the artificial Moon Marrow",
+    "wrong_pool": ["Using a Gnosis", "Drinking a potion", "Absorbing Arlecchino's flames", "Using a Delusion", "Rewinding time"],
+    "difficulty": "easy"
+  },
+  {
+    "question": "What did Columbina do to help the Frostmoon Scions on Hiisi Island in the past?",
+    "correct": "Created a massive kuuvahki shield using her power",
+    "wrong_pool": ["Fired the cannon", "Teleported them away", "Defeated Rerir early", "Summoned Varka", "Called Sandrone"],
+    "difficulty": "easy"
+  },
+  {
+    "question": "Which Hexenzirkel member remained to help in Nod-Krai while the others handled the border?",
+    "correct": "Nicole",
+    "wrong_pool": ["Alice", "Barbeloth", "Mona", "Rhinedottir", "Andersdotter"],
+    "difficulty": "easy"
+  },
+  {
+    "question": "What did the Wanderer contribute to cracking the energy field barrier?",
+    "correct": "Anemo energy",
+    "wrong_pool": ["Electro energy", "Geo energy", "Abyssal energy", "Pyro energy", "Pure spite"],
+    "difficulty": "easy"
+  },
+  {
+    "question": "How long was the Traveler unconscious while imprisoned by Dottore?",
+    "correct": "Over a month",
+    "wrong_pool": ["A few days", "One week", "Six months", "A year", "One hour"],
+    "difficulty": "easy"
+  },
+  {
+    "question": "Why did Jotautas (the Fatui grunt) decide to cooperate with the Traveler?",
+    "correct": "He did not trust Dottore and feared he would endanger Snezhnaya",
+    "wrong_pool": ["He was a spy for Arlecchino", "He hated the Tsaritsa", "The Traveler bribed him", "He was actually a Lightkeeper", "He wanted to marry Lauma"],
+    "difficulty": "medium"
+  },
+  {
+    "question": "According to Arlecchino, what happens if Dottore gains control of all three moons?",
+    "correct": "He will gain Teyvat's primordial power and become unstoppable",
+    "wrong_pool": ["He will destroy Celestia", "He will bring back the sibling", "He will become the Tsaritsa", "He will turn everyone into Fatui", "He will end all life"],
+    "difficulty": "medium"
+  },
+  {
+    "question": "What is the significance of the message Columbina left in kuuvahki on the wall?",
+    "correct": "It could only be seen in the moonlight, proving she was still alive",
+    "wrong_pool": ["It was a map to her ship", "It was a list of Dottore's weaknesses", "It was a goodbye note", "It was a spell to kill Rerir", "It was her true name"],
+    "difficulty": "medium"
+  },
+  {
+    "question": "How did Sandrone plan to counter Dottore's 'ascension' research?",
+    "correct": "By combining Rene and Alain's research into a 'world-formula'",
+    "wrong_pool": ["By building a bigger robot", "By using the Akasha System", "By asking the Sibling for help", "By detonating the Bureau", "By stealing the Trilune"],
+    "difficulty": "medium"
+  },
+  {
+    "question": "What did Columbina realize was the source of the 'familiar presence' she felt near the Traveler?",
+    "correct": "Luonnotar",
+    "wrong_pool": ["The Sibling", "Paimon", "Dottore", "Nicole", "Rerir"],
+    "difficulty": "medium"
+  },
+  {
+    "question": "What was the 'Tsaritsa's clearance' given to Arlecchino and Sandrone regarding Dottore?",
+    "correct": "Permission to kill him if he proved to be a threat",
+    "wrong_pool": ["Permission to join his experiment", "Permission to lead the Harbingers", "Permission to leave Snezhnaya", "Permission to use the Gnosis", "Permission to retire"],
+    "difficulty": "medium"
+  },
+  {
+    "question": "Why did Nefer's attempt to delve into the Traveler's mind fail?",
+    "correct": "Dottore detected her, and Nicole had to cut the connection for safety",
+    "wrong_pool": ["The Traveler's mind was empty", "The Handbook was fake", "Paimon stopped her", "Nefer lost her Dendro powers", "The Abyss blocked her"],
+    "difficulty": "medium"
+  },
+  {
+    "question": "What 'perspectives of life' did Dottore show the Traveler while they were seated in the void?",
+    "correct": "He questioned why life was restrained by rules set by the gods",
+    "wrong_pool": ["He showed them a peaceful world", "He showed them their home planet", "He showed them the death of the Archons", "He showed them Paimon's true form", "He showed them the Sibling's coronation"],
+    "difficulty": "medium"
+  },
+  {
+    "question": "How did Columbina interact with the 'Death' tarot card from the past?",
+    "correct": "She used a kuuvahki pulse to manipulate the card pull from the reflection",
+    "wrong_pool": ["She burned it", "She gave it to the Traveler", "She hid it from Barbeloth", "She changed it into 'The Star'", "She drew a mustache on it"],
+    "difficulty": "medium"
+  },
+  {
+    "question": "What was the reason Sandrone turned back to the Bureau during the initial confrontation?",
+    "correct": "To check on the safety of her unit after Dottore threatened to attack them",
+    "wrong_pool": ["She was scared of Dottore", "She forgot her notebook", "She wanted to repair Pulonia", "She was out of ammo", "She decided to join the Wild Hunt"],
+    "difficulty": "medium"
+  },
+  {
+    "question": "In the moon's reflection, what caused Columbina to realize she was traveling backwards in time?",
+    "correct": "She witnessed Nefer throwing a cup at a window to reveal a message she had just 'left'",
+    "wrong_pool": ["The clocks were spinning backward", "People were walking backward", "The moon was getting smaller", "She became a child", "The seasons were reversing"],
+    "difficulty": "medium"
+  },
+  {
+    "question": "What did Albedo discover about the energy fields by using his Geo powers?",
+    "correct": "The fields were made of pure Light Realm energy",
+    "wrong_pool": ["They were made of solid phlogiston", "They were made of Abyssal filth", "They were made of water", "They were made of dreams", "They were made of silver"],
+    "difficulty": "medium"
+  },
+  {
+    "question": "Why does Arlecchino consider Dottore’s attempt to become a god 'treason of the highest order'?",
+    "correct": "It is a direct violation of his loyalty to the Tsaritsa and her goals",
+    "wrong_pool": ["Gods are not allowed in Snezhnaya", "She wants to be a god instead", "The Tsaritsa hates gods", "Dottore is not a Snezhnayan", "It would destroy the Fatui budget"],
+    "difficulty": "hard"
+  },
+  {
+    "question": "What was the 'world-formula' Sandrone was researching to understand Dottore's plan?",
+    "correct": "A combination of Rene and Alain’s research on fate and variables",
+    "wrong_pool": ["A recipe for artificial Gnosis", "A way to destroy Irminsul", "A calculation to move the moon", "A code to deactivate Pulonia", "A ritual to summon the Sibling"],
+    "difficulty": "hard"
+  },
+  {
+    "question": "What specific memory did Columbina experience while collapsing after creating the Hiisi Island shield?",
+    "correct": "A memory of her and Sandrone in Snezhnaya talking about their pasts",
+    "wrong_pool": ["Her birth on the moon", "The crash of the Traveler's ship", "Rerir's betrayal", "Her first tea party with the Tsaritsa", "The death of the Three Moons"],
+    "difficulty": "hard"
+  },
+  {
+    "question": "How did Columbina’s interaction with the 'Bare Nasha Town' memory influence the Traveler in the present?",
+    "correct": "She tapped their shoulder, causing the sensation that made the Traveler notice her back then",
+    "wrong_pool": ["She stole their sword", "She whispered Dottore's name", "She left the Moon Marrow in their pocket", "She tripped Paimon", "She appeared as a phantom"],
+    "difficulty": "hard"
+  },
+  {
+    "question": "What is the 'Primordial Power' of Teyvat mentioned by Arlecchino?",
+    "correct": "The power Dottore will obtain once he controls all three moons",
+    "wrong_pool": ["The power of the Seven Archons", "The power of the Abyss", "The power of the Primordial One", "The power of the Seven Sovereigns", "The power of the Descenders"],
+    "difficulty": "hard"
+  },
+  {
+    "question": "Why did Columbina decide to create Luonnotar with a part of her soul?",
+    "correct": "To trail and help the Traveler and lead them to meet her past self (the little lost dove)",
+    "wrong_pool": ["To fight Dottore", "To act as a new Moon Goddess", "To replace her fading body", "To spy on Arlecchino", "To find her true name"],
+    "difficulty": "hard"
+  },
+  {
+    "question": "What is the name of Dottore's ascended form during the final battle?",
+    "correct": "Heretic of the False Moon",
+    "wrong_pool": ["God of the Trilune", "Sinner of the Abyss", "Lord of the Marrows", "Creator of Snezhnaya", "The Eternal Doctor"],
+    "difficulty": "easy"
+  },
+  {
+    "question": "Which character sacrificed their life by intercepting Dottore's killing blow aimed at the Traveler?",
+    "correct": "Sandrone",
+    "wrong_pool": ["Arlecchino", "Wanderer", "Varka", "Columbina", "Flins"],
+    "difficulty": "easy"
+  },
+  {
+    "question": "Who are the three Moon Sisters that Columbina meets in the moon's reflection?",
+    "correct": "Aria, Sonnet, and Canon",
+    "wrong_pool": ["Aino, Ineffa, and Jahoda", "Nicole, Alice, and Barbeloth", "Rukkhadevata, Kusanali, and Surasthana", "Skirk, Rhinedottir, and Gold", "Luna, Selene, and Hecate"],
+    "difficulty": "easy"
+  },
+  {
+    "question": "Where did Arlecchino promise to bring Sandrone's core to set her affairs in order?",
+    "correct": "Fontaine Research Institute",
+    "wrong_pool": ["House of the Hearth", "Sumeru Akademiya", "Nod-Krai Design Bureau", "Snezhnayan Palace", "The Abyss"],
+    "difficulty": "easy"
+  },
+  {
+    "question": "What did Columbina do to help her elder sisters face the end of their timeline?",
+    "correct": "She transported them back to the real world so they could face the end together",
+    "wrong_pool": ["She resurrected them", "She brought them to the future", "She hid them in the Abyss", "She turned them into kuuhenki", "She gave them her Vision"],
+    "difficulty": "easy"
+  },
+  {
+    "question": "Which Moon Marrow did Columbina give to Lauma at the end of the story?",
+    "correct": "Eternal Moon Marrow",
+    "wrong_pool": ["Iridescent Moon Marrow", "Frost Moon Marrow", "Abyssal Moon Marrow", "Crimson Moon Marrow", "Silver Moon Marrow"],
+    "difficulty": "easy"
+  },
+  {
+    "question": "According to the flight logs, how many times had the Traveler's ship passed by Teyvat?",
+    "correct": "Twice (once thousands of years ago and then when they crashed)",
+    "wrong_pool": ["Only once", "Three times", "Seven times", "Never before", "Every hundred years"],
+    "difficulty": "easy"
+  },
+  {
+    "question": "What is the name of the massive heat source that powers Snezhnayan cities?",
+    "correct": "Krishnik's Torch",
+    "wrong_pool": ["The Tsaritsa's Hearth", "The Eternal Flame", "Frostfire Reactor", "Delusion Core", "Gnosis Radiance"],
+    "difficulty": "easy"
+  },
+  {
+    "question": "Who rescued the Traveler from Dottore's realm at the start of 'The First Sliver of Moonlight'?",
+    "correct": "Wanderer",
+    "wrong_pool": ["Arlecchino", "Columbina", "Albedo", "Sandrone", "Varka"],
+    "difficulty": "easy"
+  },
+  {
+    "question": "What did Columbina have to do for the first time after merging with the Trilunar Authority?",
+    "correct": "Open her eyes",
+    "wrong_pool": ["Speak her name", "Summon a weapon", "Fly to the sun", "Sing a song", "Kill a human"],
+    "difficulty": "easy"
+  },
+  {
+    "question": "What was the 'cost' Nefer was willing to pay to see Columbina's past?",
+    "correct": "Her eyesight (becoming blind)",
+    "wrong_pool": ["Her life", "Her memory", "Her Dendro Vision", "Her position in the Curatorium", "Her friendship with Jahoda"],
+    "difficulty": "easy"
+  },
+  {
+    "question": "What was the final result of the joint assault on Dottore by the five heroes?",
+    "correct": "He was vaporized by a massive beam of lunar energy",
+    "wrong_pool": ["He was imprisoned in the moon", "He escaped to Snezhnaya", "He was turned into a child", "He was absorbed by the Wanderer", "He was eaten by Durin"],
+    "difficulty": "easy"
+  },
+  {
+    "question": "Which Harbinger inherited Sandrone's notes and personal effects?",
+    "correct": "Arlecchino",
+    "wrong_pool": ["Childe", "The Traveler", "Columbina", "Pulcinella", "Dottore"],
+    "difficulty": "easy"
+  },
+  {
+    "question": "What was the name of the youngest Moon Sister?",
+    "correct": "Sonnet",
+    "wrong_pool": ["Aria", "Canon", "Columbina", "Luonnotar", "Tholindis"],
+    "difficulty": "easy"
+  },
+  {
+    "question": "Who did Rerir recognize as an 'old friend' while in the moon's reflection?",
+    "correct": "Columbina",
+    "wrong_pool": ["Dainsleif", "Tholindis", "Dottore", "Irmin", "The Traveler"],
+    "difficulty": "easy"
+  },
+  {
+    "question": "What did the Tsaritsa do regarding Columbina after Dottore's defeat?",
+    "correct": "She revoked the Palestar Edict (arrest warrant)",
+    "wrong_pool": ["She promoted her to 1st Harbinger", "She gave her a Gnosis", "She banned her from Snezhnaya", "She declared war on her", "She sent her a gift"],
+    "difficulty": "easy"
+  },
+  {
+    "question": "Where was the Traveler's spaceship hidden by the Heavenly Principles?",
+    "correct": "On the Frost Moon",
+    "wrong_pool": ["Under Nasha Town", "In the Abyss", "Inside the Design Bureau", "In the moon's reflection", "At the bottom of the sea"],
+    "difficulty": "easy"
+  },
+  {
+    "question": "What did the Wanderer use to compute Sandrone's world-formula?",
+    "correct": "His core hidden inside Pulonia",
+    "wrong_pool": ["The Akasha System", "The Traveler's Handbook", "Rerir's heart", "The Iridescent Marrow", "Sandrone's notebook"],
+    "difficulty": "easy"
+  },
+  {
+    "question": "How did Sandrone trick Dottore regarding her world-formula?",
+    "correct": "She placed the real formula in Pulonia and a false one in herself",
+    "wrong_pool": ["She gave him a virus", "She lied about the math", "She used a puppet to fight him", "She hid the formula in the moon", "She sent it to Nahida"],
+    "difficulty": "medium"
+  },
+  {
+    "question": "Why did Columbina explain she kept her eyes perpetually closed?",
+    "correct": "To avoid the lies she saw everywhere, from the false moon to others' motives",
+    "wrong_pool": ["She was blind", "Her eyes were too bright", "She was sleeping", "She was cursed by Irmin", "She was hiding her true name"],
+    "difficulty": "medium"
+  },
+  {
+    "question": "What did Rerir realize about his fiancé Tholindis in the moon's reflection?",
+    "correct": "The Tholindis he saw was likely an afterimage since she was an ordinary human",
+    "wrong_pool": ["She was a traitor", "She was a Moon Sister", "She was working for Dottore", "She had become the Abyss", "She was never real"],
+    "difficulty": "medium"
+  },
+  {
+    "question": "What was the 'disaster' Nicole mentioned regarding the border of Teyvat?",
+    "correct": "Teyvat has become more easily detectable by the Abyss",
+    "wrong_pool": ["The sky is falling", "The Seven have lost their power", "The Traveler's ship exploded", "The moon is gone", "The Abyss has won"],
+    "difficulty": "medium"
+  },
+  {
+    "question": "What gift did Columbina give the Traveler at the end of their journey?",
+    "correct": "She removed some of Teyvat's restrictions on their elemental use",
+    "wrong_pool": ["A new spaceship", "A Fatui Delusion", "Her Moon Marrow", "The key to Celestia", "A home in Snezhnaya"],
+    "difficulty": "medium"
+  },
+  {
+    "question": "What was the purpose of the 'alchemical signal' that cracked Dottore's dome?",
+    "correct": "It was a signal sent by Albedo and the Wanderer to locate the Traveler",
+    "wrong_pool": ["It was a bomb", "It was the moon crashing", "It was Rerir's power", "It was the Traveler's burst", "It was Sandrone's landcruiser"],
+    "difficulty": "medium"
+  },
+  {
+    "question": "How did Tholindis lose her physical body in the past?",
+    "correct": "It was torn to shreds when she entered the moon's reflection",
+    "wrong_pool": ["Rerir killed her", "Irmin cursed her", "Dottore experimented on her", "She died of old age", "She fell from the moon"],
+    "difficulty": "medium"
+  },
+  {
+    "question": "Why was Sandrone's formula initially stuck at 90% completion?",
+    "correct": "It required the physical moon to be brought into Teyvat to complete the connection",
+    "wrong_pool": ["Sandrone died before finishing", "Dottore broke the computer", "The Wanderer's core was weak", "Paimon ate the data", "The Traveler forgot their part"],
+    "difficulty": "medium"
+  },
+  {
+    "question": "What did the Moon Sisters reveal about their imprisonment?",
+    "correct": "They were imprisoned by Nibelung during his war with the Heavenly Principles",
+    "wrong_pool": ["They were locked away by the Tsaritsa", "They were hiding from the Abyss", "They were punished by the Traveler", "They were created by Dottore", "They were part of the Primordial One"],
+    "difficulty": "medium"
+  },
+  {
+    "question": "What is Varka's concern about the Fatui Harbingers in his letter to Jean?",
+    "correct": "Their disunity and the calculated nature of the Jester",
+    "wrong_pool": ["That they are too strong", "That they have already won", "That they are all friends", "That the Tsaritsa is dead", "That Childe is the leader"],
+    "difficulty": "medium"
+  },
+  {
+    "question": "How did Columbina plan to 'return to the future' after dying in the lunar prison?",
+    "correct": "By dispersing her body into moonlight to be reconstituted later",
+    "wrong_pool": ["By using the Traveler's ship", "By possessing Luonnotar", "By taking Rerir's body", "By being reborn as a child", "By hiding in Sandrone's core"],
+    "difficulty": "medium"
+  },
+  {
+    "question": "Why did Arlecchino say Sandrone's will specified Columbina should not know certain details?",
+    "correct": "The details of her death and the 'false formula' strategy (to spare her grief/guilt)",
+    "wrong_pool": ["Because Columbina is a spy", "Because Sandrone hated her", "Because the Tsaritsa ordered it", "Because it was a prank", "Because the Traveler told her to"],
+    "difficulty": "medium"
+  },
+  {
+    "question": "What is the relationship between 'Canon' and Columbina's current abilities?",
+    "correct": "Canon has a similar power to Sonnet (implying lunar authority/fate manipulation)",
+    "wrong_pool": ["Canon is Columbina's mother", "Canon is a robot", "Canon is Dottore's real name", "Canon is the creator of the Abyss", "Canon is the true moon"],
+    "difficulty": "hard"
+  },
+  {
+    "question": "What 'variable' allowed Rerir to stay intact during his second visit to the moon's reflection?",
+    "correct": "His new body and the kuuvahki he had absorbed",
+    "wrong_pool": ["Dottore's protection", "The Traveler's presence", "Tholindis' soul", "The Trilune", "Arlecchino's flames"],
+    "difficulty": "hard"
+  },
+  {
+    "question": "Why did Sandrone realize her 'equation' was wrong regarding the state of the moons?",
+    "correct": "She had accounted for them being either alive or dead, rather than existing as a 'formula' or authority",
+    "wrong_pool": ["She forgot to add the Marrow", "She thought there were four moons", "The math was based on Fontaine, not Nod-Krai", "Dottore changed the variables", "The Traveler's status as a Descender broke the math"],
+    "difficulty": "hard"
+  },
+  {
+    "question": "What did Columbina discover about the Wanderer's hibernating state?",
+    "correct": "He offered his core to Sandrone to compute the equation into the Ley Lines",
+    "wrong_pool": ["He was dying from Dottore's curse", "He was sleeping until the festival", "He was talking to the Moon Sisters", "He was recharging his Anemo power", "He was hiding from Arlecchino"],
+    "difficulty": "hard"
+  },
+  {
+    "question": "What is the significance of 'Krishnik's Torch' beyond providing heat?",
+    "correct": "It powers Snezhnaya's advanced infrastructure through 'grand and distant' energy",
+    "wrong_pool": ["It is a weapon of mass destruction", "It is the prison of a god", "It is the source of all Delusions", "It is where the Gnosis is kept", "It is a beacon for the Abyss"],
+    "difficulty": "hard"
+  },
+  {
+    "question": "What did Canon tell Columbina she 'missed out on' by keeping her eyes closed?",
+    "correct": "The genuine truth and the true smiles of her mortal friends",
+    "wrong_pool": ["The beauty of the moon", "The location of the ship", "Dottore's betrayal", "The Sibling's arrival", "Her true name"],
+    "difficulty": "hard"
   }
 ]
-

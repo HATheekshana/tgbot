@@ -1,0 +1,531 @@
+[
+    {
+        "question": "Who is the Archon of Geo?",
+        "correct": "Zhongli",
+        "wrong_pool": ["Venti", "Raiden Shogun", "Nahida", "Furina", "Mavuika", "Xingqiu", "Diluc"],
+        "difficulty": "easy"
+    },
+    {
+        "question": "What is the max level for a 5-star Artifact?",
+        "correct": "20",
+        "wrong_pool": ["16", "10", "12", "15", "25", "30", "90"],
+        "difficulty": "easy"
+    },
+    {
+        "question": "Which element does Venti control?",
+        "correct": "Anemo",
+        "wrong_pool": ["Geo", "Electro", "Hydro", "Pyro", "Cryo", "Dendro"],
+        "difficulty": "easy"
+    },
+    {
+        "question": "What is the name of the Traveler’s sibling?",
+        "correct": "Aether/Lumine",
+        "wrong_pool": ["Diluc", "Kaeya", "Xiao", "Scaramouche", "Dainsleif"],
+        "difficulty": "easy"
+    },
+    {
+        "question": "Which region is inspired by Japan?",
+        "correct": "Inazuma",
+        "wrong_pool": ["Mondstadt", "Liyue", "Sumeru", "Fontaine", "Natlan"],
+        "difficulty": "easy"
+    },
+    {
+        "question": "What is the resin cap in Genshin Impact?",
+        "correct": "200",
+        "wrong_pool": ["120", "180", "100", "240", "300"],
+        "difficulty": "easy"
+    },
+    {
+        "question": "Which weapon type does Diluc use?",
+        "correct": "Claymore",
+        "wrong_pool": ["Sword", "Polearm", "Bow", "Catalyst"],
+        "difficulty": "easy"
+    },
+    {
+        "question": "What boss drops 'Everflame Seed'?",
+        "correct": "Pyro Regisvine",
+        "wrong_pool": ["Cryo Regisvine", "Electro Hypostasis", "Oceanid", "Maguu Kenki"],
+        "difficulty": "medium"
+    },
+    {
+        "question": "Which character uses a puppet body created by Ei?",
+        "correct": "Scaramouche",
+        "wrong_pool": ["Kazuha", "Thoma", "Itto", "Ayato", "Gorou"],
+        "difficulty": "medium"
+    },
+    {
+        "question": "What is the name of the main currency used for wishes?",
+        "correct": "Primogems",
+        "wrong_pool": ["Mora", "Genesis Crystals", "Stardust", "Starglitter"],
+        "difficulty": "easy"
+    },
+    {
+        "question": "What is the highest Adventure Rank?",
+        "correct": "60",
+        "wrong_pool": ["50", "55", "70", "80", "90"],
+        "difficulty": "easy"
+    },
+    {
+        "question": "Which boss is a dragon in Mondstadt?",
+        "correct": "Stormterror (Dvalin)",
+        "wrong_pool": ["Azhdaha", "Andrius", "Signora", "Boreas", "Dvalin's Shadow"],
+        "difficulty": "easy"
+    },
+    {
+        "question": "Which of these weapons is exclusively available via limited-time event or wish banners?",
+        "correct": "Skyward Blade",
+        "wrong_pool": ["Prototype Crescent", "Favonius Lance", "Blackcliff Pole", "Iron Sting", "Whiteblind"],
+        "difficulty": "medium"
+    },
+    {
+        "question": "Which Archon is also referred to as the 'God of Eternity'?",
+        "correct": "Raiden Shogun",
+        "wrong_pool": ["Venti", "Zhongli", "Kusanali", "Murata", "Focalors"],
+        "difficulty": "easy"
+    },
+    {
+        "question": "Who ruled the world in the earliest era?",
+        "correct": "Dragons (Vishaps)",
+        "wrong_pool": ["Humans", "Archons", "Adepti", "The Fatui", "Seelie"],
+        "difficulty": "medium"
+    },
+    {
+        "question": "What did the Heavenly Principles create after winning?",
+        "correct": "A false sky",
+        "wrong_pool": ["A new element", "The Abyss", "New Sovereigns", "The Ley Lines", "Celestia"],
+        "difficulty": "hard"
+    },
+    {
+        "question": "The current world exists under whose rule?",
+        "correct": "The Heavenly Principles",
+        "wrong_pool": ["The Sovereigns", "The Vishaps", "Humans", "The Abyss Order", "The Seven Archons"],
+        "difficulty": "medium"
+    },
+    {
+        "question": "What was the original world of Teyvat called?",
+        "correct": "Light Realm",
+        "wrong_pool": ["Abyss Realm", "Human Realm", "Sky Realm", "Void Realm", "Celestial Realm"],
+        "difficulty": "hard"
+    },
+    {
+        "question": "Which element reacts with Pyro to create Vaporize?",
+        "correct": "Hydro",
+        "wrong_pool": ["Electro", "Cryo", "Anemo", "Dendro", "Geo"],
+        "difficulty": "easy"
+    },
+    {
+        "question": "What major event caused dragons to regress into smaller, weaker forms?",
+        "correct": "Destruction of Holy Soil by human agriculture",
+        "wrong_pool": ["The Cataclysm", "War with the Abyss Order", "Loss of ley line energy", "The Archon War", "The fall of Khaenri'ah"],
+        "difficulty": "hard"
+    },
+    {
+        "question": "Which ancient dragon leader encountered Seutervoinen before the Heavenly Principles arrived?",
+        "correct": "Nibelung",
+        "wrong_pool": ["Morax", "Orobashi", "Xiuhcoatl", "Apep", "Dvalin"],
+        "difficulty": "hard"
+    },
+    {
+        "question": "What major event caused dragons to regress into smaller, weaker forms?",
+        "correct": "Destruction of Holy Soil by human agriculture",
+        "wrong_pool": ["The Cataclysm", "War with the Abyss Order", "Loss of ley line energy", "The Archon War", "The fall of Khaenri'ah"],
+        "difficulty": "hard"
+    },
+    {
+        "question": "Which ancient dragon leader encountered Seutervoinen before the Heavenly Principles arrived?",
+        "correct": "Nibelung",
+        "wrong_pool": ["Morax", "Orobashi", "Xiuhcoatl", "Apep", "Dvalin"],
+        "difficulty": "hard"
+    },
+    {
+        "question": "Which of the Three Moon sisters transformed into the baleful 'Crimson Moon' after fusing with the Abyss?",
+        "correct": "Sonnet",
+        "wrong_pool": ["Aria", "Canon", "Columbina", "Zibai", "Nichole"],
+        "difficulty": "hard"
+    },
+    {
+        "question": "What was the 'Moon's Reflection' created by Nibelung used for during the Funerary Year?",
+        "correct": "A specialized lunar prison of warped space-time",
+        "wrong_pool": ["A gateway to the Sea of Stars", "A weapon to shatter the False Sky", "A sanctuary for the Seelie race", "A laboratory for ancient dragon tech", "A palace for the Heavenly Principles"],
+        "difficulty": "hard"
+    },
+    {
+        "question": "Which moon remained intact but was flung beyond the False Sky, becoming darkened and lifeless?",
+        "correct": "The Frost Moon",
+        "wrong_pool": ["The Eternal Moon", "The Iridescent Moon", "The Shadow Moon", "The Crimson Moon", "The Abyssal Moon"],
+        "difficulty": "hard"
+    },
+    {
+        "question": "Whose remains coalesced into the 'Moon Marrow' kept by the Frostmoon Scions?",
+        "correct": "Aria",
+        "wrong_pool": ["Sonnet", "Canon", "Columbina", "Nibelung", "Xiuhcoatl"],
+        "difficulty": "hard"
+    },
+    {
+        "question": "Who served as the envoy between the Lunar Palace and Celestia, riding the Lunar Chariot?",
+        "correct": "Zibai",
+        "wrong_pool": ["Istaroth", "Skirk", "Nicole", "Mavuika", "Sandrone"],
+        "difficulty": "hard"
+    },
+    {
+        "question": "How did Columbina eventually acquire the status of the 'Trilune Goddess'?",
+        "correct": "The original sisters abdicated their authorities to her",
+        "wrong_pool": ["She defeated Dottore in the Moon's Reflection", "She absorbed the stardust of the Eternal Moon", "She was born from the Primordial Sea with full power", "She stole the Moon Marrow from Arlecchino", "She made a contract with the Heavenly Principles"],
+        "difficulty": "hard"
+    },
+    {
+        "question": "What is the recurring phenomenon in the Spiral Abyss where the lunar phase shifts twice a month?",
+        "correct": "Moment of Syzygy",
+        "wrong_pool": ["Funerary Year", "Moon-Prayer Night", "Palestar Edict", "The Ashen-White Order", "Ripples of the Welkin"],
+        "difficulty": "hard"
+    },
+    {
+        "question": "What was the intended fourth moon, which failed to materialize and formed the region of Nod-Krai?",
+        "correct": "The project by the Thirteen Sovereign Lords",
+        "wrong_pool": ["The Solar Chariot", "The Shadow Moon", "The False Sky", "The Abyssal Spire", "The Kuuvahki Cannon"],
+        "difficulty": "hard"
+    },
+  {
+    "question": "Which Fatui Harbinger is the 'Father' of the House of the Hearth in Fontaine?",
+    "correct": "Arlecchino",
+    "wrong_pool": ["Sandrone", "Pulcinella", "Signora", "Childe", "Dottore"],
+    "difficulty": "easy"
+  },
+  {
+    "question": "In which nation did the Fatui mastermind the 'Vision Hunt Decree' to destabilize the local government?",
+    "correct": "Inazuma",
+    "wrong_pool": ["Mondstadt", "Liyue", "Sumeru", "Fontaine", "Natlan"],
+    "difficulty": "easy"
+  },
+  {
+    "question": "Hailing from Snezhnaya, what is the Fatui's public-facing role in foreign nations?",
+    "correct": "A political department representing the goodwill of the Tsaritsa",
+    "wrong_pool": ["A purely mercenary group for hire", "A religious sect worshipping the Abyss", "An international trade guild", "A neutral scientific research team"],
+    "difficulty": "medium"
+  },
+  {
+    "question": "What was the fate of the Fatui's Ninth Company in The Chasm after the Jade Chamber incident?",
+    "correct": "They were abandoned by the Millelith and declared criminals",
+    "wrong_pool": ["They were promoted for their exploration efforts", "They successfully extracted the mysterious sludge", "They were rescued by Childe", "They joined the Treasure Hoarders officially"],
+    "difficulty": "medium"
+  },
+  {
+    "question": "Which Harbinger oversaw the 'Kuuvahki Experimental Design Bureau' in Nod-Krai?",
+    "correct": "Sandrone",
+    "wrong_pool": ["Pantalone", "Capitano", "Dottore", "Scaramouche", "Pierro"],
+    "difficulty": "medium"
+  },
+  {
+    "question": "In Sumeru, what specific creatures was Dottore interested in due to their power to manipulate dreams?",
+    "correct": "Aranara",
+    "wrong_pool": ["Saurians", "Pari", "Fungus", "Riftwolves", "Eremites"],
+    "difficulty": "medium"
+  },
+  {
+    "question": "What was the 'Palestar Edict' issued by the Fatui in Snezhnaya?",
+    "correct": "An order to retrieve Columbina after her resignation",
+    "wrong_pool": ["A declaration of war against the Abyss", "A plan to assassinate the Pyro Archon", "An order to dissolve the House of the Hearth", "A decree to replace the Cryo Archon"],
+    "difficulty": "hard"
+  },
+  {
+    "question": "In Natlan, which Fatui group was responsible for experimenting on Saurians regarding Phlogiston?",
+    "correct": "The Polychrome Tri-Stars",
+    "wrong_pool": ["The 34th Independent Investigative Squad", "The Ninth Company", "The Oprichniki", "The Landcruisers", "The House of the Hearth"],
+    "difficulty": "hard"
+  },
+  {
+    "question": "According to the records of the 'Apocalypse Bunker' in Nod-Krai, what was the facility actually used for?",
+    "correct": "A dangerous experiment involving abyssal energy",
+    "wrong_pool": ["A storage unit for the Tsaritsa's Gnoses", "A training ground for the Eleven Harbingers", "A secret meeting place for the Hexenzirkel", "A production line for the Solar Chariot"],
+    "difficulty": "hard"
+  },
+  {
+    "question": "What did Arlecchino do with the cores of Sandrone and Pulonia after the battle with Dottore?",
+    "correct": "Sent them to the Fontaine Research Institute",
+    "wrong_pool": ["Returned them to the Tsaritsa", "Buried them in the Frostmoon ruins", "Used them to power the Kuuvahki Cannon", "Crushed them to end their suffering"],
+    "difficulty": "hard"
+  },
+  {
+    "question": "Which Fatui agent was ordered to assassinate Elchingen after his fungus army plot failed?",
+    "correct": "Yurochka",
+    "wrong_pool": ["Viktor", "Javert", "Oleg", "Kasim", "Efim"],
+    "difficulty": "hard"
+  },
+  {
+    "question": "Which Harbinger was responsible for the experiment to turn Scaramouche into an artificial god in Sumeru?",
+    "correct": "Il Dottore",
+    "wrong_pool": ["Pierro", "Capitano", "Arlecchino", "Tartaglia", "Pantalone"],
+    "difficulty": "easy"
+  },
+  {
+    "question": "What is the name of the Snezhnayan national bank used by the Fatui to fund their international operations?",
+    "correct": "Northland Bank",
+    "wrong_pool": ["Bank of Goth", "Snezhnaya Central", "The Tsaritsa's Vault", "Liyue Qixing Exchange", "Mondstadt Monetary"],
+    "difficulty": "easy"
+  },
+  {
+    "question": "In Fontaine, which Harbinger was falsely accused and sentenced to the Fortress of Meropide?",
+    "correct": "Tartaglia",
+    "wrong_pool": ["Sandrone", "Arlecchino", "Pulcinella", "Signora", "Scaramouche"],
+    "difficulty": "medium"
+  },
+  {
+    "question": "What are the specialized Fatui personnel in Nod-Krai called, who utilize local kuuvahki for their equipment?",
+    "correct": "Oprichniki and Landcruisers",
+    "wrong_pool": ["Skirmishers and Agents", "Cicin Mages and Mirror Maidens", "The 34th Investigative Squad", "The Ninth Company", "House of the Hearth Infiltrators"],
+    "difficulty": "medium"
+  },
+  {
+    "question": "Which Fatui agent in Inazuma planned to poison Watatsumi Island to raise Arlecchino's prestige?",
+    "correct": "Efim Snezhevich",
+    "wrong_pool": ["Borenka", "Lyudochka", "Javert", "Viktor", "Anton"],
+    "difficulty": "medium"
+  },
+  {
+    "question": "What 'diplomatic gift' did Neuvillette give to Arlecchino after the Fontaine prophecy was averted?",
+    "correct": "The Hydro Gnosis",
+    "wrong_pool": ["A seat in the Palais Mermonia", "The Holy Lyre der Himmel", "A Moon Wheel", "A Proof of the Cognoscenti", "Control over the Fortress of Meropide"],
+    "difficulty": "medium"
+  },
+  {
+    "question": "What was the purpose of the 'Nilotpala Cup Beast Tamers Tournament' plot led by Elchingen?",
+    "correct": "To overthrow Sumeru with a controlled army of fungus",
+    "wrong_pool": ["To extract energy from the Withering Zones", "To capture Aranara for study", "To replace the Dendro Archon", "To steal the Electro Gnosis", "To find the Solar Chariot"],
+    "difficulty": "hard"
+  },
+  {
+    "question": "Which project thrust Arlecchino and her organization into the spotlight after acquiring the Hydro Gnosis?",
+    "correct": "Project Stuzha",
+    "wrong_pool": ["The Tatarasuna Incident", "The Palestar Edict", "The Funerary Year", "The Moment of Syzygy", "The Kuuvahki Initiative"],
+    "difficulty": "hard"
+  },
+  {
+    "question": "In Natlan, which Fatui officer led an elite force into the Temple of Cascading Colors but was revealed to be an artificial creation of Sandrone?",
+    "correct": "Velimiru",
+    "wrong_pool": ["Grudoc", "Malinovskyi", "Shumilov", "Markozov", "Oleg"],
+    "difficulty": "hard"
+  },
+  {
+    "question": "Who is the manager of the Northland Bank branch located in Nod-Krai?",
+    "correct": "Jarosznski",
+    "wrong_pool": ["Ekaterina", "Andrei", "Vsevolod", "Javert", "Henri"],
+    "difficulty": "hard"
+  },
+  {
+    "question": "What did Arlecchino sacrifice or lose while saving the Traveler and Columbina from Riftwolves in Nod-Krai?",
+    "correct": "Her hands were corroded by the wolves",
+    "wrong_pool": ["Her Vision was shattered", "Her Delusion was stolen by Dottore", "She lost her status as a Harbinger", "She lost her memories of the House", "Her Moon Wheel was destroyed"],
+    "difficulty": "hard"
+  },
+  {
+    "question": "Which Harbinger was involved in the death of Diluc's father, Crepus, in Mondstadt?",
+    "correct": "Il Dottore",
+    "wrong_pool": ["Signora", "Capitano", "Pantalone", "Pierro", "Sandrone"],
+    "difficulty": "hard"
+  },
+  {
+    "question": "What is the true identity of the 'First Descender' who originally hailed from the sea of stars?",
+    "correct": "The Primordial One (Phanes)",
+    "wrong_pool": ["Nibelung", "The Second Who Came", "The Third Descender", "Seutervoinen", "The Fourth Descender"],
+    "difficulty": "easy"
+  },
+  {
+    "question": "How many 'Shades' did the Primordial One create to help administer the laws of Teyvat?",
+    "correct": "Four",
+    "wrong_pool": ["Three", "Seven", "Eleven", "Twelve", "Six"],
+    "difficulty": "easy"
+  },
+  {
+    "question": "What was the primary purpose for the creation of the Gnoses according to ancient history?",
+    "correct": "To compensate for the Primordial One's injuries after the war",
+    "wrong_pool": ["To grant the Archons infinite elemental energy", "To seal the Abyss away forever", "To transform humans into gods", "To create a map of the Sea of Stars", "To store the memories of the Seelie"],
+    "difficulty": "medium"
+  },
+  {
+    "question": "Which era predates the arrival of the Heavenly Principles and the reshaped Human Realm?",
+    "correct": "The era of the ancient dragons and Seven Sovereigns",
+    "wrong_pool": ["The era of the Seven Archons", "The Cataclysm", "The Archon War", "The era of the Unified Civilization", "The Khaenri'ah Dynasty"],
+    "difficulty": "medium"
+  },
+  {
+    "question": "What event 500 years ago caused the Heavenly Principles to enter a dormant, sleeping state?",
+    "correct": "Intervening to stop the Abyssal power during the Cataclysm",
+    "wrong_pool": ["The battle against the Dragon King Nibelung", "The end of the Archon War", "The destruction of the Three Moons", "The arrival of the Traveler", "A betrayal by the Four Shades"],
+    "difficulty": "medium"
+  },
+  {
+    "question": "What did the Primordial One steal from the Seven Sovereigns to establish the seats in Celestia?",
+    "correct": "Their Authorities",
+    "wrong_pool": ["Their Gnoses", "Their physical hearts", "Their wings", "The Holy Soil", "The Primordial Sea"],
+    "difficulty": "medium"
+  },
+  {
+    "question": "Who was the voyager from beyond Teyvat whose arrival interrupted the reign of the ruler of the firmament?",
+    "correct": "Seutervoinen",
+    "wrong_pool": ["Phanes", "Istaroth", "The Tsaritsa", "Dottore", "Skirk"],
+    "difficulty": "hard"
+  },
+  {
+    "question": "The Seven Archons' seats in Celestia are specifically noted to contain what stolen power?",
+    "correct": "Dragon Authorities",
+    "wrong_pool": ["Abyssal Energy", "Light Realm Phlogiston", "Lunar Marrow", "The breath of the Anemo Archon", "The souls of the Four Shades"],
+    "difficulty": "hard"
+  },
+  {
+    "question": "Following the War of Funerary Flame, what did the Heavenly Principles do to maintain their control?",
+    "correct": "Banned all knowledge of history predating the war",
+    "wrong_pool": ["Executed all surviving dragons immediately", "Created the Spiral Abyss as a library", "Appointed the Fatui as world police", "Destroyed the Northland Bank", "Merged the Human and Light Realms"],
+    "difficulty": "hard"
+  },
+  {
+    "question": "Which two major organizations are currently exploiting the Heavenly Principles' dormant state to attempt a coup?",
+    "correct": "The Abyss Order and the Fatui",
+    "wrong_pool": ["The Knights of Favonius and Liyue Qixing", "The Sumeru Akademiya and the Fontaine Research Institute", "The Watatsumi Resistance and the Shogunate", "The Hexenzirkel and the Narzissenkreuz Ordo", "The Frostmoon Scions and the Tanit Tribe"],
+    "difficulty": "hard"
+  },
+  {
+    "question": "What is the name of the food-loving companion who travels with the Traveler?",
+    "correct": "Paimon",
+    "wrong_pool": ["Guoba", "Oz", "Ushi", "Taroumaru", "Baron Bunny"],
+    "difficulty": "easy"
+  },
+  {
+    "question": "Which city is known as the 'City of Freedom'?",
+    "correct": "Mondstadt",
+    "wrong_pool": ["Liyue Harbor", "Inazuma City", "Sumeru City", "Court of Fontaine"],
+    "difficulty": "easy"
+  },
+  {
+    "question": "What is the name of the red-clad Spark Knight of the Knights of Favonius?",
+    "correct": "Klee",
+    "wrong_pool": ["Amber", "Yanfei", "Hu Tao", "Yoimiya", "Xiangling"],
+    "difficulty": "easy"
+  },
+  {
+    "question": "Which element reacts with Hydro to create the 'Frozen' status?",
+    "correct": "Cryo",
+    "wrong_pool": ["Pyro", "Electro", "Geo", "Anemo", "Dendro"],
+    "difficulty": "easy"
+  },
+  {
+    "question": "What is the name of the funeral parlor where Hu Tao and Zhongli work?",
+    "correct": "Wangsheng Funeral Parlor",
+    "wrong_pool": ["Bubu Pharmacy", "Yanshang Teahouse", "Northland Bank", "Wanmin Restaurant"],
+    "difficulty": "easy"
+  },
+  {
+    "question": "Which character is the Acting Grand Master of the Knights of Favonius?",
+    "correct": "Jean",
+    "wrong_pool": ["Lisa", "Kaeya", "Eula", "Albedo", "Diluc"],
+    "difficulty": "easy"
+  },
+  {
+    "question": "What is the name of the mysterious organization Dainsleif belongs to?",
+    "correct": "Khaenri'ah",
+    "wrong_pool": ["The Fatui", "The Abyss Order", "The Adepti", "The Hexenzirkel"],
+    "difficulty": "easy"
+  },
+  {
+    "question": "Which giant tree serves as the center of Sumeru City?",
+    "correct": "Irminsul",
+    "wrong_pool": ["Windrise Tree", "Frostbearing Tree", "Sacred Sakura", "The Elder Tree"],
+    "difficulty": "easy"
+  },
+  {
+    "question": "What kind of creature is Ganyu?",
+    "correct": "Half-Qilin",
+    "wrong_pool": ["Half-Dragon", "Half-Fox", "Pure Human", "Zombie", "Adeptus bird"],
+    "difficulty": "easy"
+  },
+  {
+    "question": "What item do you use to level up a character's talents?",
+    "correct": "Talent Books",
+    "wrong_pool": ["Character EXP Materials", "Weapon Enhancement Ore", "Artifacts", "Mora only"],
+    "difficulty": "easy"
+  },
+  {
+    "question": "Which character is the idol of Mondstadt and works as a deaconess at the Cathedral?",
+    "correct": "Barbara",
+    "wrong_pool": ["Jean", "Rosaria", "Lisa", "Noelle", "Amber"],
+    "difficulty": "easy"
+  },
+  {
+    "question": "What is the name of the receptionist at the Adventurers' Guild found in every major city?",
+    "correct": "Katheryne",
+    "wrong_pool": ["Sara", "Marjorie", "Flora", "Donna", "Wagner"],
+    "difficulty": "easy"
+  },
+  {
+    "question": "Which city is known as the 'City of Contracts'?",
+    "correct": "Liyue Harbor",
+    "wrong_pool": ["Mondstadt", "Inazuma City", "Sumeru City", "Court of Fontaine"],
+    "difficulty": "easy"
+  },
+  {
+    "question": "How many Daily Commissions can you complete for rewards each day?",
+    "correct": "4",
+    "wrong_pool": ["3", "5", "6", "8", "10"],
+    "difficulty": "easy"
+  },
+  {
+    "question": "What is the name of Xiangling's bear companion who breathes fire?",
+    "correct": "Guoba",
+    "wrong_pool": ["Oz", "Ushi", "Yuegui", "Baron Bunny", "Taroumaru"],
+    "difficulty": "easy"
+  },
+  {
+    "question": "Which character is known for having incredibly bad luck and leading 'Benny's Adventure Team'?",
+    "correct": "Bennett",
+    "wrong_pool": ["Razor", "Chongyun", "Xingqiu", "Kaveh", "Itto"],
+    "difficulty": "easy"
+  },
+  {
+    "question": "What is the name of the winery owned by Diluc in Mondstadt?",
+    "correct": "Dawn Winery",
+    "wrong_pool": ["Springvale Spirits", "Goth Grand Hotel", "Cat's Tail", "Angel's Share"],
+    "difficulty": "easy"
+  },
+  {
+    "question": "Which element creates the 'Swirl' reaction when it comes into contact with other elements?",
+    "correct": "Anemo",
+    "wrong_pool": ["Geo", "Hydro", "Electro", "Dendro", "Cryo"],
+    "difficulty": "easy"
+  },
+  {
+    "question": "Who is the 'Outrider' of the Knights of Favonius who helps the Traveler at the start of the game?",
+    "correct": "Amber",
+    "wrong_pool": ["Eula", "Kaeya", "Albedo", "Sucrose", "Mona"],
+    "difficulty": "easy"
+  },
+  {
+    "question": "What is the name of the bird companion that fights alongside Fischl?",
+    "correct": "Oz",
+    "wrong_pool": ["Guoba", "Ushi", "Dvalin", "Paimon", "Hanachirusato"],
+    "difficulty": "easy"
+  },
+  {
+    "question": "Which element does the character Noelle use?",
+    "correct": "Geo",
+    "wrong_pool": ["Anemo", "Cryo", "Hydro", "Pyro", "Electro"],
+    "difficulty": "easy"
+  },
+  {
+    "question": "What is the name of the system used to decorate your own personal home world?",
+    "correct": "Serenitea Pot",
+    "wrong_pool": ["Adventurer's Handbook", "TCG Invokation", "Battle Pass", "Paimon Menu"],
+    "difficulty": "easy"
+  },
+  {
+    "question": "Which character is the librarian of the Knights of Favonius?",
+    "correct": "Lisa",
+    "wrong_pool": ["Jean", "Eula", "Mona", "Ningguang", "Nahida"],
+    "difficulty": "easy"
+  },
+  {
+    "question": "Which major region is inspired by the nation of France?",
+    "correct": "Fontaine",
+    "wrong_pool": ["Mondstadt", "Liyue", "Inazuma", "Sumeru", "Natlan"],
+    "difficulty": "easy"
+  }
+]
+
