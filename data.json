@@ -269,15 +269,15 @@
   "210273": { "icon": "UI_NameCardPic_Varka_P" },
   "210274": { "icon": "UI_NameCardPic_Bp48_P" },
     "210275": {
-        "icon": "/ui/UI_NameCardPic_Linnea_P.jpg"
+        "icon": "UI_NameCardPic_Linnea_P.jpg"
     },
     "210276": {
-        "icon": "/ui/UI_NameCardPic_Kzsd_P.jpg"
+        "icon": "UI_NameCardPic_Kzsd_P.jpg"
     },
     "210277": {
-        "icon": "/ui/UI_NameCardPic_KzsdOffering_P.jpg"
+        "icon": "UI_NameCardPic_KzsdOffering_P.jpg"
     },
     "210278": {
-        "icon": "/ui/UI_NameCardPic_Bp49_P.jpg"
+        "icon": "UI_NameCardPic_Bp49_P.jpg"
     }
 }
