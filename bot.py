@@ -8,6 +8,7 @@ import random
 import calendar
 import io
 import aiohttp
+from character_card import characters_card
 from datetime import datetime
 from aiogram.exceptions import TelegramBadRequest
 from pymongo import ReturnDocument
@@ -75,8 +76,8 @@ BANNER_NAMES = {
     200: "Standard"
 }
 
-CURRENT_RATE_UP_KEY = "skirk" 
-CURRENT_RATE_UP_NAME = characters5.get(CURRENT_RATE_UP_KEY, "Skirk")
+CURRENT_RATE_UP_KEY = "flins" 
+CURRENT_RATE_UP_NAME = characters5.get(CURRENT_RATE_UP_KEY, "Flins")
 
 try:
     with open('char.json', 'r') as file:
@@ -769,99 +770,74 @@ async def handle_card_generation(callback: types.CallbackQuery):
     if callback.from_user.id != owner_id:
         return await callback.answer("⏳ This menu isn't for you!", show_alert=True)
 
-    await callback.answer("⏳ Generating...")
+    await callback.answer("⏳ Generating Local Card...")
 
-    # Loading screen
-    try:
-        loading_img = FSInputFile("Loading_Screen_Startup.webp")
-        await callback.message.edit_media(
-            media=InputMediaPhoto(
-                media=loading_img,
-                caption="<b>Creating card and calculating rank...</b>",
-                parse_mode="HTML"
-            )
-        )
-    except:
-        pass
-
+    # 1. Fetch character ID from Enka data
     user_info = await get_enkadata(uid)
     showcase = user_info.get("showAvatarInfoList", [])
 
-    # ✅ FIX: prevent crash
     if char_index >= len(showcase):
-        return await callback.answer("❌ Character not found.", show_alert=True)
+        return await callback.answer("❌ Character not found in showcase.", show_alert=True)
 
     current_char = showcase[char_index]
-    char_id = str(current_char.get("avatarId"))
+    char_id = int(current_char.get("avatarId"))
+    
+    # 2. Local Card Generation (Replacing the API call)
+    try:
+        # We call your local function directly
+        # Ensure your characters_card function in character_card.py returns the BytesIO buffer
+        image_buffer = await characters_card(uid, char_id)
+        
+        if not image_buffer:
+            raise Exception("Buffer is empty")
+            
+    except Exception as e:
+        print(f"LOCAL GEN ERROR: {e}")
+        return await callback.message.edit_caption(
+            caption="Failed to generate local card. Check console logs."
+        )
 
-    char_entry = CHARACTER_MAP.get(char_id)
-    display_name = char_entry.get("name", "Unknown") if char_entry else f"ID: {char_id}"
-
-    card_api = "https://gi-card-api.onrender.com/character_card"
+    # 3. Fetch Ranking (Optional: keep this external if you don't have a local DB for it)
+    ranking_text = ""
     ranking_api = f"https://test-xehj.onrender.com/get/ranking/{uid}"
-
+    
     async with aiohttp.ClientSession() as session:
         try:
-            update_url = f"https://gi-card-api.onrender.com/update?uid={uid}"
-            async with session.get(update_url) as update_resp:
-                await update_resp.json()
-            payload = {
-                "uid": uid,
-                "character_index": char_index,
-                "template": 1,
-                "img": None
-            }
-
-            async with session.post(card_api, json=payload) as card_resp:
-                card_data = await card_resp.json()
-                card_url = card_data.get("response") or card_data.get("url")
-
-            ranking_text = ""
             async with session.get(ranking_api) as rank_resp:
                 if rank_resp.status == 200:
                     all_ranks = await rank_resp.json()
-                    char_rank_data = all_ranks.get(char_id)
-
+                    char_rank_data = all_ranks.get(str(char_id))
                     if char_rank_data:
                         rank = char_rank_data.get("ranking")
                         out_of = char_rank_data.get("outOf")
                         percent = char_rank_data.get("percent")
-
                         ranking_text = (
                             f"\n\n<b>ʚଓ Global Rank :</b> {rank}/{out_of}"
                             f"\n<b>ʚଓ Top :</b> {percent}%"
                         )
+        except:
+            pass # Ranking is secondary, don't crash if it fails
 
-            if not card_url:
-                return await callback.message.edit_caption(
-                    caption="❌ Failed to generate card.\nTry again later."
-                )
+    # 4. Prepare UI
+    char_entry = CHARACTER_MAP.get(str(char_id))
+    display_name = char_entry.get("name", "Unknown") if char_entry else f"ID: {char_id}"
+    
+    back_builder = InlineKeyboardBuilder()
+    back_builder.button(text="Back to List", callback_data=f"refresh_{uid}_{owner_id}")
 
-            back_builder = InlineKeyboardBuilder()
+    # 5. Send the photo from the Buffer
+    await callback.message.delete()
+    
+    # Use BufferedInputFile for the BytesIO object
+    photo = BufferedInputFile(image_buffer.getvalue(), filename=f"{char_id}.png")
+    target = callback.message.reply_to_message or callback.message
 
-            # ✅ FIX: include owner_id
-            back_builder.button(
-                text="Back to List",
-                callback_data=f"refresh_{uid}_{owner_id}"
-            )
-
-            await callback.message.delete()
-
-            target = callback.message.reply_to_message or callback.message
-
-            await target.reply_photo(
-                photo=URLInputFile(card_url),
-                caption=f"✨ <b>{display_name}</b>{ranking_text}",
-                reply_markup=back_builder.as_markup(),
-                parse_mode="HTML"
-            )
-
-        except Exception as e:
-            print("ERROR:", e)
-            await callback.message.edit_caption(
-                caption="❌ Failed to generate card.\nCheck your showcase or try again later."
-            )
-
+    await target.reply_photo(
+        photo=photo,
+        caption=f"✨ <b>{display_name}</b>{ranking_text}",
+        reply_markup=back_builder.as_markup(),
+        parse_mode="HTML"
+    )
 
 # =========================
 # BACK BUTTON HANDLER

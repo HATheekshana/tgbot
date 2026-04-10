@@ -143,15 +143,12 @@ def draw_dynamic_bubble(draw, text, position, font, padding=20, text_color=(255,
     bg_coords = [bbox[0] - padding, bbox[1] - (padding // 2), bbox[2] + padding, bbox[3] + (padding // 2)]
     draw.rounded_rectangle(bg_coords, radius=10, fill=(20, 20, 30, 180), outline=(255, 255, 255, 150), width=1)
     draw.text(position, text, font=font, fill=text_color, anchor=anchor)
-with open('weapon_names.json', 'r') as f:
-    WEAPON_DATA_MAP = json.load(f)
+with open("new.json", "r", encoding="utf-8") as f:
+    TEXT = json.load(f)
 
-def get_weapon_name(weapon_id):
-    # weapon_id is the itemId from Enka (e.g., 13101)
-    entry = WEAPON_DATA_MAP.get(str(weapon_id))
-    if entry:
-        return entry.get("EN", "Unknown Weapon")
-    return "Unknown Weapon"
+def get_weapon_name(weapon_info):
+    name_hash = str(weapon_info.get('hash', ''))
+    return TEXT.get(name_hash, f"Weapon {weapon_info.get('id')}")
 async def fetch_image(session, url):
     async with session.get(url) as response:
         if response.status == 200:
