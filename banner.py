@@ -2,18 +2,18 @@ from datetime import datetime, timezone
 
 # CURRENT BANNER END TIMES
 CURRENT_END = {
-    "Asia": datetime(2026, 4, 7, 7, 0, tzinfo=timezone.utc),
+    "Asia": datetime(2026, 4, 27, 7, 0, tzinfo=timezone.utc),
     
-    "EU": datetime(2026, 4, 7, 14, 0, tzinfo=timezone.utc),
+    "EU": datetime(2026, 4, 27, 14, 0, tzinfo=timezone.utc),
     
-    "NA": datetime(2026, 4, 7, 20, 0, tzinfo=timezone.utc),
+    "NA": datetime(2026, 4, 27, 20, 0, tzinfo=timezone.utc),
 }
 
 # NEXT BANNER START TIMES (Usually 1 hour after old one ends)
 NEXT_START = {
-    "Asia": datetime(2026, 4, 8, 3, 0, tzinfo=timezone.utc),
-    "EU": datetime(2026, 4, 8, 3, 0, tzinfo=timezone.utc),   # +7 hours from Asia
-    "NA": datetime(2026, 4, 8, 3, 0, tzinfo=timezone.utc),   # +12 hours from Asia
+    "Asia": datetime(2026, 4, 28, 3, 0, tzinfo=timezone.utc),
+    "EU": datetime(2026, 4, 28, 3, 0, tzinfo=timezone.utc),   # +7 hours from Asia
+    "NA": datetime(2026, 4, 28, 3, 0, tzinfo=timezone.utc),   # +12 hours from Asia
 }
 
 # Image paths (Local VPS paths)
