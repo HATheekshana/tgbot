@@ -42,20 +42,14 @@ SPECIAL_MAPPINGS = {
 # --- Helper Functions ---
 async def get_user_card_settings(user_id):
     try:
-        user = await users_col.find_one(
-            {"user_id": str(user_id)}
-        )
-
+        user = await users_col.find_one({"user_id": str(user_id)})
         if user and "card_settings" in user:
             return user["card_settings"]
+    except Exception as e:
+        print(f"DB Error: {e}")
 
-    except Exception:
-        pass
-
-    return {
-        "graph_on": True,
-        "stickers": {}
-    }
+    # Default if nothing is found
+    return {"graph_on": True, "stickers": {}}
 def draw_text_with_shadow(draw, text, position, font_path, font_size, 
                           text_color=(255, 255, 255, 255), 
                           shadow_color=(0, 0, 0, 180), 
@@ -168,6 +162,7 @@ def paste_splash_left(ui_layer, splash, size):
 async def characters_card(uid, char_id, telegram_id):
     # ...
     settings = await get_user_card_settings(telegram_id)
+    
     try:
         me = await get_enkadata(uid)
         me_data, t_icons, c_icons = await fetch_build_assets(uid, char_id)
@@ -299,14 +294,15 @@ async def characters_card(uid, char_id, telegram_id):
         graph_position = (1450, 150) 
         sticker_loaded = False
         
-        # 1. Try graph first if enabled
-        graph_on = settings.get("graph_on", True)
-        if graph_on:
+        # Get settings safely
+        graph_enabled = settings.get("graph_on", True)
+        stickers_dict = settings.get("stickers", {})
+
+        # 1. Try Graph ONLY if enabled
+        if graph_enabled:
             try:
-                # get_complete_radar_module is likely the slow part, keep it try-wrapped
                 complete_graph = get_complete_radar_module(stats, char_id, final_size=(380, 380))
                 if complete_graph:
-                    # Use BILINEAR for a massive speed boost on your VPS
                     radar_bg = Image.open("asstests/icons/radar_bg.png").convert("RGBA")
                     radar_bg = radar_bg.resize((530, 520), Image.Resampling.BILINEAR)
 
@@ -314,31 +310,31 @@ async def characters_card(uid, char_id, telegram_id):
                     ui_layer.paste(complete_graph, graph_position, complete_graph)
                     sticker_loaded = True
             except Exception as e:
-                print(f"Graph Error: {e}")
+                print(f"Graph generation skipped or failed: {e}")
 
-        # 2. If graph is OFF or failed, use custom sticker
+        # 2. If Graph is OFF or failed, check for the custom sticker
         if not sticker_loaded:
-            stickers_dict = settings.get("stickers", {})
-            # Ensure char_id is a string to match MongoDB keys
+            # We look for the string version of the ID (e.g., "10000122")
             custom_path = stickers_dict.get(str(char_id))
             
             if custom_path and os.path.exists(custom_path):
                 try:
                     with Image.open(custom_path) as sticker:
                         sticker = sticker.convert("RGBA")
+                        # Preserves aspect ratio within a 380x380 box
                         sticker = ImageOps.contain(sticker, (380, 380))
                         
                         s_w, s_h = sticker.size
-                        # Center the sticker in the 380x380 area
+                        # Centering logic
                         paste_x = graph_position[0] + (190 - s_w // 2)
                         paste_y = graph_position[1] + (190 - s_h // 2)
 
                         ui_layer.paste(sticker, (paste_x, paste_y), sticker)
                         sticker_loaded = True
                 except Exception as e:
-                    print(f"Sticker Load Error: {e}")
+                    print(f"Failed to render custom sticker: {e}")
 
-        # 3. Fallback to No Data icon
+        # 3. Last resort: Default 'No Data' icon
         if not sticker_loaded:
             try:
                 no_data = Image.open("asstests/icons/no_data.png").convert("RGBA")
