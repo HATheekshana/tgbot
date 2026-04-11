@@ -294,61 +294,66 @@ async def characters_card(uid, char_id, telegram_id):
             draw_text_with_shadow(draw, fmt.format(stats.get(key, 0)), (start_x + gap, curr_y + 18), font_path, 26, anchor="rm")
 
         # --- 2. Sticker vs Graph Logic (Strictly outside the loop) ---
+        # --- [START OF FIXED STICKER LOGIC] ---
         graph_position = (1450, 150)
         sticker_loaded = False
         
-        # Check settings
         graph_enabled = settings.get("graph_on", True)
         stickers_dict = settings.get("stickers", {})
 
-        # STEP A: Try Graph ONLY if setting is True
+        # 1) Try graph ONLY if enabled in settings
         if graph_enabled:
             try:
                 complete_graph = get_complete_radar_module(stats, char_id, final_size=(380, 380))
                 if complete_graph is not None:
                     radar_bg = Image.open("asstests/icons/radar_bg.png").convert("RGBA")
                     radar_bg = radar_bg.resize((530, 520), Image.Resampling.BILINEAR)
-
                     ui_layer.paste(radar_bg, (graph_position[0] - 75, graph_position[1] - 60), radar_bg)
                     ui_layer.paste(complete_graph, graph_position, complete_graph)
                     sticker_loaded = True
             except Exception as e:
-                print(f"Graph generation failed: {e}")
+                print(f"Graph Error: {e}")
 
-        # STEP B: If graph is disabled OR failed to generate, try the custom sticker
+        # 2) If graph not shown, try custom sticker
         if not sticker_loaded:
-            char_key = str(char_id)
-            custom_path = stickers_dict.get(char_key)
+            # SAFETY NET: Try both string and integer keys just in case
+            char_key_str = str(char_id)
+            custom_path = stickers_dict.get(char_key_str)
 
             if custom_path:
-                # Docker path fix
-                if not os.path.exists(custom_path) and "/app/" in custom_path:
-                    custom_path = custom_path.replace("/app/", "")
+                # DOCKER FIX: If running inside /app, ensure path is relative
+                # Your DB has "/app/custom_assets/...", but Python might need "custom_assets/..."
+                if not os.path.exists(custom_path):
+                    alt_path = custom_path.lstrip("/").replace("app/", "", 1)
+                    if os.path.exists(alt_path):
+                        custom_path = alt_path
 
                 if os.path.exists(custom_path):
                     try:
-                        with Image.open(custom_path) as sticker_img:
-                            sticker_img = sticker_img.convert("RGBA")
-                            sticker_img = ImageOps.contain(sticker_img, (380, 380))
+                        with Image.open(custom_path) as sticker:
+                            sticker = sticker.convert("RGBA")
+                            # Use contain to keep aspect ratio
+                            sticker = ImageOps.contain(sticker, (380, 380))
                             
-                            s_w, s_h = sticker_img.size
+                            s_w, s_h = sticker.size
                             paste_x = graph_position[0] + (190 - s_w // 2)
                             paste_y = graph_position[1] + (190 - s_h // 2)
 
-                            ui_layer.paste(sticker_img, (paste_x, paste_y), sticker_img)
+                            ui_layer.paste(sticker, (paste_x, paste_y), sticker)
                             sticker_loaded = True
                     except Exception as e:
-                        print(f"Custom sticker error: {e}")
+                        print(f"Sticker error for {char_id}: {e}")
 
-        # STEP C: Final fallback if no graph and no custom sticker
+        # 3) Final fallback to "No Data" icon
         if not sticker_loaded:
             try:
                 no_data = Image.open("asstests/icons/no_data.png").convert("RGBA")
                 no_data = no_data.resize((300, 300), Image.Resampling.LANCZOS)
                 nd_w, nd_h = no_data.size
                 ui_layer.paste(no_data, (graph_position[0] + (190 - nd_w // 2), graph_position[1] + (190 - nd_h // 2)), no_data)
-            except:
-                pass
+            except Exception as e:
+                print(f"Fallback icon missing: {e}")
+        # --- [END OF FIXED STICKER LOGIC] ---
                 
         # Draw Artifacts (Now session is open!)
         await draw_horizontal_artifacts(session, ui_layer, char_info, 150, 650, ImageFont.truetype(font_path, 22))
