@@ -7,6 +7,8 @@ import sys
 import random
 import calendar
 import io
+from io import BytesIO
+from PIL import Image
 import aiohttp
 from character_card import characters_card
 from datetime import datetime
@@ -92,8 +94,20 @@ class CardSettings(StatesGroup):
 # Helper to get user settings from your MongoDB
 async def get_user_card_settings(user_id):
     user = await users_col.find_one({"user_id": str(user_id)})
-    # Default: Graph is ON, no custom sticker
-    return user.get("card_settings", {"graph_on": True, "custom_sticker": None})
+
+    if not user:
+        return {
+            "graph_on": True,
+            "stickers": {}
+        }
+
+    return user.get(
+        "card_settings",
+        {
+            "graph_on": True,
+            "stickers": {}
+        }
+    )
 @dp.message(Command("settings"), F.chat.type == "private")
 async def cmd_settings(message: types.Message):
     builder = InlineKeyboardBuilder()
@@ -192,32 +206,45 @@ async def handle_sticker_upload(message: types.Message, state: FSMContext):
         return await message.answer("Please send a Sticker or Image.")
 
     file = message.sticker or message.photo[-1] or message.document
-    
+
     if file.file_size > 300 * 1024:
         return await message.answer("❌ File too large! Keep it under 300KB.")
 
-    sticker_dir = "custom_assets/stickers"
-    if not os.path.exists(sticker_dir):
-        os.makedirs(sticker_dir)
+    sticker_dir = os.path.abspath("custom_assets/stickers")
+    os.makedirs(sticker_dir, exist_ok=True)
 
     file_info = await message.bot.get_file(file.file_id)
-    ext = file_info.file_path.split('.')[-1]
-    
-    # Save file named as: user_id + char_id to allow different stickers for different characters
-    filename = f"{message.from_user.id}_{char_id}.{ext}"
+
+    # download to memory
+    image_bytes = BytesIO()
+    await message.bot.download_file(file_info.file_path, image_bytes)
+    image_bytes.seek(0)
+
+    try:
+        img = Image.open(image_bytes).convert("RGBA")
+    except Exception as e:
+        return await message.answer(f"❌ Could not process image: {e}")
+
+    filename = f"{message.from_user.id}_{char_id}.png"
     save_path = os.path.join(sticker_dir, filename)
-    
-    await message.bot.download_file(file_info.file_path, save_path)
-    
-    # Update MongoDB: Store stickers as a dictionary mapping character IDs to paths
+
+    # optional resize
+    img.thumbnail((512, 512), Image.Resampling.LANCZOS)
+
+    img.save(save_path, "PNG")
+
     await users_col.update_one(
         {"user_id": str(message.from_user.id)},
-        {"$set": {f"card_settings.stickers.{char_id}": save_path}},
+        {
+            "$set": {
+                f"card_settings.stickers.{char_id}": save_path
+            }
+        },
         upsert=True
     )
 
-    await message.answer(f"✅ Custom sticker saved for your character!")
-    await state.clear() 
+    await message.answer("✅ Custom sticker saved successfully as PNG!")
+    await state.clear()
 def get_banner_keyboard(mode="current", char_index=0):
     builder = InlineKeyboardBuilder()
     

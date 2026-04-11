@@ -41,16 +41,21 @@ SPECIAL_MAPPINGS = {
 
 # --- Helper Functions ---
 async def get_user_card_settings(user_id):
-
     try:
-        user = await users_col.find_one({"user_id": str(user_id)})
+        user = await users_col.find_one(
+            {"user_id": str(user_id)}
+        )
+
         if user and "card_settings" in user:
             return user["card_settings"]
-    except Exception as e:
-        print(f"DB Error: {e}")
-    
-    # Fallback defaults
-    return {"graph_on": True, "custom_sticker": None}
+
+    except Exception:
+        pass
+
+    return {
+        "graph_on": True,
+        "stickers": {}
+    }
 def draw_text_with_shadow(draw, text, position, font_path, font_size, 
                           text_color=(255, 255, 255, 255), 
                           shadow_color=(0, 0, 0, 180), 
@@ -293,65 +298,104 @@ async def characters_card(uid, char_id, telegram_id):
  
 
         graph_position = (1450, 150)
-        
-        # --- DEBUG LOGS ---
-        # 1. Check if settings exists and what it contains
-        print(f"DEBUG: Settings content: {settings}")
-        
-        # 2. Extract the stickers dictionary safely
-        stickers_dict = settings.get("stickers", {})
-        print(f"DEBUG: Stickers Dict: {stickers_dict}")
 
-        # 3. Force char_id to string (very common fix for MongoDB keys)
-        target_char_id = str(char_id) 
+        stickers_dict = settings.get("stickers", {})
+        target_char_id = str(char_id)
         custom_path = stickers_dict.get(target_char_id)
-        print(f"DEBUG: Target Char ID: {target_char_id} | Path found: {custom_path}")
 
         sticker_loaded = False
-        complete_graph = None
 
-        # 1. Try to generate the Radar Graph first if toggled ON
+        # 1. Try graph first if enabled
         if settings.get("graph_on", True):
-            complete_graph = get_complete_radar_module(stats, char_id, final_size=(380, 380))
+            complete_graph = get_complete_radar_module(
+                stats,
+                char_id,
+                final_size=(380, 380)
+            )
+
             if complete_graph:
                 try:
-                    radar_bg = Image.open("asstests/icons/radar_bg.png").convert("RGBA")
-                    radar_bg = radar_bg.resize((530, 520), Image.Resampling.LANCZOS)
-                    ui_layer.paste(radar_bg, (graph_position[0]-75, graph_position[1]-60), radar_bg)
-                    ui_layer.paste(complete_graph, graph_position, complete_graph)
-                    sticker_loaded = True 
-                    print("DEBUG: Graph displayed successfully.")
-                except Exception as e:
-                    print(f"Graph UI Error: {e}")
+                    radar_bg = Image.open(
+                        "asstests/icons/radar_bg.png"
+                    ).convert("RGBA")
 
-        # 2. If Graph is OFF or failed, try the Custom Sticker
+                    radar_bg = radar_bg.resize(
+                        (530, 520),
+                        Image.Resampling.LANCZOS
+                    )
+
+                    ui_layer.paste(
+                        radar_bg,
+                        (graph_position[0] - 75, graph_position[1] - 60),
+                        radar_bg
+                    )
+
+                    ui_layer.paste(
+                        complete_graph,
+                        graph_position,
+                        complete_graph
+                    )
+
+                    sticker_loaded = True
+
+                except Exception:
+                    pass
+
+        # 2. If graph is OFF or unavailable, use custom sticker
         if not sticker_loaded and custom_path:
-            if os.path.exists(custom_path):
+            absolute_path = os.path.abspath(custom_path)
+
+            if os.path.exists(absolute_path):
                 try:
-                    sticker = Image.open(custom_path).convert("RGBA")
-                    sticker = ImageOps.contain(sticker, (380, 380)) 
+                    sticker = Image.open(absolute_path).convert("RGBA")
+
+                    sticker = ImageOps.contain(
+                        sticker,
+                        (380, 380)
+                    )
+
                     s_w, s_h = sticker.size
+
                     paste_x = graph_position[0] + (190 - s_w // 2)
                     paste_y = graph_position[1] + (190 - s_h // 2)
-                    ui_layer.paste(sticker, (paste_x, paste_y), sticker)
-                    sticker_loaded = True
-                    print(f"DEBUG: Custom sticker pasted from {custom_path}")
-                except Exception as e:
-                    print(f"DEBUG: Sticker Load Error: {e}")
-            else:
-                print(f"DEBUG: File path exists in DB but NOT on disk: {custom_path}")
 
-        # 3. Final Fallback: no_data.png
+                    ui_layer.paste(
+                        sticker,
+                        (paste_x, paste_y),
+                        sticker
+                    )
+
+                    sticker_loaded = True
+
+                except Exception:
+                    pass
+
+        # 3. Final fallback
         if not sticker_loaded:
-            print("DEBUG: No graph or sticker loaded. Using fallback icon.")
             try:
-                no_data = Image.open("asstests/icons/no_data.png").convert("RGBA")
-                no_data = no_data.resize((300, 300), Image.Resampling.LANCZOS)
+                no_data = Image.open(
+                    "asstests/icons/no_data.png"
+                ).convert("RGBA")
+
+                no_data = no_data.resize(
+                    (300, 300),
+                    Image.Resampling.LANCZOS
+                )
+
                 nd_w, nd_h = no_data.size
-                ui_layer.paste(no_data, (graph_position[0] + (190 - nd_w // 2), graph_position[1] + (190 - nd_h // 2)), no_data)
-            except Exception as e:
-                print(f"Fallback Error: {e}")
-        
+
+                ui_layer.paste(
+                    no_data,
+                    (
+                        graph_position[0] + (190 - nd_w // 2),
+                        graph_position[1] + (190 - nd_h // 2)
+                    ),
+                    no_data
+                )
+
+            except Exception:
+                pass
+                
         # Draw Artifacts (Now session is open!)
         await draw_horizontal_artifacts(session, ui_layer, char_info, 150, 650, ImageFont.truetype(font_path, 22))
         final_img = Image.alpha_composite(bg, ui_layer)
