@@ -227,7 +227,7 @@ async def handle_sticker_upload(message: types.Message, state: FSMContext):
     except Exception as e:
         return await message.answer(f"❌ Could not process image: {e}")
 
-    filename = f"{message.from_user.id}_{char_id}"
+    filename = f"{message.from_user.id}_{char_id}.png"
     save_path = os.path.join(sticker_dir, filename)
 
     # optional resize
