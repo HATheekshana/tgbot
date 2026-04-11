@@ -293,11 +293,19 @@ async def characters_card(uid, char_id, telegram_id):
  
 
         graph_position = (1450, 150)
-    
-        # ADD THE NEW LOGIC HERE:
+        
+        # --- DEBUG LOGS ---
+        # 1. Check if settings exists and what it contains
+        print(f"DEBUG: Settings content: {settings}")
+        
+        # 2. Extract the stickers dictionary safely
         stickers_dict = settings.get("stickers", {})
+        print(f"DEBUG: Stickers Dict: {stickers_dict}")
+
+        # 3. Force char_id to string (very common fix for MongoDB keys)
         target_char_id = str(char_id) 
         custom_path = stickers_dict.get(target_char_id)
+        print(f"DEBUG: Target Char ID: {target_char_id} | Path found: {custom_path}")
 
         sticker_loaded = False
         complete_graph = None
@@ -311,25 +319,31 @@ async def characters_card(uid, char_id, telegram_id):
                     radar_bg = radar_bg.resize((530, 520), Image.Resampling.LANCZOS)
                     ui_layer.paste(radar_bg, (graph_position[0]-75, graph_position[1]-60), radar_bg)
                     ui_layer.paste(complete_graph, graph_position, complete_graph)
-                    sticker_loaded = True # Mark as "filled" so fallback doesn't trigger
+                    sticker_loaded = True 
+                    print("DEBUG: Graph displayed successfully.")
                 except Exception as e:
                     print(f"Graph UI Error: {e}")
 
         # 2. If Graph is OFF or failed, try the Custom Sticker
-        if not sticker_loaded and custom_path and os.path.exists(custom_path):
-            try:
-                sticker = Image.open(custom_path).convert("RGBA")
-                sticker = ImageOps.contain(sticker, (380, 380)) 
-                s_w, s_h = sticker.size
-                paste_x = graph_position[0] + (190 - s_w // 2)
-                paste_y = graph_position[1] + (190 - s_h // 2)
-                ui_layer.paste(sticker, (paste_x, paste_y), sticker)
-                sticker_loaded = True
-            except Exception as e:
-                print(f"Sticker Load Error: {e}")
+        if not sticker_loaded and custom_path:
+            if os.path.exists(custom_path):
+                try:
+                    sticker = Image.open(custom_path).convert("RGBA")
+                    sticker = ImageOps.contain(sticker, (380, 380)) 
+                    s_w, s_h = sticker.size
+                    paste_x = graph_position[0] + (190 - s_w // 2)
+                    paste_y = graph_position[1] + (190 - s_h // 2)
+                    ui_layer.paste(sticker, (paste_x, paste_y), sticker)
+                    sticker_loaded = True
+                    print(f"DEBUG: Custom sticker pasted from {custom_path}")
+                except Exception as e:
+                    print(f"DEBUG: Sticker Load Error: {e}")
+            else:
+                print(f"DEBUG: File path exists in DB but NOT on disk: {custom_path}")
 
         # 3. Final Fallback: no_data.png
         if not sticker_loaded:
+            print("DEBUG: No graph or sticker loaded. Using fallback icon.")
             try:
                 no_data = Image.open("asstests/icons/no_data.png").convert("RGBA")
                 no_data = no_data.resize((300, 300), Image.Resampling.LANCZOS)
