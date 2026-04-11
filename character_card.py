@@ -294,16 +294,15 @@ async def characters_card(uid, char_id, telegram_id):
 
         graph_position = (1450, 150)
         graph_width, graph_height = 380, 380
-        center_offset = 190 # Half of the graph area for centering
+        center_offset = 190  # Half of the graph area
 
-        # 1. Determine if we should attempt to draw the graph
+        # 1. Attempt to generate graph ONLY if toggled ON
         complete_graph = None
         if settings.get("graph_on", True):
             complete_graph = get_complete_radar_module(stats, char_id, final_size=(graph_width, graph_height))
 
-        # 2. Logic Tree: Graph -> Custom Sticker -> Default "No Data"
+        # 2. If Graph generated successfully, draw it
         if complete_graph:
-            # Draw the standard Radar UI background
             try:
                 radar_bg = Image.open("asstests/icons/radar_bg.png").convert("RGBA")
                 radar_bg = radar_bg.resize((530, 520), Image.Resampling.LANCZOS)
@@ -312,9 +311,13 @@ async def characters_card(uid, char_id, telegram_id):
                 pass
             ui_layer.paste(complete_graph, graph_position, complete_graph)
 
+        # 3. If no graph (Toggled off OR generation failed), look for sticker or default
         else:
-            # This branch runs if: graph_on is False OR get_complete_radar_module failed
-            custom_path = settings.get("custom_sticker")
+            # Look for the sticker mapped to this specific character ID
+            stickers_dict = settings.get("stickers", {})
+            custom_path = stickers_dict.get(str(char_id)) 
+            
+            sticker_loaded = False
             
             if custom_path and os.path.exists(custom_path):
                 try:
@@ -326,18 +329,16 @@ async def characters_card(uid, char_id, telegram_id):
                     paste_y = graph_position[1] + (center_offset - s_h // 2)
                     
                     ui_layer.paste(sticker, (paste_x, paste_y), sticker)
+                    sticker_loaded = True
                 except Exception as e:
-                    print(f"Sticker error: {e}")
-                    # If sticker fails to load, fall through to the default icon logic below
-                    custom_path = None 
+                    print(f"Sticker error for char {char_id}: {e}")
 
-            # 3. Final Fallback (If no graph and no valid custom sticker)
-            if not complete_graph and not custom_path:
+            # 4. Final Fallback: If no graph AND no valid custom sticker for this char
+            if not sticker_loaded:
                 try:
                     no_data = Image.open("asstests/icons/no_data.png").convert("RGBA")
                     no_data = no_data.resize((300, 300), Image.Resampling.LANCZOS)
                     
-                    # Center the no_data icon
                     nd_w, nd_h = no_data.size
                     nd_x = graph_position[0] + (center_offset - nd_w // 2)
                     nd_y = graph_position[1] + (center_offset - nd_h // 2)
