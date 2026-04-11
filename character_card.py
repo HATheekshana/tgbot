@@ -296,34 +296,35 @@ async def characters_card(uid, char_id, telegram_id):
         # --- 2. Sticker vs Graph Logic (Strictly outside the loop) ---
         # --- [START OF FIXED STICKER LOGIC] ---
         graph_position = (1450, 150)
-        sticker_loaded = False
+        content_drawn = False 
         
         graph_enabled = settings.get("graph_on", True)
         stickers_dict = settings.get("stickers", {})
 
-        # 1) Try graph ONLY if enabled in settings
+        # 1) PRIORITY: Try graph if enabled
         if graph_enabled:
             try:
                 complete_graph = get_complete_radar_module(stats, char_id, final_size=(380, 380))
                 if complete_graph is not None:
+                    # Draw the radar background
                     radar_bg = Image.open("asstests/icons/radar_bg.png").convert("RGBA")
                     radar_bg = radar_bg.resize((530, 520), Image.Resampling.BILINEAR)
                     ui_layer.paste(radar_bg, (graph_position[0] - 75, graph_position[1] - 60), radar_bg)
+                    
+                    # Draw the graph
                     ui_layer.paste(complete_graph, graph_position, complete_graph)
-                    sticker_loaded = True
+                    content_drawn = True
             except Exception as e:
                 print(f"Graph Error: {e}")
 
-        # 2) If graph not shown, try custom sticker
-        if not sticker_loaded:
-            # SAFETY NET: Try both string and integer keys just in case
-            char_key_str = str(char_id)
-            custom_path = stickers_dict.get(char_key_str)
+        # 2) FALLBACK: If graph is OFF (or failed), try the custom sticker
+        if not content_drawn:
+            custom_path = stickers_dict.get(str(char_id))
 
             if custom_path:
-                # DOCKER FIX: If running inside /app, ensure path is relative
-                # Your DB has "/app/custom_assets/...", but Python might need "custom_assets/..."
+                # Docker Path Fix: If stored as /app/custom_assets, check if it exists or trim it
                 if not os.path.exists(custom_path):
+                    # This removes leading slashes and handles the "app/" prefix Docker often adds
                     alt_path = custom_path.lstrip("/").replace("app/", "", 1)
                     if os.path.exists(alt_path):
                         custom_path = alt_path
@@ -332,7 +333,7 @@ async def characters_card(uid, char_id, telegram_id):
                     try:
                         with Image.open(custom_path) as sticker:
                             sticker = sticker.convert("RGBA")
-                            # Use contain to keep aspect ratio
+                            # Resize to fit the graph area
                             sticker = ImageOps.contain(sticker, (380, 380))
                             
                             s_w, s_h = sticker.size
@@ -340,19 +341,19 @@ async def characters_card(uid, char_id, telegram_id):
                             paste_y = graph_position[1] + (190 - s_h // 2)
 
                             ui_layer.paste(sticker, (paste_x, paste_y), sticker)
-                            sticker_loaded = True
+                            content_drawn = True
                     except Exception as e:
-                        print(f"Sticker error for {char_id}: {e}")
+                        print(f"Sticker error: {e}")
 
-        # 3) Final fallback to "No Data" icon
-        if not sticker_loaded:
+        # 3) FINAL FALLBACK: If both failed/off, show "No Data"
+        if not content_drawn:
             try:
                 no_data = Image.open("asstests/icons/no_data.png").convert("RGBA")
                 no_data = no_data.resize((300, 300), Image.Resampling.LANCZOS)
                 nd_w, nd_h = no_data.size
                 ui_layer.paste(no_data, (graph_position[0] + (190 - nd_w // 2), graph_position[1] + (190 - nd_h // 2)), no_data)
-            except Exception as e:
-                print(f"Fallback icon missing: {e}")
+            except:
+                pass
         # --- [END OF FIXED STICKER LOGIC] ---
                 
         # Draw Artifacts (Now session is open!)
