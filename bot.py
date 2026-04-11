@@ -874,53 +874,73 @@ async def cmd_redeem_code(message: types.Message, command: CommandObject):
         await message.reply(f"❌ <b>Bot Error:</b> <code>{str(e)}</code>", parse_mode="HTML")
 @dp.message(Command("characters"))
 async def cmd_characters(message: types.Message):
+    # 1. Fetch User Data
     user_data = await users_col.find_one({"user_id": str(message.from_user.id)})
 
     if not user_data or "genshin_uid" not in user_data:
         return await message.reply("Please /login <uid> first.")
 
     db_uid = str(user_data["genshin_uid"]).strip()
-    msg = await message.reply("Fetching your showcase...")
+    msg = await message.reply("🔍 Fetching your showcase...")
 
-    user_info_enka = await get_enkadata(db_uid)
-    showcase_items = user_info_enka.get("showAvatarInfoList", [])
+    # 2. Fetch Enka Data
+    try:
+        user_info_enka = await get_enkadata(db_uid)
+        showcase_items = user_info_enka.get("showAvatarInfoList", [])
+    except Exception as e:
+        print(f"Enka Fetch Error: {e}")
+        return await msg.edit_text("❌ Failed to reach Enka.network. Try again later.")
 
     if not showcase_items:
         return await msg.edit_text(
             "No characters found!\nMake sure 'Show Character Details' is enabled in your profile."
         )
 
+    # 3. Build Buttons
     builder = InlineKeyboardBuilder()
-
     for index, char in enumerate(showcase_items):
         char_id = str(char.get("avatarId"))
         char_entry = CHARACTER_MAP.get(char_id)
-
         display_name = char_entry.get("name", "Unknown") if char_entry else f"ID: {char_id}"
 
         builder.button(
             text=display_name,
             callback_data=f"gen_{db_uid}_{index}_{message.from_user.id}"
         )
-
     builder.adjust(3)
 
-    image_buffer = await create_genshin_profile(db_uid)
-
-    if not image_buffer:
+    # 4. Generate Profile Image (Non-blocking)
+    # Using asyncio.to_thread prevents the bot from freezing for other users
+    try:
+        # Note: If create_genshin_profile is 'async def', you need a wrapper 
+        # or to use to_thread inside that function for the Pillow parts.
+        image_buffer = await asyncio.to_thread(create_genshin_profile_sync, db_uid)
+        
+        if not image_buffer:
+            raise Exception("Empty buffer returned")
+            
+    except Exception as e:
+        print(f"Profile Gen Error: {e}")
         return await msg.edit_text("❌ Failed to generate profile image.")
 
+    # 5. Send Result
     photo = BufferedInputFile(image_buffer.getvalue(), filename=f"{db_uid}.png")
 
-    await msg.delete()
+    try:
+        await msg.delete()
+    except TelegramBadRequest:
+        pass # Message already gone
 
     await message.reply_photo(
         photo=photo,
-        caption="Select a character:",
+        caption="✨ **Character Showcase**\nSelect a character to see detailed stats:",
         reply_markup=builder.as_markup()
     )
 
-
+# Helper for threading if create_genshin_profile is an async function
+def create_genshin_profile_sync(uid):
+    import asyncio
+    return asyncio.run(create_genshin_profile(uid))
 # =========================
 # CHARACTER CARD HANDLER
 # =========================
