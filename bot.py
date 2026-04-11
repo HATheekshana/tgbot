@@ -233,7 +233,7 @@ async def handle_sticker_upload(message: types.Message, state: FSMContext):
     # optional resize
     img.thumbnail((512, 512), Image.Resampling.LANCZOS)
 
-    img.save(save_path, "PNG")
+    img.save(save_path, "png")
 
     await users_col.update_one(
         {"user_id": str(message.from_user.id)},
