@@ -229,7 +229,7 @@ async def characters_card(uid, char_id, telegram_id):
             draw_text_with_shadow(draw, get_weapon_name(stats['weapon']), (w_pos[0] + 170, w_pos[1] + 30), font_path, 32, anchor="lm")
             refine = w_info.get('refinement', 1)
             level = w_info.get('level', 1)
-            max_lv = "90" if w_info.get('rank', 0) == 5 else "80" if w_info.get('rank', 0) == 4 else "70"
+            max_lv = "90" 
         
             lv_text = f"R{refine}      Lv.{level}/{max_lv}"
             draw_text_with_shadow(draw, lv_text, (w_pos[0] + 170, w_pos[1] + 80), font_path, 24, text_color=(255, 255, 255), anchor="lm")
