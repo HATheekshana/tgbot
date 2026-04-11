@@ -11,3 +11,4 @@ genshin
 aioenkanetworkcard
 cryptography
 datetime
+matplotlib
