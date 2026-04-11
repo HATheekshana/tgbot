@@ -1,5 +1,4 @@
 import asyncio
-from email.mime import message
 import genshin
 from motor.motor_asyncio import AsyncIOMotorClient
 import logging
@@ -220,7 +219,7 @@ async def handle_sticker_upload(message: types.Message, state: FSMContext):
 
     # download to memory
     image_bytes = BytesIO()
-    await message.bot.download(file, destination=image_bytes)
+    await message.bot.download_file(file_info.file_path, image_bytes)
     image_bytes.seek(0)
 
     try:
