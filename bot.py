@@ -912,9 +912,8 @@ async def cmd_characters(message: types.Message):
     # 4. Generate Profile Image (Non-blocking)
     # Using asyncio.to_thread prevents the bot from freezing for other users
     try:
-        # Note: If create_genshin_profile is 'async def', you need a wrapper 
-        # or to use to_thread inside that function for the Pillow parts.
-        image_buffer = await asyncio.to_thread(create_genshin_profile_sync, db_uid)
+        # Call it directly as an async function
+        image_buffer = await create_genshin_profile(db_uid) 
         
         if not image_buffer:
             raise Exception("Empty buffer returned")
