@@ -43,12 +43,11 @@ SPECIAL_MAPPINGS = {
 async def get_user_card_settings(user_id):
     try:
         user = await users_col.find_one({"user_id": str(user_id)})
+        print(f"DEBUG: Fetching settings for {user_id}. Found: {user is not None}")
         if user and "card_settings" in user:
             return user["card_settings"]
     except Exception as e:
         print(f"DB Error: {e}")
-
-    # Default if nothing is found
     return {"graph_on": True, "stickers": {}}
 def draw_text_with_shadow(draw, text, position, font_path, font_size, 
                           text_color=(255, 255, 255, 255), 
@@ -332,7 +331,7 @@ async def characters_card(uid, char_id, telegram_id):
                 if os.path.exists(custom_path):
                     try:
                         with Image.open(custom_path) as sticker:
-                            sticker = sticker.convert("RGBA")
+                            sticker = sticker.convert("RGBA").copy()
                             # Resize to fit the graph area
                             sticker = ImageOps.contain(sticker, (380, 380))
                             

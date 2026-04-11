@@ -968,7 +968,8 @@ async def handle_card_generation(callback: types.CallbackQuery):
     
     # 2. Local Card Generation (Now non-blocking)
     try:
-        image_buffer = await asyncio.to_thread(characters_card_sync_wrapper, uid, char_id, owner_id)
+        # DO NOT use asyncio.to_thread for an async function
+        image_buffer = await characters_card(uid, char_id, owner_id)
         
         if not image_buffer:
             raise Exception("Image generation returned empty buffer")
