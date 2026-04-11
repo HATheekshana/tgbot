@@ -881,7 +881,7 @@ async def cmd_characters(message: types.Message):
         return await message.reply("Please /login <uid> first.")
 
     db_uid = str(user_data["genshin_uid"]).strip()
-    msg = await message.reply("🔍 Fetching your showcase...")
+    msg = await message.reply("Fetching your showcase...")
 
     # 2. Fetch Enka Data
     try:
@@ -889,7 +889,7 @@ async def cmd_characters(message: types.Message):
         showcase_items = user_info_enka.get("showAvatarInfoList", [])
     except Exception as e:
         print(f"Enka Fetch Error: {e}")
-        return await msg.edit_text("❌ Failed to reach Enka.network. Try again later.")
+        return await msg.edit_text("Failed to reach Enka.network. Try again later.")
 
     if not showcase_items:
         return await msg.edit_text(
@@ -933,7 +933,7 @@ async def cmd_characters(message: types.Message):
 
     await message.reply_photo(
         photo=photo,
-        caption="✨ **Character Showcase**\nSelect a character to see detailed stats:",
+        caption="✨ <b>Character Showcase</b>\nSelect a character to see detailed stats:",parse_mode="HTML",
         reply_markup=builder.as_markup()
     )
 
