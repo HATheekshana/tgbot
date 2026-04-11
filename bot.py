@@ -130,39 +130,94 @@ async def toggle_graph(callback: types.CallbackQuery):
     await card_settings_menu(callback)
     await callback.answer(f"Graph turned {'ON' if new_stat else 'OFF'}")
 @dp.callback_query(F.data == "setup_sticker_start")
-async def start_sticker_process(callback: types.CallbackQuery, state: FSMContext):
-    # For simplicity, we ask for character name/ID first
-    await callback.message.answer("Type the Character Name or ID you want to customize:")
-    await state.set_state(CardSettings.waiting_for_sticker)
-    await callback.answer()
+async def start_sticker_process(callback: types.CallbackQuery):
+    user_data = await users_col.find_one({"user_id": str(callback.from_user.id)})
 
+    if not user_data or "genshin_uid" not in user_data:
+        return await callback.answer("❌ Please /login <uid> first.", show_alert=True)
+
+    db_uid = str(user_data["genshin_uid"]).strip()
+    user_info_enka = await get_enkadata(db_uid)
+    showcase_items = user_info_enka.get("showAvatarInfoList", [])
+
+    if not showcase_items:
+        return await callback.message.edit_text(
+            "No characters found! Enable 'Show Character Details' in-game."
+        )
+
+    builder = InlineKeyboardBuilder()
+
+    for char in showcase_items:
+        char_id = str(char.get("avatarId"))
+        # Using CHARACTER_MAP from your globals
+        char_entry = CHARACTER_MAP.get(char_id)
+        display_name = char_entry.get("name", "Unknown") if char_entry else f"ID: {char_id}"
+
+        # We use a new prefix 'pick_char_' to distinguish this from the main command
+        builder.button(
+            text=display_name,
+            callback_data=f"pick_char_{char_id}" 
+        )
+
+    builder.adjust(3)
+    # Add a back button to return to settings menu
+    builder.row(types.InlineKeyboardButton(text="⬅️ Back", callback_data="set_card_menu"))
+
+    await callback.message.edit_text(
+        "✨ **Select a character to customize:**\nYour custom sticker will only show for the selected character.",
+        reply_markup=builder.as_markup()
+    )
+    await callback.answer()
+@dp.callback_query(F.data.startswith("pick_char_"))
+async def process_character_pick(callback: types.CallbackQuery, state: FSMContext):
+    char_id = callback.data.split("_")[2]
+    char_name = CHARACTER_MAP.get(char_id, {}).get("name", f"ID: {char_id}")
+
+    # Store the selected character ID in the user's state
+    await state.update_data(selected_char_id=char_id)
+    await state.set_state(CardSettings.waiting_for_sticker)
+
+    await callback.message.edit_text(
+        f"Selected: **{char_name}**\n\n"
+        "Please send the **Sticker** or **Image** you want to use for this character's card.\n"
+        "*(Note: This only works if 'Graph' is toggled OFF)*"
+    )
+    await callback.answer()
 @dp.message(CardSettings.waiting_for_sticker)
 async def handle_sticker_upload(message: types.Message, state: FSMContext):
-    # Check if the user sent a sticker or photo
+    data = await state.get_data()
+    char_id = data.get("selected_char_id")
+
     if not (message.sticker or message.photo or message.document):
         return await message.answer("Please send a Sticker or Image.")
 
     file = message.sticker or message.photo[-1] or message.document
     
-    # 300KB size limit check
     if file.file_size > 300 * 1024:
         return await message.answer("❌ File too large! Keep it under 300KB.")
 
-    # Download and save
+    sticker_dir = "custom_assets/stickers"
+    if not os.path.exists(sticker_dir):
+        os.makedirs(sticker_dir)
+
     file_info = await message.bot.get_file(file.file_id)
     ext = file_info.file_path.split('.')[-1]
-    save_path = f"custom_assets/stickers/{message.from_user.id}_custom.{ext}"
+    
+    # Save file named as: user_id + char_id to allow different stickers for different characters
+    filename = f"{message.from_user.id}_{char_id}.{ext}"
+    save_path = os.path.join(sticker_dir, filename)
     
     await message.bot.download_file(file_info.file_path, save_path)
     
-    # Save path to DB (linked to the character user provided earlier)
+    # Update MongoDB: Store stickers as a dictionary mapping character IDs to paths
     await users_col.update_one(
         {"user_id": str(message.from_user.id)},
-        {"$set": {"card_settings.custom_sticker": save_path}}
+        {"$set": {f"card_settings.stickers.{char_id}": save_path}},
+        upsert=True
     )
 
-    await message.answer("✅ Custom sticker saved for your card!")
-    await state.clear()    
+    await message.answer(f"✅ Custom sticker saved for your character!")
+    await state.clear() 
 def get_banner_keyboard(mode="current", char_index=0):
     builder = InlineKeyboardBuilder()
     
