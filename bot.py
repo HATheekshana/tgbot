@@ -960,7 +960,25 @@ async def handle_card_generation(callback: types.CallbackQuery):
         )
 
     # ... [Ranking Logic remains the same] ...
-
+    ranking_text = ""  # <--- INITIALIZE IT HERE FIRST
+    
+    ranking_api = f"https://test-xehj.onrender.com/get/ranking/{uid}"
+    async with aiohttp.ClientSession() as session:
+        try:
+            async with session.get(ranking_api, timeout=2) as rank_resp:
+                if rank_resp.status == 200:
+                    all_ranks = await rank_resp.json()
+                    char_rank_data = all_ranks.get(str(char_id))
+                    if char_rank_data:
+                        rank = char_rank_data.get("ranking")
+                        out_of = char_rank_data.get("outOf")
+                        percent = char_rank_data.get("percent")
+                        ranking_text = (
+                            f"\n\n<b>ʚଓ Global Rank :</b> {rank}/{out_of}"
+                            f"\n<b>ʚଓ Top :</b> {percent}%"
+                        )
+        except Exception as e:
+            print(f"Ranking API Error: {e}")
     # 4. Prepare UI and Send
     char_entry = CHARACTER_MAP.get(str(char_id), {})
     display_name = char_entry.get("name", "Unknown Character")
