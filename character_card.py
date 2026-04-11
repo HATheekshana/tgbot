@@ -293,46 +293,58 @@ async def characters_card(uid, char_id, telegram_id):
  
 
         graph_position = (1450, 150)
+        graph_width, graph_height = 380, 380
+        center_offset = 190 # Half of the graph area for centering
 
+        # 1. Determine if we should attempt to draw the graph
+        complete_graph = None
         if settings.get("graph_on", True):
-            complete_graph = get_complete_radar_module(stats, char_id, final_size=(380, 380))
+            complete_graph = get_complete_radar_module(stats, char_id, final_size=(graph_width, graph_height))
+
+        # 2. Logic Tree: Graph -> Custom Sticker -> Default "No Data"
+        if complete_graph:
+            # Draw the standard Radar UI background
+            try:
+                radar_bg = Image.open("asstests/icons/radar_bg.png").convert("RGBA")
+                radar_bg = radar_bg.resize((530, 520), Image.Resampling.LANCZOS)
+                ui_layer.paste(radar_bg, (graph_position[0]-75, graph_position[1]-60), radar_bg)
+            except: 
+                pass
+            ui_layer.paste(complete_graph, graph_position, complete_graph)
+
+        else:
+            # This branch runs if: graph_on is False OR get_complete_radar_module failed
+            custom_path = settings.get("custom_sticker")
             
-            if complete_graph:
-                # Draw the standard Radar UI
+            if custom_path and os.path.exists(custom_path):
                 try:
-                    radar = Image.open("asstests/icons/radar_bg.png").convert("RGBA")
-                    radar = radar.resize((530, 520), Image.Resampling.LANCZOS)
-                    ui_layer.paste(radar, (graph_position[0]-75, graph_position[1]-60), radar)
-                except: pass
-                ui_layer.paste(complete_graph, graph_position, complete_graph)
-            
-            else:
-                # --- THE CUSTOM STICKER LOGIC ---
-                # This triggers ONLY if the graph is missing
-                custom_path = settings.get("custom_sticker")
-                
-                if custom_path and os.path.exists(custom_path):
-                    try:
-                        # Load and fit the custom sticker into the graph area
-                        sticker = Image.open(custom_path).convert("RGBA")
-                        # Resize to fit comfortably where the graph would be
-                        sticker = ImageOps.contain(sticker, (400, 400)) 
-                        
-                        # Center it in the graph area
-                        s_w, s_h = sticker.size
-                        paste_x = graph_position[0] + (190 - s_w // 2)
-                        paste_y = graph_position[1] + (190 - s_h // 2)
-                        
-                        ui_layer.paste(sticker, (paste_x, paste_y), sticker)
-                    except Exception as e:
-                        print(f"Sticker error: {e}")
-                else:
-                    # Final fallback: Standard No-Data icon
-                    try:
-                        no_data = Image.open("asstests/icons/no_data.png").convert("RGBA")
-                        no_data = no_data.resize((300, 300), Image.Resampling.LANCZOS)
-                        ui_layer.paste(no_data, graph_position, no_data)
-                    except: pass
+                    sticker = Image.open(custom_path).convert("RGBA")
+                    sticker = ImageOps.contain(sticker, (400, 400)) 
+                    
+                    s_w, s_h = sticker.size
+                    paste_x = graph_position[0] + (center_offset - s_w // 2)
+                    paste_y = graph_position[1] + (center_offset - s_h // 2)
+                    
+                    ui_layer.paste(sticker, (paste_x, paste_y), sticker)
+                except Exception as e:
+                    print(f"Sticker error: {e}")
+                    # If sticker fails to load, fall through to the default icon logic below
+                    custom_path = None 
+
+            # 3. Final Fallback (If no graph and no valid custom sticker)
+            if not complete_graph and not custom_path:
+                try:
+                    no_data = Image.open("asstests/icons/no_data.png").convert("RGBA")
+                    no_data = no_data.resize((300, 300), Image.Resampling.LANCZOS)
+                    
+                    # Center the no_data icon
+                    nd_w, nd_h = no_data.size
+                    nd_x = graph_position[0] + (center_offset - nd_w // 2)
+                    nd_y = graph_position[1] + (center_offset - nd_h // 2)
+                    
+                    ui_layer.paste(no_data, (nd_x, nd_y), no_data)
+                except Exception as e:
+                    print(f"Default icon error: {e}")
         
         # Draw Artifacts (Now session is open!)
         await draw_horizontal_artifacts(session, ui_layer, char_info, 150, 650, ImageFont.truetype(font_path, 22))
