@@ -112,7 +112,7 @@ async def get_user_card_settings(user_id):
 async def cmd_settings(message: types.Message):
     builder = InlineKeyboardBuilder()
     builder.button(text="Character Card", callback_data="set_card_menu")
-    await message.answer("⚙️ **Bot Settings**", reply_markup=builder.as_markup())
+    await message.answer("⚙️ <b>Bot Settings</b>", parse_mode="HTML", reply_markup=builder.as_markup())
 
 @dp.callback_query(F.data == "set_card_menu")
 async def card_settings_menu(callback: types.CallbackQuery):
@@ -126,7 +126,7 @@ async def card_settings_menu(callback: types.CallbackQuery):
     builder.button(text=f"Graph - {graph_status}", callback_data="toggle_graph_stat")
     
     builder.adjust(1)
-    await callback.message.edit_text("🎴 **Character Card Settings**", reply_markup=builder.as_markup())
+    await callback.message.edit_text("🎴 <b>Character Card Settings</b>", parse_mode="HTML", reply_markup=builder.as_markup())
 
 @dp.callback_query(F.data == "toggle_graph_stat")
 async def toggle_graph(callback: types.CallbackQuery):
@@ -175,10 +175,11 @@ async def start_sticker_process(callback: types.CallbackQuery):
 
     builder.adjust(3)
     # Add a back button to return to settings menu
-    builder.row(types.InlineKeyboardButton(text="⬅️ Back", callback_data="set_card_menu"))
+    builder.row(types.InlineKeyboardButton(text="Back", callback_data="set_card_menu"))
 
     await callback.message.edit_text(
-        "✨ **Select a character to customize:**\nYour custom sticker will only show for the selected character.",
+        "✨ <b>Select a character to customize:</b>\nYour custom sticker will only show for the selected character.",
+        parse_mode="HTML",
         reply_markup=builder.as_markup()
     )
     await callback.answer()
@@ -192,9 +193,10 @@ async def process_character_pick(callback: types.CallbackQuery, state: FSMContex
     await state.set_state(CardSettings.waiting_for_sticker)
 
     await callback.message.edit_text(
-        f"Selected: **{char_name}**\n\n"
-        "Please send the **Sticker** or **Image** you want to use for this character's card.\n"
-        "*(Note: This only works if 'Graph' is toggled OFF)*"
+        f"Selected: <b>{char_name}</b>\n\n"
+        "Please send the <b>Sticker</b> or <b>Image</b> you want to use for this character's card.\n"
+        "<i>(Note: This only works if 'Graph' is toggled OFF)</i>",
+        parse_mode="HTML"
     )
     await callback.answer()
 @dp.message(CardSettings.waiting_for_sticker)
@@ -208,7 +210,7 @@ async def handle_sticker_upload(message: types.Message, state: FSMContext):
     file = message.sticker or message.photo[-1] or message.document
 
     if file.file_size > 300 * 1024:
-        return await message.answer("❌ File too large! Keep it under 300KB.")
+        return await message.answer("File too large! Keep it under 300KB.")
 
     sticker_dir = os.path.abspath("custom_assets/stickers")
     os.makedirs(sticker_dir, exist_ok=True)
@@ -243,7 +245,7 @@ async def handle_sticker_upload(message: types.Message, state: FSMContext):
         upsert=True
     )
 
-    await message.answer("✅ Custom sticker saved successfully as PNG!")
+    await message.answer("✅ Custom sticker saved successfully!")
     await state.clear()
 def get_banner_keyboard(mode="current", char_index=0):
     builder = InlineKeyboardBuilder()
