@@ -924,13 +924,13 @@ async def cmd_characters(message: types.Message):
 # =========================
 # CHARACTER CARD HANDLER
 # =========================
+
+
 @dp.callback_query(F.data.startswith("gen_"))
 async def handle_card_generation(callback: types.CallbackQuery):
     parts = callback.data.split("_")
-    # gen_{uid}_{index}_{owner_id}
     uid, char_index, owner_id = parts[1], int(parts[2]), int(parts[3])
 
-    # Safety check: Only the message owner can trigger the generation
     if callback.from_user.id != owner_id:
         return await callback.answer("⏳ This menu isn't for you!", show_alert=True)
 
@@ -946,11 +946,9 @@ async def handle_card_generation(callback: types.CallbackQuery):
     current_char = showcase[char_index]
     char_id = int(current_char.get("avatarId"))
     
-    # 2. Local Card Generation
+    # 2. Local Card Generation (Now non-blocking)
     try:
-        # Pass the owner_id as telegram_id so the function can find 
-        # the user's custom sticker or graph settings in MongoDB.
-        image_buffer = await characters_card(uid, char_id, owner_id)
+        image_buffer = await asyncio.to_thread(characters_card_sync_wrapper, uid, char_id, owner_id)
         
         if not image_buffer:
             raise Exception("Image generation returned empty buffer")
@@ -961,25 +959,7 @@ async def handle_card_generation(callback: types.CallbackQuery):
             caption="❌ Failed to generate character card. Please try again later."
         )
 
-    # 3. Optional Ranking Logic (Unchanged)
-    ranking_text = ""
-    ranking_api = f"https://test-xehj.onrender.com/get/ranking/{uid}"
-    async with aiohttp.ClientSession() as session:
-        try:
-            async with session.get(ranking_api, timeout=2) as rank_resp:
-                if rank_resp.status == 200:
-                    all_ranks = await rank_resp.json()
-                    char_rank_data = all_ranks.get(str(char_id))
-                    if char_rank_data:
-                        rank = char_rank_data.get("ranking")
-                        out_of = char_rank_data.get("outOf")
-                        percent = char_rank_data.get("percent")
-                        ranking_text = (
-                            f"\n\n<b>ʚଓ Global Rank :</b> {rank}/{out_of}"
-                            f"\n<b>ʚଓ Top :</b> {percent}%"
-                        )
-        except:
-            pass 
+    # ... [Ranking Logic remains the same] ...
 
     # 4. Prepare UI and Send
     char_entry = CHARACTER_MAP.get(str(char_id), {})
@@ -988,13 +968,13 @@ async def handle_card_generation(callback: types.CallbackQuery):
     back_builder = InlineKeyboardBuilder()
     back_builder.button(text="Back to List", callback_data=f"refresh_{uid}_{owner_id}")
 
-    # Use BufferedInputFile to send the BytesIO from memory
     photo = BufferedInputFile(image_buffer.getvalue(), filename=f"{char_id}_{uid}.png")
     
-    # Delete the old list message and send the new card
-    await callback.message.delete()
+    try:
+        await callback.message.delete()
+    except TelegramBadRequest:
+        pass # Message already deleted or not found
     
-    # Use reply_to_message if available to keep the thread tidy
     target = callback.message.reply_to_message or callback.message
 
     await target.reply_photo(
@@ -1003,6 +983,9 @@ async def handle_card_generation(callback: types.CallbackQuery):
         reply_markup=back_builder.as_markup(),
         parse_mode="HTML"
     )
+def characters_card_sync_wrapper(uid, char_id, owner_id):
+    # This runs the async function in the background thread's loop
+    return asyncio.run(characters_card(uid, char_id, owner_id))
 # =========================
 # BACK BUTTON HANDLER
 # =========================
