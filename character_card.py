@@ -293,59 +293,50 @@ async def characters_card(uid, char_id, telegram_id):
  
 
         graph_position = (1450, 150)
-        graph_width, graph_height = 380, 380
-        center_offset = 190  # Half of the graph area
+    
+        # ADD THE NEW LOGIC HERE:
+        stickers_dict = settings.get("stickers", {})
+        target_char_id = str(char_id) 
+        custom_path = stickers_dict.get(target_char_id)
 
-        # 1. Attempt to generate graph ONLY if toggled ON
+        sticker_loaded = False
         complete_graph = None
+
+        # 1. Try to generate the Radar Graph first if toggled ON
         if settings.get("graph_on", True):
-            complete_graph = get_complete_radar_module(stats, char_id, final_size=(graph_width, graph_height))
+            complete_graph = get_complete_radar_module(stats, char_id, final_size=(380, 380))
+            if complete_graph:
+                try:
+                    radar_bg = Image.open("asstests/icons/radar_bg.png").convert("RGBA")
+                    radar_bg = radar_bg.resize((530, 520), Image.Resampling.LANCZOS)
+                    ui_layer.paste(radar_bg, (graph_position[0]-75, graph_position[1]-60), radar_bg)
+                    ui_layer.paste(complete_graph, graph_position, complete_graph)
+                    sticker_loaded = True # Mark as "filled" so fallback doesn't trigger
+                except Exception as e:
+                    print(f"Graph UI Error: {e}")
 
-        # 2. If Graph generated successfully, draw it
-        if complete_graph:
+        # 2. If Graph is OFF or failed, try the Custom Sticker
+        if not sticker_loaded and custom_path and os.path.exists(custom_path):
             try:
-                radar_bg = Image.open("asstests/icons/radar_bg.png").convert("RGBA")
-                radar_bg = radar_bg.resize((530, 520), Image.Resampling.LANCZOS)
-                ui_layer.paste(radar_bg, (graph_position[0]-75, graph_position[1]-60), radar_bg)
-            except: 
-                pass
-            ui_layer.paste(complete_graph, graph_position, complete_graph)
+                sticker = Image.open(custom_path).convert("RGBA")
+                sticker = ImageOps.contain(sticker, (380, 380)) 
+                s_w, s_h = sticker.size
+                paste_x = graph_position[0] + (190 - s_w // 2)
+                paste_y = graph_position[1] + (190 - s_h // 2)
+                ui_layer.paste(sticker, (paste_x, paste_y), sticker)
+                sticker_loaded = True
+            except Exception as e:
+                print(f"Sticker Load Error: {e}")
 
-        # 3. If no graph (Toggled off OR generation failed), look for sticker or default
-        else:
-            # Look for the sticker mapped to this specific character ID
-            stickers_dict = settings.get("stickers", {})
-            custom_path = stickers_dict.get(str(char_id)) 
-            
-            sticker_loaded = False
-            
-            if custom_path and os.path.exists(custom_path):
-                try:
-                    sticker = Image.open(custom_path).convert("RGBA")
-                    sticker = ImageOps.contain(sticker, (400, 400)) 
-                    
-                    s_w, s_h = sticker.size
-                    paste_x = graph_position[0] + (center_offset - s_w // 2)
-                    paste_y = graph_position[1] + (center_offset - s_h // 2)
-                    
-                    ui_layer.paste(sticker, (paste_x, paste_y), sticker)
-                    sticker_loaded = True
-                except Exception as e:
-                    print(f"Sticker error for char {char_id}: {e}")
-
-            # 4. Final Fallback: If no graph AND no valid custom sticker for this char
-            if not sticker_loaded:
-                try:
-                    no_data = Image.open("asstests/icons/no_data.png").convert("RGBA")
-                    no_data = no_data.resize((300, 300), Image.Resampling.LANCZOS)
-                    
-                    nd_w, nd_h = no_data.size
-                    nd_x = graph_position[0] + (center_offset - nd_w // 2)
-                    nd_y = graph_position[1] + (center_offset - nd_h // 2)
-                    
-                    ui_layer.paste(no_data, (nd_x, nd_y), no_data)
-                except Exception as e:
-                    print(f"Default icon error: {e}")
+        # 3. Final Fallback: no_data.png
+        if not sticker_loaded:
+            try:
+                no_data = Image.open("asstests/icons/no_data.png").convert("RGBA")
+                no_data = no_data.resize((300, 300), Image.Resampling.LANCZOS)
+                nd_w, nd_h = no_data.size
+                ui_layer.paste(no_data, (graph_position[0] + (190 - nd_w // 2), graph_position[1] + (190 - nd_h // 2)), no_data)
+            except Exception as e:
+                print(f"Fallback Error: {e}")
         
         # Draw Artifacts (Now session is open!)
         await draw_horizontal_artifacts(session, ui_layer, char_info, 150, 650, ImageFont.truetype(font_path, 22))
