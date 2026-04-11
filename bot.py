@@ -38,7 +38,8 @@ from cryptography.fernet import Fernet
 from tasks import setup_scheduler
 from paimon import fetch_and_save_wishes, calculate_pity
 from banner import get_banner_text, CURRENT_IMAGES, NEXT_IMAGES
-
+from aiogram.fsm.state import State, StatesGroup
+from aiogram.fsm.context import FSMContext
 quiz_track = {}
 group_message_counts = {}
 QUIZ_THRESHOLD = 40
@@ -85,6 +86,83 @@ try:
 except Exception as e:
     print(f"Error loading char.json: {e}")
     CHARACTER_MAP = {}
+class CardSettings(StatesGroup):
+    waiting_for_sticker = State()
+
+# Helper to get user settings from your MongoDB
+async def get_user_card_settings(user_id):
+    user = await users_col.find_one({"user_id": str(user_id)})
+    # Default: Graph is ON, no custom sticker
+    return user.get("card_settings", {"graph_on": True, "custom_sticker": None})
+@dp.message(Command("settings"), F.chat.type == "private")
+async def cmd_settings(message: types.Message):
+    builder = InlineKeyboardBuilder()
+    builder.button(text="Character Card", callback_data="set_card_menu")
+    await message.answer("⚙️ **Bot Settings**", reply_markup=builder.as_markup())
+
+@dp.callback_query(F.data == "set_card_menu")
+async def card_settings_menu(callback: types.CallbackQuery):
+    settings = await get_user_card_settings(callback.from_user.id)
+    
+    builder = InlineKeyboardBuilder()
+    builder.button(text="Custom Sticker", callback_data="setup_sticker_start")
+    
+    # Dynamic Toggle Button
+    graph_status = "ON" if settings.get("graph_on", True) else "OFF"
+    builder.button(text=f"Graph - {graph_status}", callback_data="toggle_graph_stat")
+    
+    builder.adjust(1)
+    await callback.message.edit_text("🎴 **Character Card Settings**", reply_markup=builder.as_markup())
+
+@dp.callback_query(F.data == "toggle_graph_stat")
+async def toggle_graph(callback: types.CallbackQuery):
+    settings = await get_user_card_settings(callback.from_user.id)
+    new_stat = not settings.get("graph_on", True)
+    
+    # Update MongoDB
+    await users_col.update_one(
+        {"user_id": str(callback.from_user.id)},
+        {"$set": {"card_settings.graph_on": new_stat}},
+        upsert=True
+    )
+    
+    # Refresh the UI
+    await card_settings_menu(callback)
+    await callback.answer(f"Graph turned {'ON' if new_stat else 'OFF'}")
+@dp.callback_query(F.data == "setup_sticker_start")
+async def start_sticker_process(callback: types.CallbackQuery, state: FSMContext):
+    # For simplicity, we ask for character name/ID first
+    await callback.message.answer("Type the Character Name or ID you want to customize:")
+    await state.set_state(CardSettings.waiting_for_sticker)
+    await callback.answer()
+
+@dp.message(CardSettings.waiting_for_sticker)
+async def handle_sticker_upload(message: types.Message, state: FSMContext):
+    # Check if the user sent a sticker or photo
+    if not (message.sticker or message.photo or message.document):
+        return await message.answer("Please send a Sticker or Image.")
+
+    file = message.sticker or message.photo[-1] or message.document
+    
+    # 300KB size limit check
+    if file.file_size > 300 * 1024:
+        return await message.answer("❌ File too large! Keep it under 300KB.")
+
+    # Download and save
+    file_info = await message.bot.get_file(file.file_id)
+    ext = file_info.file_path.split('.')[-1]
+    save_path = f"custom_assets/stickers/{message.from_user.id}_custom.{ext}"
+    
+    await message.bot.download_file(file_info.file_path, save_path)
+    
+    # Save path to DB (linked to the character user provided earlier)
+    await users_col.update_one(
+        {"user_id": str(message.from_user.id)},
+        {"$set": {"card_settings.custom_sticker": save_path}}
+    )
+
+    await message.answer("✅ Custom sticker saved for your card!")
+    await state.clear()    
 def get_banner_keyboard(mode="current", char_index=0):
     builder = InlineKeyboardBuilder()
     
@@ -765,45 +843,46 @@ async def cmd_characters(message: types.Message):
 @dp.callback_query(F.data.startswith("gen_"))
 async def handle_card_generation(callback: types.CallbackQuery):
     parts = callback.data.split("_")
+    # gen_{uid}_{index}_{owner_id}
     uid, char_index, owner_id = parts[1], int(parts[2]), int(parts[3])
 
+    # Safety check: Only the message owner can trigger the generation
     if callback.from_user.id != owner_id:
         return await callback.answer("⏳ This menu isn't for you!", show_alert=True)
 
-    await callback.answer("⏳ Generating Local Card...")
+    await callback.answer("⏳ Generating your character card...")
 
     # 1. Fetch character ID from Enka data
     user_info = await get_enkadata(uid)
     showcase = user_info.get("showAvatarInfoList", [])
 
     if char_index >= len(showcase):
-        return await callback.answer("❌ Character not found in showcase.", show_alert=True)
+        return await callback.answer("❌ Character no longer in showcase.", show_alert=True)
 
     current_char = showcase[char_index]
     char_id = int(current_char.get("avatarId"))
     
-    # 2. Local Card Generation (Replacing the API call)
+    # 2. Local Card Generation
     try:
-        # We call your local function directly
-        # Ensure your characters_card function in character_card.py returns the BytesIO buffer
-        image_buffer = await characters_card(uid, char_id)
+        # Pass the owner_id as telegram_id so the function can find 
+        # the user's custom sticker or graph settings in MongoDB.
+        image_buffer = await characters_card(uid, char_id, owner_id)
         
         if not image_buffer:
-            raise Exception("Buffer is empty")
+            raise Exception("Image generation returned empty buffer")
             
     except Exception as e:
         print(f"LOCAL GEN ERROR: {e}")
         return await callback.message.edit_caption(
-            caption="Failed to generate local card. Check console logs."
+            caption="❌ Failed to generate character card. Please try again later."
         )
 
-    # 3. Fetch Ranking (Optional: keep this external if you don't have a local DB for it)
+    # 3. Optional Ranking Logic (Unchanged)
     ranking_text = ""
     ranking_api = f"https://test-xehj.onrender.com/get/ranking/{uid}"
-    
     async with aiohttp.ClientSession() as session:
         try:
-            async with session.get(ranking_api) as rank_resp:
+            async with session.get(ranking_api, timeout=2) as rank_resp:
                 if rank_resp.status == 200:
                     all_ranks = await rank_resp.json()
                     char_rank_data = all_ranks.get(str(char_id))
@@ -816,20 +895,22 @@ async def handle_card_generation(callback: types.CallbackQuery):
                             f"\n<b>ʚଓ Top :</b> {percent}%"
                         )
         except:
-            pass # Ranking is secondary, don't crash if it fails
+            pass 
 
-    # 4. Prepare UI
-    char_entry = CHARACTER_MAP.get(str(char_id))
-    display_name = char_entry.get("name", "Unknown") if char_entry else f"ID: {char_id}"
+    # 4. Prepare UI and Send
+    char_entry = CHARACTER_MAP.get(str(char_id), {})
+    display_name = char_entry.get("name", "Unknown Character")
     
     back_builder = InlineKeyboardBuilder()
     back_builder.button(text="Back to List", callback_data=f"refresh_{uid}_{owner_id}")
 
-    # 5. Send the photo from the Buffer
+    # Use BufferedInputFile to send the BytesIO from memory
+    photo = BufferedInputFile(image_buffer.getvalue(), filename=f"{char_id}_{uid}.png")
+    
+    # Delete the old list message and send the new card
     await callback.message.delete()
     
-    # Use BufferedInputFile for the BytesIO object
-    photo = BufferedInputFile(image_buffer.getvalue(), filename=f"{char_id}.png")
+    # Use reply_to_message if available to keep the thread tidy
     target = callback.message.reply_to_message or callback.message
 
     await target.reply_photo(
@@ -838,7 +919,6 @@ async def handle_card_generation(callback: types.CallbackQuery):
         reply_markup=back_builder.as_markup(),
         parse_mode="HTML"
     )
-
 # =========================
 # BACK BUTTON HANDLER
 # =========================

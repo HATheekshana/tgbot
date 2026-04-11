@@ -1,13 +1,19 @@
 import asyncio
 import aiohttp
 import json
+import os
 from io import BytesIO
 from PIL import Image, ImageDraw, ImageOps, ImageFilter, ImageFont, ImageChops, ImageEnhance
-
+from motor.motor_asyncio import AsyncIOMotorClient
+from graph import get_complete_radar_module
 # Local Imports
 from char_t_c import fetch_build_assets, draw_build_column
 from artifacts import draw_horizontal_artifacts
+MONGO_URL = os.getenv("MONGO_URL")
 
+cluster = AsyncIOMotorClient(MONGO_URL)
+db = cluster["genshin_bot"]
+users_col = db["user_stats"]
 W_STAT_ICONS = {
     "FIGHT_PROP_BASE_ATTACK": "asstests/icons/atk.png",
     "FIGHT_PROP_CHARGE_EFFICIENCY": "asstests/icons/er.png",
@@ -34,7 +40,17 @@ SPECIAL_MAPPINGS = {
 }
 
 # --- Helper Functions ---
+async def get_user_card_settings(user_id):
 
+    try:
+        user = await users_col.find_one({"user_id": str(user_id)})
+        if user and "card_settings" in user:
+            return user["card_settings"]
+    except Exception as e:
+        print(f"DB Error: {e}")
+    
+    # Fallback defaults
+    return {"graph_on": True, "custom_sticker": None}
 def draw_text_with_shadow(draw, text, position, font_path, font_size, 
                           text_color=(255, 255, 255, 255), 
                           shadow_color=(0, 0, 0, 180), 
@@ -144,7 +160,9 @@ def paste_splash_left(ui_layer, splash, size):
 
 # --- Main Logic ---
 
-async def characters_card(uid, char_id):
+async def characters_card(uid, char_id, telegram_id):
+    # ...
+    settings = await get_user_card_settings(telegram_id)
     try:
         me = await get_enkadata(uid)
         me_data, t_icons, c_icons = await fetch_build_assets(uid, char_id)
@@ -200,7 +218,7 @@ async def characters_card(uid, char_id):
         draw_text_with_shadow(draw,text=f"Lvl: {char_level}/90",position=(50, 90),font_path=font_path,font_size=24,text_color=(255, 255, 255, 255), anchor="lm")
         draw_text_with_shadow(draw,text=f"Friendship: {f_level}",position=(50, 125),font_path=font_path,font_size=24,text_color=(255, 255, 255, 255), anchor="lm")
         if weapon_img:
-            w_pos = (1050, 30)
+            w_pos = (900, 20)
             w_info = stats['weapon']
             ui_layer.paste(ImageOps.contain(weapon_img, (140, 140)), w_pos, ImageOps.contain(weapon_img, (140, 140)))
             draw_text_with_shadow(draw, get_weapon_name(stats['weapon']), (w_pos[0] + 170, w_pos[1] + 30), font_path, 32, anchor="lm")
@@ -262,24 +280,65 @@ async def characters_card(uid, char_id):
             (f"{element} DMG Bonus", "elem_bonus", "{:.1f}%", f"asstests/icons/{element.lower()}.png"),
             ("Elemental Mastery", "em", "{:.0f}", "asstests/icons/em.png")
         ]
-
+        start_x = 900
+        gap = 500
         for i, (label, key, fmt, icon_path) in enumerate(stat_config):
             curr_y = 220 + (i * 50)
             try:
                 icon = Image.open(icon_path).convert("RGBA").resize((35, 35))
-                ui_layer.paste(icon, (950, curr_y), icon)
+                ui_layer.paste(icon, (start_x-50, curr_y), icon)
             except: pass
-            draw_text_with_shadow(draw, label, (1000, curr_y + 18), font_path, 24, anchor="lm")
-            draw_text_with_shadow(draw, fmt.format(stats.get(key, 0)), (1800, curr_y + 18), font_path, 26, anchor="rm")
+            draw_text_with_shadow(draw, label, (start_x, curr_y + 18), font_path, 24, anchor="lm")
+            draw_text_with_shadow(draw, fmt.format(stats.get(key, 0)), (start_x + gap, curr_y + 18), font_path, 26, anchor="rm")
+ 
 
-        # Final Compositing
-        
+        graph_position = (1450, 150)
+
+        if settings.get("graph_on", True):
+            complete_graph = get_complete_radar_module(stats, char_id, final_size=(380, 380))
+            
+            if complete_graph:
+                # Draw the standard Radar UI
+                try:
+                    radar = Image.open("asstests/icons/radar_bg.png").convert("RGBA")
+                    radar = radar.resize((530, 520), Image.Resampling.LANCZOS)
+                    ui_layer.paste(radar, (graph_position[0]-75, graph_position[1]-60), radar)
+                except: pass
+                ui_layer.paste(complete_graph, graph_position, complete_graph)
+            
+            else:
+                # --- THE CUSTOM STICKER LOGIC ---
+                # This triggers ONLY if the graph is missing
+                custom_path = settings.get("custom_sticker")
+                
+                if custom_path and os.path.exists(custom_path):
+                    try:
+                        # Load and fit the custom sticker into the graph area
+                        sticker = Image.open(custom_path).convert("RGBA")
+                        # Resize to fit comfortably where the graph would be
+                        sticker = ImageOps.contain(sticker, (400, 400)) 
+                        
+                        # Center it in the graph area
+                        s_w, s_h = sticker.size
+                        paste_x = graph_position[0] + (190 - s_w // 2)
+                        paste_y = graph_position[1] + (190 - s_h // 2)
+                        
+                        ui_layer.paste(sticker, (paste_x, paste_y), sticker)
+                    except Exception as e:
+                        print(f"Sticker error: {e}")
+                else:
+                    # Final fallback: Standard No-Data icon
+                    try:
+                        no_data = Image.open("asstests/icons/no_data.png").convert("RGBA")
+                        no_data = no_data.resize((300, 300), Image.Resampling.LANCZOS)
+                        ui_layer.paste(no_data, graph_position, no_data)
+                    except: pass
         
         # Draw Artifacts (Now session is open!)
         await draw_horizontal_artifacts(session, ui_layer, char_info, 150, 650, ImageFont.truetype(font_path, 22))
         final_img = Image.alpha_composite(bg, ui_layer)
         # Draw Talents/Consts
-        draw_build_column(final_img, 650, me_data, t_icons, c_icons) 
+        draw_build_column(final_img, 650, me_data, t_icons, c_icons)
 
         buffer = BytesIO()
         final_img.convert("RGB").save(buffer, "JPEG", quality=95)
