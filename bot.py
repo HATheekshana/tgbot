@@ -110,6 +110,7 @@ async def card_settings_menu(callback: types.CallbackQuery):
 
     builder = InlineKeyboardBuilder()
     builder.button(text="🖼 Manage Custom Stickers", callback_data="setup_sticker_start")
+    builder.button(text="🌅 Manage Custom Splash Arts", callback_data="setup_splash_start")
 
     graph_status = "ON" if settings.get("graph_on", True) else "OFF"
     builder.button(text=f"Global Graph: {graph_status}", callback_data="toggle_graph_stat")
@@ -167,7 +168,31 @@ async def start_sticker_process(callback: types.CallbackQuery):
     builder.row(types.InlineKeyboardButton(text="⬅️ Back", callback_data="set_card_menu"))
     await callback.message.edit_text("✨ <b>Select a character to customize:</b>", parse_mode="HTML", reply_markup=builder.as_markup())
 
-@dp.callback_query(F.data.startswith("pick_char_"))
+@dp.callback_query(F.data == "setup_splash_start")
+async def start_splash_process(callback: types.CallbackQuery):
+    user_data = await users_col.find_one({"user_id": str(callback.from_user.id)})
+    if not user_data or "genshin_uid" not in user_data:
+        return await callback.answer("❌ Please /login <uid> first.", show_alert=True)
+
+    db_uid = str(user_data["genshin_uid"]).strip()
+    user_info_enka = await get_enkadata(db_uid)
+    showcase_items = user_info_enka.get("showAvatarInfoList", [])
+
+    if not showcase_items:
+        return await callback.message.edit_text("No characters found! Enable 'Show Character Details' in-game.")
+
+    builder = InlineKeyboardBuilder()
+    for char in showcase_items:
+        char_id = str(char.get("avatarId"))
+        char_entry = CHARACTER_MAP.get(char_id, {})
+        display_name = char_entry.get("name", f"ID: {char_id}")
+        builder.button(text=display_name, callback_data=f"pick_char_splash_{char_id}")
+
+    builder.adjust(3)
+    builder.row(types.InlineKeyboardButton(text="⬅️ Back", callback_data="set_card_menu"))
+    await callback.message.edit_text("🌅 <b>Select a character for custom splash art:</b>", parse_mode="HTML", reply_markup=builder.as_markup())
+
+@dp.callback_query(F.data.startswith("pick_char_") and not F.data.startswith("pick_char_splash_"))
 async def process_character_pick(callback: types.CallbackQuery, state: FSMContext):
     char_id = callback.data.split("_")[2]
     settings = await get_user_card_settings(callback.from_user.id)
@@ -190,6 +215,25 @@ async def process_character_pick(callback: types.CallbackQuery, state: FSMContex
     builder.row(types.InlineKeyboardButton(text="⬅️ Back", callback_data="setup_sticker_start"))
 
     await callback.message.edit_text(f"Settings for <b>{char_name}</b>:", parse_mode="HTML", reply_markup=builder.as_markup())
+
+@dp.callback_query(F.data.startswith("pick_char_splash_"))
+async def process_character_pick_splash(callback: types.CallbackQuery, state: FSMContext):
+    char_id = callback.data.split("_")[3]
+    settings = await get_user_card_settings(callback.from_user.id)
+
+    char_name = CHARACTER_MAP.get(char_id, {}).get("name", f"ID: {char_id}")
+
+    builder = InlineKeyboardBuilder()
+    builder.button(text="🌅 Set Custom Splash Art", callback_data=f"set_splash_{char_id}")
+    
+    splash_dict = settings.get("splash_arts", {})
+    if char_id in splash_dict:
+        builder.button(text="🔄 Reset Custom Splash Art", callback_data=f"reset_splash_{char_id}")
+    
+    builder.adjust(1)
+    builder.row(types.InlineKeyboardButton(text="⬅️ Back", callback_data="setup_splash_start"))
+
+    await callback.message.edit_text(f"🌅 <b>Custom Splash Art: {char_name}</b>", parse_mode="HTML", reply_markup=builder.as_markup())
 
 @dp.callback_query(F.data.startswith("toggle_char_graph_"))
 async def toggle_specific_graph(callback: types.CallbackQuery):
@@ -239,7 +283,7 @@ async def start_splash_upload_prompt(callback: types.CallbackQuery, state: FSMCo
         f"🌅 <b>Custom Splash Art: {char_name}</b>\n\nPlease send the <b>Photo</b> or <b>Image Document</b>.\n"
         "<i>Note: This will replace the default splash art background.</i>",
         parse_mode="HTML",
-        reply_markup=InlineKeyboardBuilder().button(text="❌ Cancel", callback_data=f"pick_char_{char_id}").as_markup()
+        reply_markup=InlineKeyboardBuilder().button(text="❌ Cancel", callback_data=f"pick_char_splash_{char_id}").as_markup()
     )
 
 @dp.message(CardSettings.waiting_for_sticker)
@@ -399,7 +443,8 @@ async def reset_splash_art(callback: types.CallbackQuery):
     )
 
     await callback.answer("✅ Custom splash art reset to default.")
-    await process_character_pick(callback, None)
+    callback.data = f"pick_char_splash_{char_id}"
+    await process_character_pick_splash(callback, None)
 
 @dp.message(Command("ban_sticker"), F.from_user.id == ADMIN_ID)
 async def ban_sticker_command(message: types.Message):
