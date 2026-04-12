@@ -24,54 +24,52 @@ LABELS = ['HP', 'ATK', 'DEF', 'EM', 'Crit DMG', 'Crit Rate', 'ER', 'Elem DMG']
 
 def generate_full_radar_chart(values, color="#E0B0FF", element="Electro"):
     num_vars = len(LABELS)
-    # Standard Akasha layout: Top is 12 o'clock, clockwise
     angles = np.linspace(np.pi/2, np.pi/2 - 2*np.pi, num_vars, endpoint=False).tolist()
     
-    # Clip at 1.2 to allow EM to hit the outer boundary
-    plot_values = [np.clip(v, 0, 1.2) for v in values]
+    # Clip at 1.15 - sits between the 2nd line (1.0) and the outer edge (1.2)
+    plot_values = [np.clip(v, 0, 1.15) for v in values]
     plot_values += [plot_values[0]] 
     plot_angles = angles + [angles[0]]
 
     fig, ax = plt.subplots(figsize=(10, 10), subplot_kw=dict(polar=True))
     
-    # Large margins to prevent labels from touching the stats text on the card
-    plt.subplots_adjust(left=0.15, right=0.85, bottom=0.15, top=0.85)
+    # INCREASE MARGINS: This shrinks the spider web slightly so labels stay 
+    # away from your Max HP / ATK text on the card.
+    plt.subplots_adjust(left=0.2, right=0.8, bottom=0.2, top=0.8)
     
     ax.set_facecolor('none')
     fig.patch.set_alpha(0.0)
     
-    # 1. Scale to 1.2 so 1.0 (Target) is the 2nd line from the edge
+    # SCALE: 1.2 is the boundary
     ax.set_ylim(0, 1.2) 
     
-    # 2. Subtle Web Styling
+    # Subtle Web Styling
     ax.spines['polar'].set_color('white')
-    ax.spines['polar'].set_alpha(0.2) # Very faint
+    ax.spines['polar'].set_alpha(0.15)
     ax.spines['polar'].set_linewidth(1.0)
     
-    # 6 Grid rings (0.2 intervals)
+    # Grid lines at 0.2 intervals
     ax.set_yticks([0.2, 0.4, 0.6, 0.8, 1.0, 1.2])
     ax.set_yticklabels([]) 
-    ax.grid(True, color='white', alpha=0.15, linestyle='-')
+    ax.grid(True, color='white', alpha=0.1, linestyle='-')
 
-    # 3. Draw Data with Markers (Dots)
-    ax.plot(plot_angles, plot_values, color=color, linewidth=2.5, 
-            marker='o', markersize=6, markerfacecolor='white', 
-            markeredgecolor=color, markeredgewidth=1.5)
+    # Draw Data with dots (Akasha Style)
+    ax.plot(plot_angles, plot_values, color=color, linewidth=2.0, 
+            marker='o', markersize=4, markerfacecolor='white', 
+            markeredgecolor=color, markeredgewidth=1)
     
-    # Soft fill
-    ax.fill(plot_angles, plot_values, color=color, alpha=0.25)
+    ax.fill(plot_angles, plot_values, color=color, alpha=0.2)
 
-    # 4. Label Placement
     display_labels = [l if l != 'Elem DMG' else f"{element} DMG" for l in LABELS]
     
     for angle, label in zip(angles, display_labels):
-        # Akasha labels are small and clean
         ha = 'center'
         if 0.1 < angle < 3.0: ha = 'left' 
         elif 3.2 < angle < 6.0: ha = 'right'
         
-        ax.text(angle, 1.35, label, size=18, color='white', 
-                weight='normal', ha=ha, va='center', alpha=0.9)
+        # Position at 1.4 to keep words clear of the outer ring
+        ax.text(angle, 1.4, label, size=16, color='white', 
+                weight='normal', ha=ha, va='center', alpha=0.8)
 
     ax.set_xticklabels([])
 
