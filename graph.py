@@ -105,15 +105,17 @@ def get_complete_radar_module(char_stats, char_id, final_size=(450, 450)):
     # Map the relative values against your manual targets database
     multiplier = 0.9  # Increase this to stretch the graph further
     
+    multiplier = 0.9  # 0.9 keeps most stats inside the web, > 1.0 pushes them out
+    
     values_list = [
-        (char_stats.get('hp', 0) / targets['hp']) * multiplier, 1.0,
-        (char_stats.get('atk', 0) / targets['atk']) * multiplier, 1.0,
-        (char_stats.get('def', 0) / targets['def']) * multiplier, 1.0,
-        (char_stats.get('em', 0) / targets['em']) * multiplier, 1.0,
-        (char_stats.get('cd', 0) / targets['cd']) * multiplier, 1.0,
-        (char_stats.get('cr', 0) / targets['cr']) * multiplier, 1.0,
-        (char_stats.get('er', 0) / targets['er']) * multiplier, 1.0,
-        (char_stats.get('elem_bonus', 0) / targets.get('dmg_val', 46.6)) * multiplier, 1.0,
+        (char_stats.get('hp', 0) / targets['hp']) * multiplier,
+        (char_stats.get('atk', 0) / targets['atk']) * multiplier,
+        (char_stats.get('def', 0) / targets['def']) * multiplier,
+        (char_stats.get('em', 0) / targets['em']) * multiplier,
+        (char_stats.get('cd', 0) / targets['cd']) * multiplier,
+        (char_stats.get('cr', 0) / targets['cr']) * multiplier,
+        (char_stats.get('er', 0) / targets['er']) * multiplier,
+        (char_stats.get('elem_bonus', 0) / targets.get('dmg_val', 46.6)) * multiplier,
     ]
 
     # Generate the complete image (Web + Data + Text) in one step
