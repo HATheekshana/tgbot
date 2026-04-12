@@ -26,34 +26,36 @@ def generate_full_radar_chart(values, color="#bb86fc", element="Physical"):
     num_vars = len(LABELS)
     angles = np.linspace(np.pi/2, np.pi/2 - 2*np.pi, num_vars, endpoint=False).tolist()
     
-    # --- THE LIMIT LOGIC ---
-    # We clip values at 1.1. 
-    # This means even if EM is 500%, it visually stops just past the 100% line.
-    plot_values = [np.clip(v, 0, 1.1) for v in values]
+    # 1. We clip at 1.0 so it hits the target line exactly.
+    # To have it sit on the 2nd line, we set the limit to 1.2 below.
+    plot_values = [np.clip(v, 0, 1.0) for v in values]
     plot_values += [plot_values[0]] 
-    
     plot_angles = angles + [angles[0]]
 
-    fig, ax = plt.subplots(figsize=(12, 12), subplot_kw=dict(polar=True))
-    plt.subplots_adjust(left=0.1, right=0.9, bottom=0.1, top=0.9)
+    fig, ax = plt.subplots(figsize=(10, 10), subplot_kw=dict(polar=True))
+    
+    # --- CRITICAL CHANGE: REDUCE MARGINS ---
+    # This forces the graph to stretch toward the edges of the image
+    plt.subplots_adjust(left=0.02, right=0.98, bottom=0.02, top=0.98)
     
     ax.set_facecolor('none')
     fig.patch.set_alpha(0.0)
     
-    # Scale the grid slightly larger than our clip limit
-    ax.set_ylim(0, 1.3) 
+    # 2. Set ylim to 1.2. 
+    # 1.0 (Target) is now the 2nd line from the edge (1.2 is the 1st).
+    ax.set_ylim(0, 1.2) 
     
     ax.spines['polar'].set_color('white')
     ax.spines['polar'].set_alpha(0.3)
     ax.spines['polar'].set_linewidth(2.0)
     
-    # 5 rings: 0.2, 0.4, 0.6, 0.8, 1.0 (Target)
-    ax.set_yticks([0.2, 0.4, 0.6, 0.8, 1.0])
+    # Draw rings: 0.2, 0.4, 0.6, 0.8, 1.0, 1.2
+    ax.set_yticks([0.2, 0.4, 0.6, 0.8, 1.0, 1.2])
     ax.set_yticklabels([]) 
     ax.grid(True, color='white', alpha=0.2, linestyle='-')
 
     # Draw Data
-    ax.plot(plot_angles, plot_values, color=color, linewidth=6.0, solid_capstyle='round')
+    ax.plot(plot_angles, plot_values, color=color, linewidth=7.0, solid_capstyle='round')
     ax.fill(plot_angles, plot_values, color=color, alpha=0.45)
 
     display_labels = [l if l != 'Elem DMG' else f"{element} DMG" for l in LABELS]
@@ -63,8 +65,9 @@ def generate_full_radar_chart(values, color="#bb86fc", element="Physical"):
         if 0.1 < angle < 3.0: ha = 'left' 
         elif 3.2 < angle < 6.0: ha = 'right'
         
-        # Position labels safely outside the 1.3 limit
-        ax.text(angle, 1.42, label, size=24, color='white', 
+        # 3. Position labels tighter to the outer ring (1.2)
+        # 1.12 keeps them close so the graph stays large
+        ax.text(angle, 1.12, label, size=26, color='white', 
                 weight='bold', ha=ha, va='center', alpha=1)
 
     ax.set_xticklabels([])
