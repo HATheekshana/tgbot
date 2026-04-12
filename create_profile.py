@@ -80,15 +80,21 @@ async def create_genshin_profile(uid):
 
     async with aiohttp.ClientSession() as session:
         namecard_url = await get_namecard_image_url(user_info_enka['nameCardId'])
-        async with session.get(namecard_url, timeout=aiohttp.ClientTimeout(total=5)) as resp:
-            namecard_img = Image.open(BytesIO(await resp.read())).convert("RGBA")
-            namecard_img = ImageOps.fit(namecard_img, (528, 201), Image.Resampling.LANCZOS)
-
-        async with session.get(avatar_url, timeout=aiohttp.ClientTimeout(total=5)) as resp:
-            avatar_img = Image.open(BytesIO(await resp.read())).convert("RGBA")
-            avatar_img = ImageOps.fit(avatar_img, mask.size, centering=(0.5, 0.5))
-            clean_avatar = Image.new("RGBA", mask.size, (0, 0, 0, 0))
-            clean_avatar.paste(avatar_img, (0, 0), mask)
+        
+        async def fetch_namecard():
+            async with session.get(namecard_url, timeout=aiohttp.ClientTimeout(total=5)) as resp:
+                return Image.open(BytesIO(await resp.read())).convert("RGBA")
+        
+        async def fetch_avatar():
+            async with session.get(avatar_url, timeout=aiohttp.ClientTimeout(total=5)) as resp:
+                img = Image.open(BytesIO(await resp.read())).convert("RGBA")
+                img = ImageOps.fit(img, mask.size, centering=(0.5, 0.5))
+                clean = Image.new("RGBA", mask.size, (0, 0, 0, 0))
+                clean.paste(img, (0, 0), mask)
+                return clean
+        
+        namecard_img, clean_avatar = await asyncio.gather(fetch_namecard(), fetch_avatar())
+        namecard_img = ImageOps.fit(namecard_img, (528, 201), Image.Resampling.LANCZOS)
 
     base.paste(namecard_img, (35, 15), namecard_img)
     base.paste(banner_frame, (35, 15), banner_frame)

@@ -198,10 +198,9 @@ async def characters_card(uid, char_id, telegram_id):
         splash_task = asyncio.create_task(fetch_image(session, get_splash_url(avatar_icon)))
         bg_urls = get_namecard_urls(avatar_icon)
 
-        bg_img = None
-        for url in bg_urls:
-            bg_img = await fetch_image(session, url)
-            if bg_img: break
+        bg_tasks = [fetch_image(session, url) for url in bg_urls]
+        bg_results = await asyncio.gather(*bg_tasks, return_exceptions=True)
+        bg_img = next((img for img in bg_results if img and not isinstance(img, Exception)), None)
 
         splash_img = await splash_task
         weapon_ic = stats['weapon'].get('icon')
@@ -310,74 +309,74 @@ async def characters_card(uid, char_id, telegram_id):
             draw_text_with_shadow(draw, label, (start_x, curr_y + 18), font_path, 24, anchor="lm")
             draw_text_with_shadow(draw, fmt.format(stats.get(key, 0)), (start_x + gap, curr_y + 18), font_path, 26, anchor="rm")
 
-        graph_position = (1450, 150)
-        content_drawn = False
-
-        graph_enabled_globally = settings.get("graph_on", True)
-        disabled_chars = settings.get("disabled_graphs", [])
-        stickers_dict = settings.get("stickers", {})
-
-        char_graph_enabled = str(char_id) not in [str(id) for id in disabled_chars]
-
-        if graph_enabled_globally and char_graph_enabled:
-            try:
-                complete_graph = get_complete_radar_module(stats, char_id, final_size=(400, 400))
-
-                if complete_graph is not None:
-                    radar_bg = Image.open("asstests/icons/radar_bg.png").convert("RGBA")
-                    radar_bg = radar_bg.resize((530, 525), Image.Resampling.BILINEAR)
-                    ui_layer.paste(radar_bg, (graph_position[0] - 70, graph_position[1] - 52), radar_bg)
-
-                    ui_layer.paste(complete_graph, graph_position, complete_graph)
-                    content_drawn = True
-
-            except Exception as e:
-                print(f"Graph Generation Error: {e}")
-
-        if not content_drawn:
-            custom_path = stickers_dict.get(str(char_id))
-
-            if custom_path:
-                if not os.path.exists(custom_path):
-                    filename = os.path.basename(custom_path)
-                    local_path = os.path.join("custom_assets/stickers", filename)
-                    if os.path.exists(local_path):
-                        custom_path = local_path
-
-                if os.path.exists(custom_path):
-                    try:
-                        with Image.open(custom_path) as sticker:
-                            sticker = sticker.convert("RGBA").copy()
-                            sticker.thumbnail((380, 380), Image.Resampling.LANCZOS)
-
-                            s_w, s_h = sticker.size
-                            paste_x = graph_position[0] + (190 - s_w // 2)
-                            paste_y = graph_position[1] + (190 - s_h // 2)
-
-                            ui_layer.paste(sticker, (paste_x, paste_y), sticker)
-                            content_drawn = True
-                    except Exception as e:
-                        print(f"Custom Sticker Paste Error: {e}")
-
-        if not content_drawn:
-            try:
-                no_data = Image.open("asstests/icons/no_data.png").convert("RGBA")
-                no_data = no_data.resize((300, 300), Image.Resampling.LANCZOS)
-
-                nd_w, nd_h = no_data.size
-                paste_x = graph_position[0] + (190 - nd_w // 2)
-                paste_y = graph_position[1] + (190 - nd_h // 2)
-
-                ui_layer.paste(no_data, (paste_x, paste_y), no_data)
-            except Exception as e:
-                print(f"Final Fallback Error: {e}")
-
         await draw_horizontal_artifacts(session, ui_layer, char_info, 150, 650, ImageFont.truetype(font_path, 22))
 
         loop = asyncio.get_event_loop()
 
         def render_final_image():
-            """Composite images and draw build column - CPU intensive"""
+            """Composite images, draw graph/sticker, and draw build column - CPU intensive"""
+            graph_position = (1450, 150)
+            content_drawn = False
+
+            graph_enabled_globally = settings.get("graph_on", True)
+            disabled_chars = settings.get("disabled_graphs", [])
+            stickers_dict = settings.get("stickers", {})
+
+            char_graph_enabled = str(char_id) not in [str(id) for id in disabled_chars]
+
+            if graph_enabled_globally and char_graph_enabled:
+                try:
+                    complete_graph = get_complete_radar_module(stats, char_id, final_size=(400, 400))
+
+                    if complete_graph is not None:
+                        radar_bg = Image.open("asstests/icons/radar_bg.png").convert("RGBA")
+                        radar_bg = radar_bg.resize((530, 525), Image.Resampling.BILINEAR)
+                        ui_layer.paste(radar_bg, (graph_position[0] - 70, graph_position[1] - 52), radar_bg)
+
+                        ui_layer.paste(complete_graph, graph_position, complete_graph)
+                        content_drawn = True
+
+                except Exception as e:
+                    print(f"Graph Generation Error: {e}")
+
+            if not content_drawn:
+                custom_path = stickers_dict.get(str(char_id))
+
+                if custom_path:
+                    if not os.path.exists(custom_path):
+                        filename = os.path.basename(custom_path)
+                        local_path = os.path.join("custom_assets/stickers", filename)
+                        if os.path.exists(local_path):
+                            custom_path = local_path
+
+                    if os.path.exists(custom_path):
+                        try:
+                            with Image.open(custom_path) as sticker:
+                                sticker = sticker.convert("RGBA").copy()
+                                sticker.thumbnail((380, 380), Image.Resampling.LANCZOS)
+
+                                s_w, s_h = sticker.size
+                                paste_x = graph_position[0] + (190 - s_w // 2)
+                                paste_y = graph_position[1] + (190 - s_h // 2)
+
+                                ui_layer.paste(sticker, (paste_x, paste_y), sticker)
+                                content_drawn = True
+                        except Exception as e:
+                            print(f"Custom Sticker Paste Error: {e}")
+
+            if not content_drawn:
+                try:
+                    no_data = Image.open("asstests/icons/no_data.png").convert("RGBA")
+                    no_data = no_data.resize((300, 300), Image.Resampling.LANCZOS)
+
+                    nd_w, nd_h = no_data.size
+                    paste_x = graph_position[0] + (190 - nd_w // 2)
+                    paste_y = graph_position[1] + (190 - nd_h // 2)
+
+                    ui_layer.paste(no_data, (paste_x, paste_y), no_data)
+                except Exception as e:
+                    print(f"Final Fallback Error: {e}")
+
             final_img = Image.alpha_composite(bg, ui_layer)
             draw_build_column(final_img, 650, me_data, t_icons, c_icons)
 
