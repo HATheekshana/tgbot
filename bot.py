@@ -1120,7 +1120,7 @@ async def handle_card_generation(callback: types.CallbackQuery):
 
     await target.reply_photo(
         photo=photo,
-        caption=f"✨ <b>{display_name}</b>{ranking_text}",
+        caption=f"<b>{display_name}</b>{ranking_text}",
         reply_markup=back_builder.as_markup(),
         parse_mode="HTML"
     )
