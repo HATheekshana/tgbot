@@ -63,7 +63,7 @@ def generate_full_radar_chart(values, color="#bb86fc", element="Physical"):
         for l in LABELS
     ]
 
-    label_radius = MAX_LIMIT + 0.5
+    label_radius = MAX_LIMIT + 0.2
 
     for angle, label in zip(angles, display_labels):
         ha = 'center'

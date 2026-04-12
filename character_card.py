@@ -211,7 +211,7 @@ async def characters_card(uid, char_id, telegram_id):
 
         # Header & Weapon
         draw_text_with_shadow(draw,text=char_name,position=(50, 50),font_path=font_path,font_size=36,text_color=(255, 255, 255, 255), anchor="lm")
-        draw_text_with_shadow(draw,text=me['nickname'],position=(150, 50),font_path=font_path,font_size=26,text_color=(255, 255, 255, 255), anchor="lm")
+        draw_text_with_shadow(draw,text=me['nickname'],position=(200, 50),font_path=font_path,font_size=26,text_color=(255, 255, 255, 255), anchor="lm")
         draw_text_with_shadow(draw,text=f"Lvl: {char_level}/90",position=(50, 90),font_path=font_path,font_size=24,text_color=(255, 255, 255, 255), anchor="lm")
         draw_text_with_shadow(draw,text=f"Friendship: {f_level}",position=(50, 125),font_path=font_path,font_size=24,text_color=(255, 255, 255, 255), anchor="lm")
         if weapon_img:
