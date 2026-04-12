@@ -25,56 +25,64 @@ LABELS = ['HP', 'ATK', 'DEF', 'EM', 'Crit DMG', 'Crit Rate', 'ER', 'Elem DMG']
 def generate_full_radar_chart(values, color="#bb86fc", element="Physical"):
     num_vars = len(LABELS)
     angles = np.linspace(np.pi/2, np.pi/2 - 2*np.pi, num_vars, endpoint=False).tolist()
-    
-    # 1. Close the loop
+
+    MAX_LIMIT = 1.15
+
     def soft_cap(v):
         if v <= 1.0:
             return v
         return 1.0 + (v - 1.0) * 0.25
 
-    clamped_values = [min(soft_cap(v), 1.15) for v in values]
-    plot_values = clamped_values + [clamped_values[0]]
+    clamped_values = [min(soft_cap(v), MAX_LIMIT) for v in values]
 
-    ax.set_ylim(0, 1.15)
     plot_values = clamped_values + [clamped_values[0]]
     plot_angles = angles + [angles[0]]
 
     fig, ax = plt.subplots(figsize=(10, 10), subplot_kw=dict(polar=True))
-    
-    # Tighten margins to allow the graph to expand
+
     plt.subplots_adjust(left=0.05, right=0.95, bottom=0.05, top=0.95)
-    
+
     ax.set_facecolor('none')
     fig.patch.set_alpha(0.0)
-    
-    # 2. THE SCALE: Setting ylim to 1.25 makes the 1.0 (Target) 
-    # the second line from the outside.
-    
+
+    ax.set_ylim(0, MAX_LIMIT)
+
     ax.spines['polar'].set_color('white')
     ax.spines['polar'].set_alpha(0.3)
     ax.spines['polar'].set_linewidth(2.0)
-    
-    # 3. THE GRID: explicitly draw rings up to the target
-    ax.set_yticks(np.arange(0.2, MAX_LIMIT + 0.1, 0.2))
-    ax.set_yticklabels([]) 
+
+    ax.set_yticks(np.arange(0.2, MAX_LIMIT + 0.01, 0.2))
+    ax.set_yticklabels([])
     ax.grid(True, color='white', alpha=0.2, linestyle='-')
 
-    # Draw the data
     ax.plot(plot_angles, plot_values, color=color, linewidth=6.0, solid_capstyle='round')
     ax.fill(plot_angles, plot_values, color=color, alpha=0.45)
 
-    display_labels = [l if l != 'Elem DMG' else f"{element} DMG" for l in LABELS]
-    
+    display_labels = [
+        l if l != 'Elem DMG' else f"{element} DMG"
+        for l in LABELS
+    ]
+
+    label_radius = MAX_LIMIT + 0.08
+
     for angle, label in zip(angles, display_labels):
         ha = 'center'
-        # Dynamic alignment based on angle
-        if 0.1 < angle < 3.0: ha = 'left' 
-        elif 3.2 < angle < 6.0: ha = 'right'
-        
-        # 4. LABEL POSITION: Set to 1.35 or 1.4 to be outside the whole graph
-        # Since ylim is 1.25, anything > 1.25 is outside the web.
-        ax.text(angle, 1.38, label, size=22, color='white', 
-                weight='bold', ha=ha, va='center', alpha=1)
+
+        if 0.1 < angle < 3.0:
+            ha = 'left'
+        elif 3.2 < angle < 6.0:
+            ha = 'right'
+
+        ax.text(
+            angle,
+            label_radius,
+            label,
+            size=22,
+            color='white',
+            weight='bold',
+            ha=ha,
+            va='center'
+        )
 
     ax.set_xticklabels([])
 
@@ -82,7 +90,7 @@ def generate_full_radar_chart(values, color="#bb86fc", element="Physical"):
     plt.savefig(buf, format='png', transparent=True, dpi=300)
     plt.close(fig)
     buf.seek(0)
-    
+
     return Image.open(buf).convert("RGBA")
 
 def get_complete_radar_module(char_stats, char_id, final_size=(450, 450)):
