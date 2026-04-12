@@ -232,7 +232,7 @@ async def start_sticker_upload_prompt(callback: types.CallbackQuery, state: FSMC
 @dp.message(CardSettings.waiting_for_sticker)
 async def handle_sticker_upload(message: types.Message, state: FSMContext):
     data = await state.get_data()
-    char_id = data.get("selected_char_id")
+    char_id_str = str(data.get("selected_char_id"))
 
     if message.sticker:
         file = message.sticker
@@ -241,35 +241,45 @@ async def handle_sticker_upload(message: types.Message, state: FSMContext):
     elif message.document and message.document.mime_type.startswith("image/"):
         file = message.document
     else:
-        return await message.answer("❌ Please send a valid Image, Sticker, or Photo.")
+        return await message.answer("❌ Invalid format. Please send an image or sticker.")
 
-    if file.file_size > 500 * 1024:
-        return await message.answer("❌ File too large! Please keep it under 500KB.")
-
-    sticker_dir = os.path.abspath("custom_assets/stickers")
-    os.makedirs(sticker_dir, exist_ok=True)
-
+    # Get file info
     file_info = await message.bot.get_file(file.file_id)
     image_bytes = BytesIO()
     await message.bot.download_file(file_info.file_path, image_bytes)
     image_bytes.seek(0)
 
     try:
+        # 1. Process Image
         img = Image.open(image_bytes).convert("RGBA")
-        filename = f"{message.from_user.id}_{char_id}.png"
-        save_path = os.path.join(sticker_dir, filename)
-        img.thumbnail((512, 512), Image.Resampling.LANCZOS)
-        img.save(save_path, "png")
+        
+        # 2. Optimization: Lower resolution to match card UI
+        img.thumbnail((400, 400), Image.Resampling.LANCZOS)
 
+        # 3. Path Management
+        relative_dir = "custom_assets/stickers"
+        abs_dir = os.path.abspath(relative_dir)
+        os.makedirs(abs_dir, exist_ok=True)
+        
+        filename = f"{message.from_user.id}_{char_id_str}.png"
+        full_save_path = os.path.join(abs_dir, filename)
+        db_path = os.path.join(relative_dir, filename) # Store relative path
+
+        # 4. Save with Compression
+        img.save(full_save_path, "PNG", optimize=True)
+
+        # 5. Database Update
         await users_col.update_one(
             {"user_id": str(message.from_user.id)},
-            {"$set": {f"card_settings.stickers.{char_id}": save_path}},
+            {"$set": {f"card_settings.stickers.{char_id_str}": db_path}},
             upsert=True
         )
 
-        await message.answer("✅ Custom sticker saved successfully!")
+        await message.answer("✅ Custom sticker optimized and saved!")
         await state.clear()
+        
     except Exception as e:
+        print(f"Upload Error: {e}")
         await message.answer(f"❌ Failed to process image: {e}")
 def get_banner_keyboard(mode="current", char_index=0):
     builder = InlineKeyboardBuilder()
