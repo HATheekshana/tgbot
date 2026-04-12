@@ -294,7 +294,7 @@ async def characters_card(uid, char_id, telegram_id):
                 if complete_graph is not None:
                     # Draw the radar background
                     radar_bg = Image.open("asstests/icons/radar_bg.png").convert("RGBA")
-                    radar_bg = radar_bg.resize((530, 520), Image.Resampling.BILINEAR)
+                    radar_bg = radar_bg.resize((530, 525), Image.Resampling.BILINEAR)
                     ui_layer.paste(radar_bg, (graph_position[0] - 75, graph_position[1] - 60), radar_bg)
                     
                     # Draw the graph
