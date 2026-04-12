@@ -24,68 +24,57 @@ LABELS = ['HP', 'ATK', 'DEF', 'EM', 'Crit DMG', 'Crit Rate', 'ER', 'Elem DMG']
 
 def generate_full_radar_chart(values, color="#bb86fc", element="Physical"):
     """
-    Generates a complete radar chart (spider net, data, and labels) as a PIL image.
+    Generates a high-resolution radar chart with 'breakout' spikes for over-capped stats.
     """
     num_vars = len(LABELS)
     
-    # Start at the top (pi/2) and rotate clockwise
+    # Standardize angles (Top-down, clockwise)
     angles = np.linspace(np.pi/2, np.pi/2 - 2*np.pi, num_vars, endpoint=False).tolist()
     
-    # Close the loop for both values and angles
-    plot_values = values + [values[0]]
+    # --- Data Preparation ---
+    # Cap visual spikes at 1.3 so they stay on canvas but exceed the 1.0 web
+    plot_values = [min(v, 1.3) for v in values]
+    plot_values += [plot_values[0]]  # Close the polygon
     plot_angles = angles + [angles[0]]
 
-    # High-resolution figure size
     fig, ax = plt.subplots(figsize=(8, 8), subplot_kw=dict(polar=True))
     plt.subplots_adjust(left=0.1, right=0.9, bottom=0.1, top=0.9)
     
-    # Transparent background for the plot area
+    # Style the background
     ax.set_facecolor('none')
     fig.patch.set_alpha(0.0)
     
-    # --- DRAWING THE SPIDER NET (取代 png) ---
-    # Draw the main outer spine (the regular octagon)
+    # --- The Spider Web (Fixed Grid) ---
+    # Set ylim to 1.4 to provide a buffer for thick lines and spikes
+    ax.set_ylim(0, 1.4) 
     ax.spines['polar'].set_color('white')
     ax.spines['polar'].set_alpha(0.3)
     ax.spines['polar'].set_linewidth(1.5)
     
-    # Draw 5 Concentric "Web" Circles (20%, 40%, 60%, 80%, 100% radial marks)
-    plot_values = [min(v, 1.3) for v in values]
-    plot_values += [plot_values[0]] # Close the loop
-    
-    # Set ylim to 1.3 so we can see the "breakout" points
-    ax.set_ylim(0, 1.35) 
-    
-    # Keep yticks at 1.0 so the "Goal" web stays where it is
+    # Grid rings at 20% intervals up to the 100% target
     ax.set_yticks([0.2, 0.4, 0.6, 0.8, 1.0])
-    ax.set_yticklabels([]) # We don't want to show the numbers
+    ax.set_yticklabels([]) 
     ax.grid(True, color='white', alpha=0.2, linestyle='-')
 
-    # --- DRAWING THE DATA ---
-    # Thick bold line (linewidth=5.0) matching the reference quality
+    # --- Draw Data ---
     ax.plot(plot_angles, plot_values, color=color, linewidth=5.0, solid_capstyle='round')
-    # Use semi-transparent fill so the web is visible behind it
     ax.fill(plot_angles, plot_values, color=color, alpha=0.45)
 
-    # --- ADDING THE LABELS ---
-    # Update the generic label with the specific character element
+    # --- Labels ---
     display_labels = [l if l != 'Elem DMG' else f"{element} DMG" for l in LABELS]
     
-    # Place each label at its correct angle, slightly further out than the web edge
     for angle, label in zip(angles, display_labels):
-        # Logic to choose center/left/right horizontal alignment (ha)
-        # to prevent text overlap with the web spine
         ha = 'center'
-        if 0.1 < angle < 3.0: ha = 'left'   # Top-Right to Bottom-Right
-        elif 3.2 < angle < 6.0: ha = 'right' # Bottom-Left to Top-Left
+        if 0.1 < angle < 3.0: ha = 'left' 
+        elif 3.2 < angle < 6.0: ha = 'right'
         
-        ax.text(angle, 1.15, label, size=20, color='white', 
+        # Position labels at 1.25 to sit clearly outside the web but inside the image
+        ax.text(angle, 1.25, label, size=20, color='white', 
                 weight='bold', ha=ha, va='center', alpha=1)
 
-    # Hide standard degree ticks/labels
     ax.set_xticklabels([])
 
-    # Render to a high-DPI buffer to ensure sharpness
+    # Final Render
     buf = io.BytesIO()
     plt.savefig(buf, format='png', transparent=True, dpi=300)
     plt.close(fig)
