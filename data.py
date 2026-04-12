@@ -21,18 +21,18 @@ characters4 = {
 }
 
 characters5 = {
-    "albedo":"Albedo", "alhaitham":"Alhaitham", "arataki-itto":"AratakiItto", "arlecchino":"Arlecchino", 
-    "baizhu":"Baizhu", "chasca":"Chasca", "chiori":"Chiori", "citlali":"Citlali", "clorinde":"Clorinde", 
-    "columbina":"Columbina", "cyno":"Cyno", "dehya":"Dehya", "diluc":"Diluc", "durin":"Durin", 
-    "emilie":"Emilie", "escoffier":"Escoffier", "eula":"Eula", "flins":"Flins", "furina":"Furina", 
-    "ganyu":"Ganyu", "hu-tao":"HuTao", "ineffa":"Ineffa", "jean":"Jean", "kaedehara-kazuha":"Kaedehara Kazuha", 
-    "kamisato-ayaka":"Kamisato Ayaka", "kamisato-ayato":"Kamisato Ayato", "keqing":"Keqing", "kinich":"Kinich", 
-    "klee":"Klee", "lauma":"Lauma", "lyney":"Lyney", "mavuika":"Mavuika", "mona":"Mona", "mualani":"Mualani", 
-    "nahida":"Nahida", "navia":"Navia", "nefer":"Nefer", "neuvillette":"Neuvillette", "nilou":"Nilou", 
-    "qiqi":"Qiqi", "raiden-shogun":"Raiden Shogun", "sangonomiya-kokomi":"Sangonomiya Kokomi", "shenhe":"Shenhe", 
-    "sigewinne":"Sigewinne", "skirk":"Skirk", "tartaglia":"Tartaglia", "tighnari":"Tighnari", "varesa":"Varesa", 
-    "varka":"Varka", "venti":"Venti", "wanderer":"Wanderer", "wriothesley":"Wriothesley", "xianyun":"Xianyun", 
-    "xiao":"Xiao", "xilonen":"Xilonen", "yae-miko":"YaeMiko", "yelan":"Yelan", "yoimiya":"Yoimiya", 
+    "albedo":"Albedo", "alhaitham":"Alhaitham", "arataki-itto":"AratakiItto", "arlecchino":"Arlecchino",
+    "baizhu":"Baizhu", "chasca":"Chasca", "chiori":"Chiori", "citlali":"Citlali", "clorinde":"Clorinde",
+    "columbina":"Columbina", "cyno":"Cyno", "dehya":"Dehya", "diluc":"Diluc", "durin":"Durin",
+    "emilie":"Emilie", "escoffier":"Escoffier", "eula":"Eula", "flins":"Flins", "furina":"Furina",
+    "ganyu":"Ganyu", "hu-tao":"HuTao", "ineffa":"Ineffa", "jean":"Jean", "kaedehara-kazuha":"Kaedehara Kazuha",
+    "kamisato-ayaka":"Kamisato Ayaka", "kamisato-ayato":"Kamisato Ayato", "keqing":"Keqing", "kinich":"Kinich",
+    "klee":"Klee", "lauma":"Lauma", "lyney":"Lyney", "mavuika":"Mavuika", "mona":"Mona", "mualani":"Mualani",
+    "nahida":"Nahida", "navia":"Navia", "nefer":"Nefer", "neuvillette":"Neuvillette", "nilou":"Nilou",
+    "qiqi":"Qiqi", "raiden-shogun":"Raiden Shogun", "sangonomiya-kokomi":"Sangonomiya Kokomi", "shenhe":"Shenhe",
+    "sigewinne":"Sigewinne", "skirk":"Skirk", "tartaglia":"Tartaglia", "tighnari":"Tighnari", "varesa":"Varesa",
+    "varka":"Varka", "venti":"Venti", "wanderer":"Wanderer", "wriothesley":"Wriothesley", "xianyun":"Xianyun",
+    "xiao":"Xiao", "xilonen":"Xilonen", "yae-miko":"YaeMiko", "yelan":"Yelan", "yoimiya":"Yoimiya",
     "yumemizuki-mizuki":"Yumemizuki Mizuki", "zhongli":"Zhongli", "zibai":"Zibai"
 }
 rare = {
@@ -47,9 +47,10 @@ TEAMS_DB = {
     },
     "nefer": {
         "premium": "images/teams/nefer_premium.jpg",
-        
+
     },
     "zibai": {
         "premium": "images/teams/zibai_premium.jpg"
                 }
 }
+

@@ -12,3 +12,4 @@ async def fetch_enka_data(uid: str):
 async def get_user_uid(user_id: str):
     user_data = await users_col.find_one({"user_id": user_id})
     return user_data.get("genshin_uid") if user_data else None
+

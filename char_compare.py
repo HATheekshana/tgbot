@@ -78,7 +78,6 @@ def extract_char_stats(avatar_list, char_id, element):
             p = char.get("fightPropMap", {})
             friendship = char.get("fetterInfo", {}).get("expLevel", 1)
             char_level = char.get("propMap", {}).get("4001", {}).get("val", "1")
-            # --- WEAPON EXTRACTION ---
             weapon_info = {}
             equips = char.get("equipList", [])
             for item in equips:
@@ -87,7 +86,7 @@ def extract_char_stats(avatar_list, char_id, element):
                     weapon_data = item.get("weapon")
                     weapon_info["id"] = item.get("itemId")
                     weapon_info["level"] = weapon_data.get("level")
-                    weapon_info["icon"] = flat_data.get("icon") 
+                    weapon_info["icon"] = flat_data.get("icon")
                     weapon_info["hash"] = flat_data.get("nameTextMapHash")
                     weapon_info["rank"] = flat_data.get("rankLevel")
                     affix_map = weapon_data.get("affixMap", {})
@@ -97,10 +96,8 @@ def extract_char_stats(avatar_list, char_id, element):
                     else:
                         refinement = 1
 
-                    # Affix level 0 = Refinement 1
                     weapon_info["refinement"] = refinement
-                    
-                    # --- ADDED: Extract Base ATK and Sub Stats ---
+
                     w_stats = []
                     for s in flat_data.get("weaponStats", []):
                         w_stats.append({
@@ -111,29 +108,25 @@ def extract_char_stats(avatar_list, char_id, element):
                     break
             elem_bonus = 0
 
-            # Element-specific (Pyro, Hydro, etc.)
             elem_bonus += get_prop(p, bonus_id)
 
-            # General DMG bonus (VERY important)
             elem_bonus += get_prop(p, 26)
 
-            # Extra elemental bonus (rare but safe)
             elem_bonus += get_prop(p, 27)
 
-            # Convert to %
             elem_bonus *= 100
             return {
                 "char_level": char_level,
                 "friendship": friendship,
-                "hp": get_prop(p, 2000), 
-                "atk": get_prop(p, 2001), 
+                "hp": get_prop(p, 2000),
+                "atk": get_prop(p, 2001),
                 "def": get_prop(p, 2002),
-                "em": get_prop(p, 28), 
-                "cr": get_prop(p, 20) * 100, 
+                "em": get_prop(p, 28),
+                "cr": get_prop(p, 20) * 100,
                 "cd": get_prop(p, 22) * 100,
-                "er": get_prop(p, 23) * 100, 
+                "er": get_prop(p, 23) * 100,
                 "elem_bonus": elem_bonus,
-                "weapon": weapon_info # Now includes weapon details
+                "weapon": weapon_info
             }
     return None
 async def get_namecard_image_url(card_id):
@@ -158,13 +151,13 @@ async def fetch_image(session, url):
         if response.status == 200:
             return Image.open(BytesIO(await response.read())).convert("RGBA")
     return None
-async def get_rank(uid, char_id, session): # Add session here
+async def get_rank(uid, char_id, session):
     ranking_api = f"https://test-xehj.onrender.com/get/ranking/{uid}"
     try:
         async with session.get(ranking_api, timeout=10) as rank_resp:
             if rank_resp.status == 200:
                 all_ranks = await rank_resp.json()
-                char_rank_data = all_ranks.get(str(char_id)) # Ensure string key
+                char_rank_data = all_ranks.get(str(char_id))
                 if char_rank_data:
                     rank = char_rank_data.get("ranking")
                     out_of = char_rank_data.get("outOf")
@@ -180,19 +173,18 @@ async def compare_characters(uid, uid2, char_id):
         me_data, them_data, t_icons, c_icons = await fetch_build_assets(uid, uid2, char_id)
     except Exception as e:
         print("--- CRITICAL ERROR IN IMAGE GENERATION ---")
-        traceback.print_exc() # This prints the full error + line number to your console
+        traceback.print_exc()
         print("------------------------------------------")
         return None
-# In bot.py, check: if result is None: await message.answer("Error...")
-    try: 
+    try:
         font = ImageFont.truetype("Genshin_Impact.ttf", 23)
         font_big = ImageFont.truetype("Genshin_Impact.ttf", 28)
         font_small = ImageFont.truetype("Genshin_Impact.ttf", 20)
         font_xsmall = ImageFont.truetype("Genshin_Impact.ttf", 16)
-        
-    except: 
+
+    except:
         font = ImageFont.load_default()
-    
+
     with open('char.json', 'r') as f:
         char_map = json.load(f)
 
@@ -223,7 +215,7 @@ async def compare_characters(uid, uid2, char_id):
         fetch_image(session, url_me),
         fetch_image(session, url_them)
         )
-        
+
     async with aiohttp.ClientSession() as session:
         try:
             user_info_me = await get_player_full_data(uid)
@@ -243,20 +235,20 @@ async def compare_characters(uid, uid2, char_id):
             fetch_image(session, splash_url),
             fetch_image(session, char_url)
         )
-        
+
     target_size = (1875, 890)
     bg_path = ELEMENT_BG_MAP.get(element, "asstests/backgrounds/anemo.jpg")
-    
+
     bg_base = ImageOps.fit(Image.open(bg_path).convert("RGBA"), target_size, method=Image.Resampling.LANCZOS)
-    
+
     if splash_art:
         splash_art.thumbnail((1600, 1600), Image.Resampling.LANCZOS)
         bg_w, bg_h = target_size
         splash_w, splash_h = splash_art.size
         center_x = (bg_w // 2) - (splash_w // 2)
-        center_y = 100 
+        center_y = 100
         bg_base.paste(splash_art, (center_x, center_y), splash_art)
-    
+
     background = bg_base.filter(ImageFilter.GaussianBlur(radius=7))
 
     ui_layer = Image.new("RGBA", target_size, (0, 0, 0, 0))
@@ -282,31 +274,28 @@ async def compare_characters(uid, uid2, char_id):
             background.paste(wp_res, pos, wp_res)
             w_info = stats['weapon']
             weapon_name = get_weapon_name(w_info['hash'])
-            
-            # --- Draw Weapon Name ---
+
             draw.text((pos[0] + 240, 245), weapon_name, font=font_xsmall, fill=(0, 0, 0), anchor="mm")
-            
-            # --- Draw Base ATK and Sub Stat Boxes ---
+
             w_stats_list = w_info.get("stats", [])
             stat_x_start = pos[0] + 120
             for i, s in enumerate(w_stats_list):
-                curr_stat_x = stat_x_start + (i * 125) # Space them apart
-                # Box for stat
+                curr_stat_x = stat_x_start + (i * 125)
                 draw.rounded_rectangle([curr_stat_x, 270, curr_stat_x + 115, 310], radius=5, fill=(15, 15, 25, 200))
                 icon_path = W_STAT_ICONS.get(s['prop'], "asstests/icons/atk.png")
                 try:
                     s_icon = Image.open(icon_path).convert("RGBA").resize((22, 22))
                     ui_layer.paste(s_icon, (curr_stat_x + 5, 279), s_icon)
                 except: pass
-            
+
                 val_str = f"{s['val']}"
                 if any(x in s['prop'] for x in ["PERCENT", "CHARGE", "CRITICAL"]):
                     val_str += "%"
-                
+
                 draw.text((curr_stat_x + 35, 290), val_str, font=font_small, fill=(255, 255, 255), anchor="lm")
 
             max_lv: str = "90" if w_info.get('rank', 0) == 5 else "80" if w_info.get('rank', 0) == 4 else "70"
-            
+
             draw_dynamic_bubble(draw, f"Lv: {w_info['level']}/{max_lv}", (pos[0] + 140, 335), font_small, anchor="lm")
             draw_dynamic_bubble(draw, f"R{w_info.get('refinement', 1)}", (pos[0]+345, 335), font_small, text_color=(255, 204, 0, 255), anchor="rm")
     f_level_me = stats_them.get("friendship", 1) if stats_me else 1
@@ -318,7 +307,6 @@ async def compare_characters(uid, uid2, char_id):
     mask_ci = Image.new("L", (c_box_w, c_box_h), 0)
     ImageDraw.Draw(mask_ci).rounded_rectangle([0, 0, c_box_w, c_box_h], radius=10, fill=255)
     if char_icon: background.paste(ImageOps.fit(char_icon, (c_box_w, c_box_h)), (CI_coords[0], CI_coords[1]), mask_ci)
-    
 
     for av, pos in [(avatar_them, (20, 10)), (avatar_me, (1670, 10))]:
         if av:
@@ -358,14 +346,13 @@ async def compare_characters(uid, uid2, char_id):
     draw.rounded_rectangle([937, 490, 1085, 875], radius=10, fill=(255,255,255,60), outline=(255,255,255,200))
     draw.rounded_rectangle([785, 490, 932, 875], radius=10, fill=(255,255,255,60), outline=(255,255,255,200))
     y_start = 370
-    icon_w = 60      # Small box for icon
-    label_w = 330     # Box for stat name
-    val_w = 170       # Box for numeric values
-    gap = 10          # Space between rectangles
+    icon_w = 60
+    label_w = 330
+    val_w = 170
+    gap = 10
     row_height = 55
     row_spacing = 65
 
-    # Calculate total width of the 4-box row to center it
     start_x = 10
 
     stat_config = [
@@ -379,62 +366,54 @@ async def compare_characters(uid, uid2, char_id):
         ("Elemental Mastery", "em", "{:.0f}", "asstests/icons/em.png")
     ]
 
-    # 4. Draw Rows: [Icon] [Label] [User 1 Value] [User 2 Value]
     for i, (label, key, fmt, icon_path) in enumerate(stat_config):
         curr_y = y_start + (i * row_spacing)
-        
-        # Segment 1: ICON
-        draw.rounded_rectangle([start_x, curr_y, start_x + icon_w, curr_y + row_height], 
+
+        draw.rounded_rectangle([start_x, curr_y, start_x + icon_w, curr_y + row_height],
                                radius=8, fill=(15, 15, 25, 220), outline=(255,255,255,50))
         try:
             icon = Image.open(icon_path).convert("RGBA").resize((32, 32))
             ui_layer.paste(icon, (start_x + 14, curr_y + 11), icon)
         except: pass
 
-        # Segment 2: STAT LABEL
         l_x = start_x + icon_w + gap
-        draw.rounded_rectangle([l_x, curr_y, l_x + label_w, curr_y + row_height], 
+        draw.rounded_rectangle([l_x, curr_y, l_x + label_w, curr_y + row_height],
                                radius=8, fill=(15, 15, 25, 170), outline=(255,255,255,50))
         draw.text((l_x + 20, curr_y + (row_height//2)), label, font=font, fill=(230, 230, 230), anchor="lm")
 
-        # Segment 3: USER 1 VALUE
         v1_x = l_x + label_w + gap
-        draw.rounded_rectangle([v1_x, curr_y, v1_x + val_w, curr_y + row_height], 
+        draw.rounded_rectangle([v1_x, curr_y, v1_x + val_w, curr_y + row_height],
                                radius=8, fill=(15, 15, 25, 170), outline=(255,255,255,50))
         val1 = fmt.format(stats_me.get(key, 0)) if stats_me else "0"
         draw.text((v1_x + (val_w // 2), curr_y + (row_height//2)), val1, font=font, fill=(255, 255, 255), anchor="mm")
 
-        # Segment 4: USER 2 VALUE
         v2_x = v1_x + val_w + gap
-        draw.rounded_rectangle([v2_x, curr_y, v2_x + val_w, curr_y + row_height], 
+        draw.rounded_rectangle([v2_x, curr_y, v2_x + val_w, curr_y + row_height],
                                radius=8, fill=(15, 15, 25, 170), outline=(255,255,255,50))
         val2 = fmt.format(stats_them.get(key, 0)) if stats_them else "0"
         draw.text((v2_x + (val_w // 2), curr_y + (row_height//2)), val2, font=font, fill=(255, 255, 255), anchor="mm")
-    # Move heavy image rendering to thread to avoid blocking other users
     loop = asyncio.get_event_loop()
-    
+
     def render_comparison():
         """CPU-intensive: draw_build_column, star icons, and JPEG encoding"""
         draw_build_column(background, 795, them_data, t_icons, c_icons)
         draw_build_column(background, 945, me_data, t_icons, c_icons)
-        
+
         if rarity == 4:
             star4 = Image.open("asstests/icons/stars/c_stars_4.png").convert("RGBA")
             background.paste(star4, (850, 150), star4)
         elif rarity == 5:
             star5 = Image.open("asstests/icons/stars/c_stars_5.png").convert("RGBA")
             background.paste(star5, (850, 150), star5)
-        
+
         buffer = BytesIO()
         final_img = Image.alpha_composite(background, ui_layer)
         final_img.convert("RGB").save(buffer, format="JPEG", quality=90)
         buffer.seek(0)
         return buffer
-    
-    # Render comparison in thread
+
     buffer = await loop.run_in_executor(None, render_comparison)
-    
-    # Handle async artifacts drawing after rendering
+
     async with aiohttp.ClientSession() as session:
         try:
             me_char_obj = next((c for c in me.get('avatarInfoList', []) if str(c['avatarId']) == str(char_id)), None)
@@ -442,14 +421,14 @@ async def compare_characters(uid, uid2, char_id):
         except (StopIteration, AttributeError):
             print("Character not found in one of the showcases!")
             return buffer
-        
+
         await draw_all_artifacts(
-            session=session, 
-            background=ui_layer, 
+            session=session,
+            background=ui_layer,
             me_char_data=me_char_obj,
             them_char_data=them_char_obj,
             font=font_small
         )
-    
+
     return buffer
 

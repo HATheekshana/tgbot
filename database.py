@@ -9,3 +9,4 @@ cluster = AsyncIOMotorClient(MONGO_URL)
 db = cluster["genshin_bot"]
 users_col = db["user_stats"]
 groups_col = db["groups"]
+

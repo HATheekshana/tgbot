@@ -18,7 +18,7 @@ with open('char.json', 'r') as f:
 async def get_character_data(uid):
     user_info_enka = await get_enkadata(uid)
     showcase_items = user_info_enka.get("showAvatarInfoList", [])
-    
+
     if not showcase_items:
         print(f"⚠️ No characters found in Enka showcase for UID {uid}.")
         return []
@@ -27,7 +27,7 @@ async def get_character_data(uid):
     for item in showcase_items:
         aid = str(item.get("avatarId"))
         char_info = CHARACTER_MAP.get(aid)
-        
+
         if char_info:
             icon_name = char_info["avataricon"]
             final_list.append({
@@ -35,7 +35,7 @@ async def get_character_data(uid):
                 "rarity": char_info["rarity"],
                 "icon": f"https://enka.network/ui/{icon_name}.png",
                 "level": item.get("propMap", {}).get("4001", {}).get("val", 1),
-                "constellations": len(item.get("talentIdList", [])) 
+                "constellations": len(item.get("talentIdList", []))
             })
         else:
             final_list.append({
@@ -63,59 +63,52 @@ async def create_genshin_profile(uid):
         avatar_url = "https://enka.network/ui/UI_AvatarIcon_PlayerBoy.png"
 
     user_info_enka = await get_enkadata(uid)
-    
-    # 1. Image loading and Setup
+
     base = Image.open("PROFILE-BACKGROUND.png").convert("RGBA")
     frame = Image.open("AVATAR.png").convert("RGBA")
     banner_frame = Image.open("BANNER_FRAME.png").convert("RGBA")
-    
+
     mask = ImageOps.invert(Image.open("AVATAR_MASKA.png").convert("L"))
     char_mask = ImageOps.invert(Image.open("CHARTER_MASK.png").convert("L"))
 
     async with aiohttp.ClientSession() as session:
-        # Fetch Namecard
         namecard_url = await get_namecard_image_url(user_info_enka['nameCardId'])
         async with session.get(namecard_url) as resp:
             namecard_img = Image.open(BytesIO(await resp.read())).convert("RGBA")
             namecard_img = ImageOps.fit(namecard_img, (528, 201), Image.Resampling.LANCZOS)
-        
-        # Fetch Avatar
+
         async with session.get(avatar_url) as resp:
             avatar_img = Image.open(BytesIO(await resp.read())).convert("RGBA")
             avatar_img = ImageOps.fit(avatar_img, mask.size, centering=(0.5, 0.5))
             clean_avatar = Image.new("RGBA", mask.size, (0, 0, 0, 0))
             clean_avatar.paste(avatar_img, (0, 0), mask)
 
-    # 2. Layering Part 1: Background Elements
     base.paste(namecard_img, (35, 15), namecard_img)
     base.paste(banner_frame, (35, 15), banner_frame)
     base.paste(frame, (220, 100), frame)
     base.paste(clean_avatar, (220, 100), clean_avatar)
-    
 
-    # 3. Layering Part 2: Characters (Processed after background frames)
     final_list = await get_character_data(uid)
     async with aiohttp.ClientSession() as session:
-        for i, char in enumerate(final_list): # Limiting to 8 to avoid grid overflow
+        for i, char in enumerate(final_list):
             async with session.get(char["icon"]) as response:
                 if response.status == 200:
                     char_content = await response.read()
                     charimage = Image.open(BytesIO(char_content)).convert("RGBA")
                     charimage = ImageOps.fit(charimage, char_mask.size, centering=(0.5, 0.5))
-                    
+
                     clean_char = Image.new("RGBA", char_mask.size, (0, 0, 0, 0))
                     clean_char.paste(charimage, (0, 0), char_mask)
-                    
+
                     x = 615 + ((i % 4) * 150)
                     y = 290 + ((i // 4) * 150)
-                    
+
                     bg_file = "CHARTER_5.png" if char['rarity'] == 5 else "CHARTER_4.png"
                     char_bg = Image.open(bg_file).convert("RGBA")
-                    
+
                     base.paste(char_bg, (x, y), char_bg)
                     base.paste(clean_char, (x, y), clean_char)
 
-    # 4. Text Overlay and Rendering (move to thread to avoid blocking)
     def render_profile():
         """CPU-intensive: Text drawing and PNG encoding"""
         draw = ImageDraw.Draw(base)
@@ -143,7 +136,8 @@ async def create_genshin_profile(uid):
         base.save(buffer, format="PNG")
         buffer.seek(0)
         return buffer
-    
+
     loop = asyncio.get_event_loop()
     buffer = await loop.run_in_executor(None, render_profile)
     return buffer
+

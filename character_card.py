@@ -9,7 +9,6 @@ from graph import get_complete_radar_module
 from dotenv import load_dotenv
 
 load_dotenv()
-# Local Imports
 from char_t_c import fetch_build_assets, draw_build_column
 from artifacts import draw_horizontal_artifacts
 MONGO_URL = os.getenv("MONGO_URL")
@@ -28,7 +27,6 @@ W_STAT_ICONS = {
     "FIGHT_PROP_DEFENSE_PERCENT": "asstests/icons/def.png"
 }
 
-# Load Data
 try:
     with open("new.json", "r", encoding="utf-8") as f:
         TEXT = json.load(f)
@@ -54,7 +52,6 @@ SPECIAL_MAPPINGS = {
     "Liney": "Lyney", "Liuyun": "Xianyun"
 }
 
-# --- Helper Functions ---
 async def get_user_card_settings(user_id):
     try:
         user = await users_col.find_one({"user_id": str(user_id)})
@@ -64,9 +61,9 @@ async def get_user_card_settings(user_id):
     except Exception as e:
         print(f"DB Error: {e}")
     return {"graph_on": True, "stickers": {}}
-def draw_text_with_shadow(draw, text, position, font_path, font_size, 
-                          text_color=(255, 255, 255, 255), 
-                          shadow_color=(0, 0, 0, 180), 
+def draw_text_with_shadow(draw, text, position, font_path, font_size,
+                          text_color=(255, 255, 255, 255),
+                          shadow_color=(0, 0, 0, 180),
                           anchor="mm", shadow_offset=(2, 2)):
     font = ImageFont.truetype(font_path, font_size)
     shadow_pos = (position[0] + shadow_offset[0], position[1] + shadow_offset[1])
@@ -91,7 +88,7 @@ def get_prop(stats_dict, prop_id):
     return stats_dict.get(str(prop_id), stats_dict.get(int(prop_id), 0))
 
 def extract_char_stats(avatar_list, char_id, element):
-    element = element.capitalize() 
+    element = element.capitalize()
     element_map = {
         "Pyro": 40, "Electro": 41, "Hydro": 42, "Dendro": 43,
         "Anemo": 45, "Geo": 44, "Cryo": 46, "Physical": 30
@@ -114,7 +111,7 @@ def extract_char_stats(avatar_list, char_id, element):
                         "icon": flat_data.get("icon"),
                         "hash": flat_data.get("nameTextMapHash"),
                         "refinement": list(weapon_data.get("affixMap", {0:0}).values())[0] + 1,
-                        "stats": [{"prop": s.get("appendPropId"), "val": s.get("statValue")} 
+                        "stats": [{"prop": s.get("appendPropId"), "val": s.get("statValue")}
                                   for s in flat_data.get("weaponStats", [])]
                     }
                     break
@@ -166,17 +163,14 @@ def paste_splash_left(ui_layer, splash, size):
     draw = ImageDraw.Draw(mask)
     for i in range(fade_width):
         draw.line([(left_area_w - fade_width + i, 0), (left_area_w - fade_width + i, card_h)], fill=int(255 * (1 - i / fade_width)))
-    
+
     splash.putalpha(ImageChops.multiply(splash.getchannel('A'), mask))
     ui_layer.paste(splash, (0, 0), splash)
     return ui_layer
 
-# --- Main Logic ---
-
 async def characters_card(uid, char_id, telegram_id):
-    # ...
     settings = await get_user_card_settings(telegram_id)
-    
+
     try:
         me = await get_enkadata(uid)
         me_data, t_icons, c_icons = await fetch_build_assets(uid, char_id)
@@ -187,10 +181,10 @@ async def characters_card(uid, char_id, telegram_id):
     char_id_str = str(char_id)
     char_info_map = CHAR_MAP.get(char_id_str, {"element": "Anemo", "avataricon": "UI_AvatarIcon_Qin"})
     initial_element = char_info_map.get('element', 'Anemo')
-    
+
     stats = extract_char_stats(me['avatarInfoList'], char_id, initial_element)
     char_info = next(c for c in me['avatarInfoList'] if str(c.get("avatarId")) == str(char_id))
-    
+
     element = stats.get("element", initial_element)
     avatar_icon = char_info_map.get("avataricon", "UI_AvatarIcon_Zibai")
     char_name = avatar_icon.replace("UI_AvatarIcon_", "")
@@ -203,19 +197,19 @@ async def characters_card(uid, char_id, telegram_id):
     async with aiohttp.ClientSession() as session:
         splash_task = asyncio.create_task(fetch_image(session, get_splash_url(avatar_icon)))
         bg_urls = get_namecard_urls(avatar_icon)
-        
+
         bg_img = None
         for url in bg_urls:
             bg_img = await fetch_image(session, url)
             if bg_img: break
-        
+
         splash_img = await splash_task
         weapon_ic = stats['weapon'].get('icon')
         weapon_img = await fetch_image(session, f"https://enka.network/ui/{weapon_ic}.png")
 
         if not bg_img:
             bg_img = Image.new("RGBA", target_size, (30, 30, 45, 255))
-        
+
         bg = ImageOps.fit(bg_img, target_size, method=Image.Resampling.BILINEAR).convert("RGBA")
         bg = ImageEnhance.Brightness(bg).enhance(0.45)
         ui_layer = Image.new("RGBA", target_size, (0, 0, 0, 0))
@@ -224,30 +218,28 @@ async def characters_card(uid, char_id, telegram_id):
         if splash_img:
             ui_layer = paste_splash_left(ui_layer, splash_img, target_size)
 
-        # Header & Weapon
         base_x, base_y = 50, 50
-        spacing = 15  # Pixels between name and nickname
+        spacing = 15
 
-        # 2. Draw the Character Name first
         draw_text_with_shadow(
-            draw, 
-            text=char_name, 
-            position=(base_x, base_y), 
-            font_path=font_path, 
-            font_size=36, 
-            text_color=(255, 255, 255, 255), 
+            draw,
+            text=char_name,
+            position=(base_x, base_y),
+            font_path=font_path,
+            font_size=36,
+            text_color=(255, 255, 255, 255),
             anchor="lm"
         )
         name_font = ImageFont.truetype(font_path, 36)
         bbox = draw.textbbox((base_x, base_y), char_name, font=name_font, anchor="lm")
         next_x = bbox[2] + spacing
         draw_text_with_shadow(
-            draw, 
-            text=me['nickname'], 
-            position=(next_x, base_y), 
-            font_path=font_path, 
-            font_size=26, 
-            text_color=(255, 255, 255, 255), 
+            draw,
+            text=me['nickname'],
+            position=(next_x, base_y),
+            font_path=font_path,
+            font_size=26,
+            text_color=(255, 255, 255, 255),
             anchor="lm"
         )
         draw_text_with_shadow(draw,text=f"Lvl: {char_level}/90",position=(50, 90),font_path=font_path,font_size=24,text_color=(255, 255, 255, 255), anchor="lm")
@@ -259,43 +251,42 @@ async def characters_card(uid, char_id, telegram_id):
             draw_text_with_shadow(draw, get_weapon_name(stats['weapon']), (w_pos[0] + 170, w_pos[1] + 30), font_path, 32, anchor="lm")
             refine = w_info.get('refinement', 1)
             level = w_info.get('level', 1)
-            max_lv = "90" 
-        
+            max_lv = "90"
+
             lv_text = f"R{refine}      Lv.{level}/{max_lv}"
             draw_text_with_shadow(draw, lv_text, (w_pos[0] + 170, w_pos[1] + 80), font_path, 24, text_color=(255, 255, 255), anchor="lm")
-            
+
             w_stats_list = w_info.get("stats", [])
-        STARS_PATH = "asstests/icons/stars/" 
+        STARS_PATH = "asstests/icons/stars/"
         w_rarity = stats['weapon'].get('rarity', 5)
         try:
             star_img = Image.open(f"{STARS_PATH}Star{w_rarity}.png").convert("RGBA")
-                
+
             star_img = star_img.resize((140, 40), Image.Resampling.BILINEAR)
-                
+
             ui_layer.paste(star_img, (w_pos[0] + 10, w_pos[1] + 120), star_img)
         except Exception as e:
             print(f"Error loading star image Star{w_rarity}.png: {e}")
         stat_x_start = w_pos[0] + 170
         stat_y = w_pos[1] + 100
         for i, s in enumerate(w_stats_list):
-            curr_stat_x = stat_x_start + (i * 125) 
-            
+            curr_stat_x = stat_x_start + (i * 125)
+
             draw.rounded_rectangle([curr_stat_x, stat_y, curr_stat_x + 115, stat_y + 40], radius=5, fill=(255, 255, 255, 100))
-            
+
             icon_path = W_STAT_ICONS.get(s['prop'], "asstests/icons/atk.png")
             try:
                 s_icon = Image.open(icon_path).convert("RGBA").resize((22, 22))
                 ui_layer.paste(s_icon, (curr_stat_x + 5, stat_y + 10), s_icon)
             except:
                 pass
-            
+
             val_str = f"{s['val']}"
             if any(x in str(s['prop']) for x in ["PERCENT", "CHARGE", "CRITICAL"]):
                 val_str += "%"
-            
+
             draw.text((curr_stat_x + 40, stat_y + 20), val_str, font=font_small, fill=(255, 255, 255), anchor="lm")
 
-        # Detailed Stats
         stat_config = [
             ("Max HP", "hp", "{:.0f}", "asstests/icons/hp.png"),
             ("ATK", "atk", "{:.0f}", "asstests/icons/atk.png"),
@@ -306,7 +297,7 @@ async def characters_card(uid, char_id, telegram_id):
             (f"{element} DMG Bonus", "elem_bonus", "{:.1f}%", f"asstests/icons/{element.lower()}.png"),
             ("Elemental Mastery", "em", "{:.0f}", "asstests/icons/em.png")
         ]
-        
+
         start_x = 900
         gap = 500
         for i, (label, key, fmt, icon_path) in enumerate(stat_config):
@@ -314,48 +305,39 @@ async def characters_card(uid, char_id, telegram_id):
             try:
                 icon = Image.open(icon_path).convert("RGBA").resize((35, 35))
                 ui_layer.paste(icon, (start_x - 50, curr_y), icon)
-            except: 
+            except:
                 pass
             draw_text_with_shadow(draw, label, (start_x, curr_y + 18), font_path, 24, anchor="lm")
             draw_text_with_shadow(draw, fmt.format(stats.get(key, 0)), (start_x + gap, curr_y + 18), font_path, 26, anchor="rm")
 
-        # --- 2. Sticker  Graph Logic---
         graph_position = (1450, 150)
-        content_drawn = False 
+        content_drawn = False
 
-        # 1. Pull settings
         graph_enabled_globally = settings.get("graph_on", True)
         disabled_chars = settings.get("disabled_graphs", [])
         stickers_dict = settings.get("stickers", {})
 
-        # 2. Check if this specific character should show a graph
-        # We cast char_id to string to match the list format
         char_graph_enabled = str(char_id) not in [str(id) for id in disabled_chars]
 
-        # Draw graph ONLY if Global is ON and this specific char is NOT disabled
         if graph_enabled_globally and char_graph_enabled:
             try:
                 complete_graph = get_complete_radar_module(stats, char_id, final_size=(400, 400))
-                
+
                 if complete_graph is not None:
-                    # Draw background
                     radar_bg = Image.open("asstests/icons/radar_bg.png").convert("RGBA")
                     radar_bg = radar_bg.resize((530, 525), Image.Resampling.BILINEAR)
                     ui_layer.paste(radar_bg, (graph_position[0] - 70, graph_position[1] - 52), radar_bg)
-                    
-                    # Draw graph
+
                     ui_layer.paste(complete_graph, graph_position, complete_graph)
                     content_drawn = True
-                    
+
             except Exception as e:
                 print(f"Graph Generation Error: {e}")
 
-        # 3. If graph was skipped/failed, try Custom Sticker
         if not content_drawn:
             custom_path = stickers_dict.get(str(char_id))
 
             if custom_path:
-                # Better pathing: if saved path doesn't exist, check local sticker folder
                 if not os.path.exists(custom_path):
                     filename = os.path.basename(custom_path)
                     local_path = os.path.join("custom_assets/stickers", filename)
@@ -367,7 +349,7 @@ async def characters_card(uid, char_id, telegram_id):
                         with Image.open(custom_path) as sticker:
                             sticker = sticker.convert("RGBA").copy()
                             sticker.thumbnail((380, 380), Image.Resampling.LANCZOS)
-                            
+
                             s_w, s_h = sticker.size
                             paste_x = graph_position[0] + (190 - s_w // 2)
                             paste_y = graph_position[1] + (190 - s_h // 2)
@@ -377,36 +359,33 @@ async def characters_card(uid, char_id, telegram_id):
                     except Exception as e:
                         print(f"Custom Sticker Paste Error: {e}")
 
-        # 4. Final Fallback
         if not content_drawn:
             try:
                 no_data = Image.open("asstests/icons/no_data.png").convert("RGBA")
                 no_data = no_data.resize((300, 300), Image.Resampling.LANCZOS)
-                
+
                 nd_w, nd_h = no_data.size
                 paste_x = graph_position[0] + (190 - nd_w // 2)
                 paste_y = graph_position[1] + (190 - nd_h // 2)
-                
+
                 ui_layer.paste(no_data, (paste_x, paste_y), no_data)
             except Exception as e:
                 print(f"Final Fallback Error: {e}")
-                
-        # Draw Artifacts
+
         await draw_horizontal_artifacts(session, ui_layer, char_info, 150, 650, ImageFont.truetype(font_path, 22))
-        
-        # Run heavy image processing in thread pool to avoid blocking other requests
+
         loop = asyncio.get_event_loop()
-        
+
         def render_final_image():
             """Composite images and draw build column - CPU intensive"""
             final_img = Image.alpha_composite(bg, ui_layer)
             draw_build_column(final_img, 650, me_data, t_icons, c_icons)
-            
-            # Encode to JPEG
+
             buffer = BytesIO()
             final_img.convert("RGB").save(buffer, "JPEG", quality=95)
             buffer.seek(0)
             return buffer
-        
+
         buffer = await loop.run_in_executor(None, render_final_image)
         return buffer
+
