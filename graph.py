@@ -3,6 +3,7 @@ import numpy as np
 import io
 import json
 from PIL import Image
+from matplotlib.font_manager import FontProperties
 
 ELEMENT_COLORS = {
     "Pyro": "#FF9999",
@@ -64,7 +65,10 @@ def generate_full_radar_chart(values, color="#bb86fc", element="Physical"):
     ]
 
     label_radius = MAX_LIMIT + 0.15
-
+    font_prop = FontProperties(
+    fname="asstests/fonts/Genshin_Impact.ttf",
+    size=22
+    )
     for angle, label in zip(angles, display_labels):
         ha = 'center'
 
@@ -77,7 +81,7 @@ def generate_full_radar_chart(values, color="#bb86fc", element="Physical"):
             angle,
             label_radius,
             label,
-            size=22,
+            fontproperties=font_prop,
             color='white',
             weight='bold',
             ha=ha,
