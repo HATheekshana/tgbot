@@ -88,30 +88,23 @@ try:
 except Exception as e:
     print(f"Error loading char.json: {e}")
     CHARACTER_MAP = {}
+
+# --- FSM STATES ---
 class CardSettings(StatesGroup):
     waiting_for_sticker = State()
 
-# Helper to get user settings from your MongoDB
+# --- DATABASE HELPERS ---
 async def get_user_card_settings(user_id):
     user = await users_col.find_one({"user_id": str(user_id)})
+    if not user or "card_settings" not in user:
+        return {"graph_on": True, "disabled_graphs": [], "stickers": {}}
+    return user["card_settings"]
 
-    if not user:
-        return {
-            "graph_on": True,
-            "stickers": {}
-        }
-
-    return user.get(
-        "card_settings",
-        {
-            "graph_on": True,
-            "stickers": {}
-        }
-    )
+# --- MAIN SETTINGS MENU ---
 @dp.message(Command("settings"), F.chat.type == "private")
 async def cmd_settings(message: types.Message):
     builder = InlineKeyboardBuilder()
-    builder.button(text="Character Card", callback_data="set_card_menu")
+    builder.button(text="🎴 Character Card", callback_data="set_card_menu")
     await message.answer("⚙️ <b>Bot Settings</b>", parse_mode="HTML", reply_markup=builder.as_markup())
 
 @dp.callback_query(F.data == "set_card_menu")
@@ -119,34 +112,47 @@ async def card_settings_menu(callback: types.CallbackQuery):
     settings = await get_user_card_settings(callback.from_user.id)
     
     builder = InlineKeyboardBuilder()
-    builder.button(text="Custom Sticker", callback_data="setup_sticker_start")
+    builder.button(text="🖼 Manage Custom Stickers", callback_data="setup_sticker_start")
     
-    # Dynamic Toggle Button
+    # Global Graph Toggle
     graph_status = "ON" if settings.get("graph_on", True) else "OFF"
-    builder.button(text=f"Graph - {graph_status}", callback_data="toggle_graph_stat")
+    builder.button(text=f"Global Graph: {graph_status}", callback_data="toggle_graph_stat")
+    
+    # Optional: Reset all character-specific settings
+    if settings.get("disabled_graphs"):
+        builder.button(text="🔄 Reset All Chars to ON", callback_data="reset_all_graphs")
     
     builder.adjust(1)
-    await callback.message.edit_text("🎴 <b>Character Card Settings</b>", parse_mode="HTML", reply_markup=builder.as_markup())
+    await callback.message.edit_text("🎴 <b>Character Card Settings</b>\n\nTurning Global Graph OFF will hide radar charts for all characters.", 
+                                    parse_mode="HTML", reply_markup=builder.as_markup())
 
+# --- TOGGLE HANDLERS ---
 @dp.callback_query(F.data == "toggle_graph_stat")
-async def toggle_graph(callback: types.CallbackQuery):
+async def toggle_global_graph(callback: types.CallbackQuery):
     settings = await get_user_card_settings(callback.from_user.id)
     new_stat = not settings.get("graph_on", True)
     
-    # Update MongoDB
     await users_col.update_one(
         {"user_id": str(callback.from_user.id)},
         {"$set": {"card_settings.graph_on": new_stat}},
         upsert=True
     )
-    
-    # Refresh the UI
+    await callback.answer(f"Global Graph: {'ON' if new_stat else 'OFF'}")
     await card_settings_menu(callback)
-    await callback.answer(f"Graph turned {'ON' if new_stat else 'OFF'}")
+
+@dp.callback_query(F.data == "reset_all_graphs")
+async def reset_all_graphs(callback: types.CallbackQuery):
+    await users_col.update_one(
+        {"user_id": str(callback.from_user.id)},
+        {"$set": {"card_settings.disabled_graphs": []}}
+    )
+    await callback.answer("All character-specific graphs reset to ON.")
+    await card_settings_menu(callback)
+
+# --- CHARACTER SELECTION FLOW ---
 @dp.callback_query(F.data == "setup_sticker_start")
 async def start_sticker_process(callback: types.CallbackQuery):
     user_data = await users_col.find_one({"user_id": str(callback.from_user.id)})
-
     if not user_data or "genshin_uid" not in user_data:
         return await callback.answer("❌ Please /login <uid> first.", show_alert=True)
 
@@ -155,63 +161,37 @@ async def start_sticker_process(callback: types.CallbackQuery):
     showcase_items = user_info_enka.get("showAvatarInfoList", [])
 
     if not showcase_items:
-        return await callback.message.edit_text(
-            "No characters found! Enable 'Show Character Details' in-game."
-        )
+        return await callback.message.edit_text("No characters found! Enable 'Show Character Details' in-game.")
 
     builder = InlineKeyboardBuilder()
-
     for char in showcase_items:
         char_id = str(char.get("avatarId"))
-        # Using CHARACTER_MAP from your globals
-        char_entry = CHARACTER_MAP.get(char_id)
-        display_name = char_entry.get("name", "Unknown") if char_entry else f"ID: {char_id}"
-
-        # We use a new prefix 'pick_char_' to distinguish this from the main command
-        builder.button(
-            text=display_name,
-            callback_data=f"pick_char_{char_id}" 
-        )
+        char_entry = CHARACTER_MAP.get(char_id, {})
+        display_name = char_entry.get("name", f"ID: {char_id}")
+        builder.button(text=display_name, callback_data=f"pick_char_{char_id}")
 
     builder.adjust(3)
-    # Add a back button to return to settings menu
-    builder.row(types.InlineKeyboardButton(text="Back", callback_data="set_card_menu"))
+    builder.row(types.InlineKeyboardButton(text="⬅️ Back", callback_data="set_card_menu"))
+    await callback.message.edit_text("✨ <b>Select a character to customize:</b>", parse_mode="HTML", reply_markup=builder.as_markup())
 
-    await callback.message.edit_text(
-        "✨ <b>Select a character to customize:</b>\nYour custom sticker will only show for the selected character.",
-        parse_mode="HTML",
-        reply_markup=builder.as_markup()
-    )
-    await callback.answer()
 @dp.callback_query(F.data.startswith("pick_char_"))
 async def process_character_pick(callback: types.CallbackQuery, state: FSMContext):
     char_id = callback.data.split("_")[2]
     settings = await get_user_card_settings(callback.from_user.id)
     
-    # Check if graph is specifically off for this character
-    # We will store disabled graphs in a list called 'disabled_graphs'
     disabled_list = settings.get("disabled_graphs", [])
     is_disabled = char_id in disabled_list
-    
     char_name = CHARACTER_MAP.get(char_id, {}).get("name", f"ID: {char_id}")
     
     builder = InlineKeyboardBuilder()
-    
-    # Button to toggle graph for THIS character
-    status_text = "Graph: OFF (Click to ON)" if is_disabled else "Graph: ON (Click to OFF)"
+    status_text = "📊 Graph: OFF (Click to ON)" if is_disabled else "📊 Graph: ON (Click to OFF)"
     builder.button(text=status_text, callback_data=f"toggle_char_graph_{char_id}")
-    
-    # Button to set sticker
     builder.button(text="🖼 Set Custom Sticker", callback_data=f"set_sticker_{char_id}")
-    
     builder.adjust(1)
-    builder.row(types.InlineKeyboardButton(text="Back", callback_data="setup_sticker_start"))
+    builder.row(types.InlineKeyboardButton(text="⬅️ Back", callback_data="setup_sticker_start"))
 
-    await callback.message.edit_text(
-        f"Settings for <b>{char_name}</b>:",
-        parse_mode="HTML",
-        reply_markup=builder.as_markup()
-    )
+    await callback.message.edit_text(f"Settings for <b>{char_name}</b>:", parse_mode="HTML", reply_markup=builder.as_markup())
+
 @dp.callback_query(F.data.startswith("toggle_char_graph_"))
 async def toggle_specific_graph(callback: types.CallbackQuery):
     char_id = callback.data.split("_")[3]
@@ -230,57 +210,67 @@ async def toggle_specific_graph(callback: types.CallbackQuery):
         {"$set": {"card_settings.disabled_graphs": disabled_list}},
         upsert=True
     )
-    
     await callback.answer(msg)
-    await process_character_pick(callback, None) # Refresh menu
+    await process_character_pick(callback, None)
+
+# --- STICKER UPLOAD LOGIC ---
+@dp.callback_query(F.data.startswith("set_sticker_"))
+async def start_sticker_upload_prompt(callback: types.CallbackQuery, state: FSMContext):
+    char_id = callback.data.split("_")[2]
+    char_name = CHARACTER_MAP.get(char_id, {}).get("name", f"ID: {char_id}")
+
+    await state.update_data(selected_char_id=char_id)
+    await state.set_state(CardSettings.waiting_for_sticker)
+
+    await callback.message.edit_text(
+        f"✨ <b>Custom Sticker: {char_name}</b>\n\nPlease send the <b>Sticker</b>, <b>Photo</b>, or <b>Image Document</b>.\n"
+        "<i>Note: Stickers will prioritize this character if Graph is OFF.</i>",
+        parse_mode="HTML",
+        reply_markup=InlineKeyboardBuilder().button(text="❌ Cancel", callback_data=f"pick_char_{char_id}").as_markup()
+    )
+
 @dp.message(CardSettings.waiting_for_sticker)
 async def handle_sticker_upload(message: types.Message, state: FSMContext):
     data = await state.get_data()
     char_id = data.get("selected_char_id")
 
-    if not (message.sticker or message.photo or message.document):
-        return await message.answer("Please send a Sticker or Image.")
+    if message.sticker:
+        file = message.sticker
+    elif message.photo:
+        file = message.photo[-1]
+    elif message.document and message.document.mime_type.startswith("image/"):
+        file = message.document
+    else:
+        return await message.answer("❌ Please send a valid Image, Sticker, or Photo.")
 
-    file = message.sticker or message.photo[-1] or message.document
-
-    if file.file_size > 300 * 1024:
-        return await message.answer("File too large! Keep it under 300KB.")
+    if file.file_size > 500 * 1024:
+        return await message.answer("❌ File too large! Please keep it under 500KB.")
 
     sticker_dir = os.path.abspath("custom_assets/stickers")
     os.makedirs(sticker_dir, exist_ok=True)
 
     file_info = await message.bot.get_file(file.file_id)
-
-    # download to memory
     image_bytes = BytesIO()
     await message.bot.download_file(file_info.file_path, image_bytes)
     image_bytes.seek(0)
 
     try:
         img = Image.open(image_bytes).convert("RGBA")
+        filename = f"{message.from_user.id}_{char_id}.png"
+        save_path = os.path.join(sticker_dir, filename)
+        img.thumbnail((512, 512), Image.Resampling.LANCZOS)
+        img.save(save_path, "png")
+
+        await users_col.update_one(
+            {"user_id": str(message.from_user.id)},
+            {"$set": {f"card_settings.stickers.{char_id}": save_path}},
+            upsert=True
+        )
+
+        await message.answer("✅ Custom sticker saved successfully!")
+        await state.clear()
     except Exception as e:
-        return await message.answer(f"❌ Could not process image: {e}")
-
-    filename = f"{message.from_user.id}_{char_id}.png"
-    save_path = os.path.join(sticker_dir, filename)
-
-    # optional resize
-    img.thumbnail((512, 512), Image.Resampling.LANCZOS)
-
-    img.save(save_path, "png")
-
-    await users_col.update_one(
-        {"user_id": str(message.from_user.id)},
-        {
-            "$set": {
-                f"card_settings.stickers.{char_id}": save_path
-            }
-        },
-        upsert=True
-    )
-
-    await message.answer("✅ Custom sticker saved successfully!")
-    await state.clear()
+        await message.answer(f"❌ Failed to process image: {e}")
 def get_banner_keyboard(mode="current", char_index=0):
     builder = InlineKeyboardBuilder()
     
