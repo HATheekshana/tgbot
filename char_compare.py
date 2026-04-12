@@ -8,6 +8,10 @@ import genshin
 from io import BytesIO
 from artifacts_grid import draw_all_artifacts
 from t_c import fetch_build_assets, draw_build_column
+from dotenv import load_dotenv
+import os
+
+load_dotenv()
 W_STAT_ICONS = {
         "FIGHT_PROP_BASE_ATTACK": "asstests/icons/atk.png",
         "FIGHT_PROP_CHARGE_EFFICIENCY": "asstests/icons/er.png",
@@ -63,8 +67,8 @@ def extract_char_stats(avatar_list, char_id, element):
     "Electro": 41,
     "Hydro": 42,
     "Dendro": 43,
-    "Anemo": 44,
-    "Geo": 45,
+    "Anemo": 45,
+    "Geo": 44,
     "Cryo": 46
     }
     bonus_id = element_map.get(element, 45)
@@ -406,39 +410,46 @@ async def compare_characters(uid, uid2, char_id):
                                radius=8, fill=(15, 15, 25, 170), outline=(255,255,255,50))
         val2 = fmt.format(stats_them.get(key, 0)) if stats_them else "0"
         draw.text((v2_x + (val_w // 2), curr_y + (row_height//2)), val2, font=font, fill=(255, 255, 255), anchor="mm")
-    draw_build_column(background, 795, them_data, t_icons, c_icons)
-    draw_build_column(background, 945, me_data, t_icons, c_icons) 
-
-
-    if rarity == 4:
-        star4 = Image.open("asstests/icons/stars/c_stars_4.png").convert("RGBA")
-        background.paste(star4, (850, 150), star4)
-    elif rarity == 5:
-        star5 = Image.open("asstests/icons/stars/c_stars_5.png").convert("RGBA")
-        background.paste(star5, (850, 150), star5)
+    # Move heavy image rendering to thread to avoid blocking other users
+    loop = asyncio.get_event_loop()
+    
+    def render_comparison():
+        """CPU-intensive: draw_build_column, star icons, and JPEG encoding"""
+        draw_build_column(background, 795, them_data, t_icons, c_icons)
+        draw_build_column(background, 945, me_data, t_icons, c_icons)
+        
+        if rarity == 4:
+            star4 = Image.open("asstests/icons/stars/c_stars_4.png").convert("RGBA")
+            background.paste(star4, (850, 150), star4)
+        elif rarity == 5:
+            star5 = Image.open("asstests/icons/stars/c_stars_5.png").convert("RGBA")
+            background.paste(star5, (850, 150), star5)
+        
+        buffer = BytesIO()
+        final_img = Image.alpha_composite(background, ui_layer)
+        final_img.convert("RGB").save(buffer, format="JPEG", quality=90)
+        buffer.seek(0)
+        return buffer
+    
+    # Render comparison in thread
+    buffer = await loop.run_in_executor(None, render_comparison)
+    
+    # Handle async artifacts drawing after rendering
     async with aiohttp.ClientSession() as session:
-        # How to extract the specific character objects from the Enka API response
         try:
-            # me and them are the full JSON responses from Enka
-           me_char_obj = next((c for c in me.get('avatarInfoList', []) if str(c['avatarId']) == str(char_id)), None)
-           them_char_obj = next((c for c in them.get('avatarInfoList', []) if str(c['avatarId']) == str(char_id)), None)
-        except StopIteration:
+            me_char_obj = next((c for c in me.get('avatarInfoList', []) if str(c['avatarId']) == str(char_id)), None)
+            them_char_obj = next((c for c in them.get('avatarInfoList', []) if str(c['avatarId']) == str(char_id)), None)
+        except (StopIteration, AttributeError):
             print("Character not found in one of the showcases!")
-            return
+            return buffer
+        
         await draw_all_artifacts(
             session=session, 
             background=ui_layer, 
-            me_char_data=me_char_obj,    # The dictionary for the character from Player 1
-            them_char_data=them_char_obj, # The dictionary for the character from Player 2
-            font=font_small                    # Your loaded ImageFont object
+            me_char_data=me_char_obj,
+            them_char_data=them_char_obj,
+            font=font_small
         )
-        # In char_compare.py, inside your main drawing function
-        
-        
-    buffer = BytesIO()
-    final_img = Image.alpha_composite(background, ui_layer)
-    # Convert to RGB (required for JPEG) and save with high quality
-    final_img.convert("RGB").save(buffer, format="JPEG", quality=90) 
-    buffer.seek(0)
+    
     return buffer
 

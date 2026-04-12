@@ -1,8 +1,12 @@
 import asyncio
 from motor.motor_asyncio import AsyncIOMotorClient
+from dotenv import load_dotenv
+import os
+
+load_dotenv()
 
 # Your MongoDB Connection String
-MONGO_URL = "mongodb+srv://zerorenx_db_user:theekshana@tgbot.yuowvp8.mongodb.net/?appName=Tgbot"
+MONGO_URL = os.getenv("MONGO_URL")
 
 async def gift_wishes():
     cluster = AsyncIOMotorClient(MONGO_URL)

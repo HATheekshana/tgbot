@@ -1,8 +1,13 @@
 from PIL import Image, ImageDraw, ImageOps, ImageFilter, ImageFont
 import aiohttp
+import asyncio
 import json
 from io import BytesIO
 from genshin_utils import get_player_full_data, get_enkadata
+from dotenv import load_dotenv
+import os
+
+load_dotenv()
 
 with open('char.json', 'r') as f:
     CHARACTER_MAP = json.load(f)
@@ -97,21 +102,30 @@ async def create_masked_showcase(uid, uid2):
                     ui_layer.paste(char_bg, (x, y), char_bg)
                     ui_layer.paste(clean_char, (x, y), clean_char)
 
-    # 4. Final Text and Composite
-    try: font = ImageFont.truetype("Genshin_Impact.ttf", 23)
-    except: font = ImageFont.load_default()
-    draw_dynamic_bubble(draw, me['nickname'], (1750, 190), font)
-    draw_dynamic_bubble(draw, them['nickname'], (100, 190), font)
-    draw_dynamic_bubble(draw, f"UID : {uid}", (1520, 50), font)
-    draw_dynamic_bubble(draw, f"UID : {uid2}", (330, 50), font)
-    draw_dynamic_bubble(draw, "AR : " + str(me['level']), (1580, 95), font)
-    draw_dynamic_bubble(draw, "AR : " + str(them['level']), (270, 95), font)
-    draw_dynamic_bubble(draw, "WL : " + str(me['worldLevel']), (1585, 140), font)
-    draw_dynamic_bubble(draw, "WL : " + str(them['worldLevel']), (265, 140), font)
-    draw_dynamic_bubble(draw, "ACHIEVEMENTS : " + str(me['achievements']), (1490, 185), font)
-    draw_dynamic_bubble(draw, "ACHIEVEMENTS : " + str(them['achievements']), (360, 185), font)
-    final_img = Image.alpha_composite(background, ui_layer)
-    buffer = BytesIO()
-    final_img.save(buffer, format="PNG")
-    buffer.seek(0)
+    # 4. Final Text and Composite - Run in thread to avoid blocking
+    loop = asyncio.get_event_loop()
+    
+    def render_showcase():
+        """CPU-intensive: Text drawing, compositing, and PNG encoding"""
+        try: font = ImageFont.truetype("Genshin_Impact.ttf", 23)
+        except: font = ImageFont.load_default()
+        
+        draw_dynamic_bubble(draw, me['nickname'], (1750, 190), font)
+        draw_dynamic_bubble(draw, them['nickname'], (100, 190), font)
+        draw_dynamic_bubble(draw, f"UID : {uid}", (1520, 50), font)
+        draw_dynamic_bubble(draw, f"UID : {uid2}", (330, 50), font)
+        draw_dynamic_bubble(draw, "AR : " + str(me['level']), (1580, 95), font)
+        draw_dynamic_bubble(draw, "AR : " + str(them['level']), (270, 95), font)
+        draw_dynamic_bubble(draw, "WL : " + str(me['worldLevel']), (1585, 140), font)
+        draw_dynamic_bubble(draw, "WL : " + str(them['worldLevel']), (265, 140), font)
+        draw_dynamic_bubble(draw, "ACHIEVEMENTS : " + str(me['achievements']), (1490, 185), font)
+        draw_dynamic_bubble(draw, "ACHIEVEMENTS : " + str(them['achievements']), (360, 185), font)
+        
+        final_img = Image.alpha_composite(background, ui_layer)
+        buffer = BytesIO()
+        final_img.save(buffer, format="PNG")
+        buffer.seek(0)
+        return buffer
+    
+    buffer = await loop.run_in_executor(None, render_showcase)
     return buffer

@@ -6,6 +6,9 @@ from io import BytesIO
 from PIL import Image, ImageDraw, ImageOps, ImageFilter, ImageFont, ImageChops, ImageEnhance
 from motor.motor_asyncio import AsyncIOMotorClient
 from graph import get_complete_radar_module
+from dotenv import load_dotenv
+
+load_dotenv()
 # Local Imports
 from char_t_c import fetch_build_assets, draw_build_column
 from artifacts import draw_horizontal_artifacts
@@ -26,12 +29,24 @@ W_STAT_ICONS = {
 }
 
 # Load Data
-with open("new.json", "r", encoding="utf-8") as f:
-    TEXT = json.load(f)
-with open("data.json", "r", encoding="utf-8") as f:
-    NAMECARD_DATA = json.load(f)
-with open("char.json", "r", encoding="utf-8") as f:
-    CHAR_MAP = json.load(f)
+try:
+    with open("new.json", "r", encoding="utf-8") as f:
+        TEXT = json.load(f)
+except FileNotFoundError:
+    print("Warning: new.json not found")
+    TEXT = {}
+try:
+    with open("data.json", "r", encoding="utf-8") as f:
+        NAMECARD_DATA = json.load(f)
+except FileNotFoundError:
+    print("Warning: data.json not found")
+    NAMECARD_DATA = {}
+try:
+    with open("char.json", "r", encoding="utf-8") as f:
+        CHAR_MAP = json.load(f)
+except FileNotFoundError:
+    print("Warning: char.json not found")
+    CHAR_MAP = {}
 
 SPECIAL_MAPPINGS = {
     "Ambor": "Amber", "Noel": "Noelle", "Feiyan": "Yanfei",
@@ -61,7 +76,7 @@ def draw_text_with_shadow(draw, text, position, font_path, font_size,
 async def get_enkadata(uid):
     url = f"https://enka.network/api/uid/{uid}"
     async with aiohttp.ClientSession() as session:
-        async with session.get(url) as response:
+        async with session.get(url, timeout=aiohttp.ClientTimeout(total=10)) as response:
             if response.status == 200:
                 data = await response.json()
                 player_info = data.get("playerInfo", {})
@@ -135,7 +150,7 @@ def get_weapon_name(weapon_info):
 
 async def fetch_image(session, url):
     try:
-        async with session.get(url) as resp:
+        async with session.get(url, timeout=aiohttp.ClientTimeout(total=10)) as resp:
             if resp.status != 200: return None
             return Image.open(BytesIO(await resp.read())).convert("RGBA")
     except: return None
@@ -378,11 +393,20 @@ async def characters_card(uid, char_id, telegram_id):
                 
         # Draw Artifacts
         await draw_horizontal_artifacts(session, ui_layer, char_info, 150, 650, ImageFont.truetype(font_path, 22))
-        final_img = Image.alpha_composite(bg, ui_layer)
-        draw_build_column(final_img, 650, me_data, t_icons, c_icons)
-
-        buffer = BytesIO()
-        final_img.convert("RGB").save(buffer, "JPEG", quality=95)
-        buffer.seek(0)
         
+        # Run heavy image processing in thread pool to avoid blocking other requests
+        loop = asyncio.get_event_loop()
+        
+        def render_final_image():
+            """Composite images and draw build column - CPU intensive"""
+            final_img = Image.alpha_composite(bg, ui_layer)
+            draw_build_column(final_img, 650, me_data, t_icons, c_icons)
+            
+            # Encode to JPEG
+            buffer = BytesIO()
+            final_img.convert("RGB").save(buffer, "JPEG", quality=95)
+            buffer.seek(0)
+            return buffer
+        
+        buffer = await loop.run_in_executor(None, render_final_image)
         return buffer

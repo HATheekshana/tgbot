@@ -115,32 +115,35 @@ async def create_genshin_profile(uid):
                     base.paste(char_bg, (x, y), char_bg)
                     base.paste(clean_char, (x, y), clean_char)
 
-    # 4. Text Overlay
-    draw = ImageDraw.Draw(base)
-    try:
-        f_big = ImageFont.truetype("Genshin_Impact.ttf", 23)
-        f_small = ImageFont.truetype("Genshin_Impact.ttf", 20)
-        f_xsmall = ImageFont.truetype("Genshin_Impact.ttf", 18)
-    except:
-        f_big = f_small = f_xsmall = ImageFont.load_default()
+    # 4. Text Overlay and Rendering (move to thread to avoid blocking)
+    def render_profile():
+        """CPU-intensive: Text drawing and PNG encoding"""
+        draw = ImageDraw.Draw(base)
+        try:
+            f_big = ImageFont.truetype("Genshin_Impact.ttf", 23)
+            f_small = ImageFont.truetype("Genshin_Impact.ttf", 20)
+            f_xsmall = ImageFont.truetype("Genshin_Impact.ttf", 18)
+        except:
+            f_big = f_small = f_xsmall = ImageFont.load_default()
 
-    draw.text((300, 290), str(user_info_enka['nickname']), font=f_big, fill=(135, 110, 95), anchor="mm")
-    draw.text((90, 365), f"AR: {user_info_enka['level']}", font=f_small, fill=(135, 110, 95))
-    draw.text((90, 415), f"World Level: {user_info_enka['worldLevel']}", font=f_small, fill=(135, 110, 95))
-    draw.text((75, 475), str(user_info_enka['signature']), font=f_small, fill=(135, 110, 95))
+        draw.text((300, 290), str(user_info_enka['nickname']), font=f_big, fill=(135, 110, 95), anchor="mm")
+        draw.text((90, 365), f"AR: {user_info_enka['level']}", font=f_small, fill=(135, 110, 95))
+        draw.text((90, 415), f"World Level: {user_info_enka['worldLevel']}", font=f_small, fill=(135, 110, 95))
+        draw.text((75, 475), str(user_info_enka['signature']), font=f_small, fill=(135, 110, 95))
 
-    draw.text((660, 244), "CHARACTERS", font=f_big, fill=(135, 110, 95))
-    draw.text((720, 140), "ACHIEVEMENTS", font=f_xsmall, fill=(135, 110, 95))
-    draw.text((760, 175), str(user_info_enka['achievements']), font=f_big, fill=(135, 110, 95))
+        draw.text((660, 244), "CHARACTERS", font=f_big, fill=(135, 110, 95))
+        draw.text((720, 140), "ACHIEVEMENTS", font=f_xsmall, fill=(135, 110, 95))
+        draw.text((760, 175), str(user_info_enka['achievements']), font=f_big, fill=(135, 110, 95))
 
-    abyss_text = f"{user_info_enka['abyssfloor']}-{user_info_enka['abysslevel']}"
-    draw.text((1010, 140), "SPIRAL ABYSS", font=f_xsmall, fill=(135, 110, 95))
-    draw.text((1050, 175), abyss_text, font=f_big, fill=(135, 110, 95))
+        abyss_text = f"{user_info_enka['abyssfloor']}-{user_info_enka['abysslevel']}"
+        draw.text((1010, 140), "SPIRAL ABYSS", font=f_xsmall, fill=(135, 110, 95))
+        draw.text((1050, 175), abyss_text, font=f_big, fill=(135, 110, 95))
 
-    buffer = BytesIO()
-
-    base.save(buffer, format="PNG")
-
-    buffer.seek(0)
-
+        buffer = BytesIO()
+        base.save(buffer, format="PNG")
+        buffer.seek(0)
+        return buffer
+    
+    loop = asyncio.get_event_loop()
+    buffer = await loop.run_in_executor(None, render_profile)
     return buffer

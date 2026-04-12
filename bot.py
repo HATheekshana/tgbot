@@ -11,7 +11,7 @@ from io import BytesIO
 from PIL import Image
 import aiohttp
 from character_card import characters_card
-from datetime import datetime
+from datetime import datetime, timedelta
 from aiogram.exceptions import TelegramBadRequest
 from pymongo import ReturnDocument
 from dotenv import load_dotenv
@@ -19,18 +19,17 @@ import os
 import json
 import html
 import time
-from aiogram import types, F
+from aiogram import types, F, Bot, Dispatcher
+from aiogram.fsm.context import FSMContext
+from aiogram.fsm.state import State, StatesGroup
 from char_compare import compare_characters
 from database import users_col, cluster, groups_col
 from enka_api import fetch_enka_data
-from aiogram.filters import Command
+from aiogram.filters import Command, CommandObject
 from comapre_image import create_masked_showcase
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
-from datetime import datetime, timedelta
-from aiogram.types import FSInputFile, URLInputFile, InputMediaPhoto,FSInputFile, BufferedInputFile, InlineKeyboardMarkup, InlineKeyboardButton
-from aiogram import Bot, Dispatcher, types
-from aiogram.filters import Command ,CommandObject
+from aiogram.types import FSInputFile, InputMediaPhoto, BufferedInputFile, InlineKeyboardMarkup, InlineKeyboardButton
 from pytz import timezone
 from wishing import combine_images
 from create_profile import create_genshin_profile
@@ -488,13 +487,6 @@ async def back_to_main(callback: types.CallbackQuery):
         parse_mode="HTML"
     )
     await callback.answer()
-def encrypt_cookies(ltuid, ltoken):
-    data = json.dumps({"ltuid": ltuid, "ltoken": ltoken}).encode()
-    return cipher.encrypt(data).decode()
-
-def decrypt_cookies(encrypted_str):
-    decrypted_data = cipher.decrypt(encrypted_str.encode()).decode()
-    return json.loads(decrypted_data)
 if not TOKEN or not MONGO_URL or not ADMIN_VAL:
     print("ERROR: Missing environment variables in .env file!")
     sys.exit(1)
@@ -1051,10 +1043,6 @@ async def cmd_characters(message: types.Message):
         reply_markup=builder.as_markup()
     )
 
-# Helper for threading if create_genshin_profile is an async function
-def create_genshin_profile_sync(uid):
-    import asyncio
-    return asyncio.run(create_genshin_profile(uid))
 # =========================
 # CHARACTER CARD HANDLER
 # =========================
@@ -1136,9 +1124,6 @@ async def handle_card_generation(callback: types.CallbackQuery):
         reply_markup=back_builder.as_markup(),
         parse_mode="HTML"
     )
-def characters_card_sync_wrapper(uid, char_id, owner_id):
-    # This runs the async function in the background thread's loop
-    return asyncio.run(characters_card(uid, char_id, owner_id))
 # =========================
 # BACK BUTTON HANDLER
 # =========================
@@ -1591,7 +1576,7 @@ async def send_image_10(message: types.Message):
 
     # --- 4. Image Handling ---
     bg_path = "https://raw.githubusercontent.com/Mantan21/Genshin-Impact-Wish-Simulator/master/src/images/background/splash-background.webp"
-    combined_img = combine_images(file_path, bg_path, splash_name, splash_rarity)
+    combined_img = await combine_images(file_path, bg_path, splash_name, splash_rarity)
     
     output = io.BytesIO()
     combined_img.save(output, format="PNG")
@@ -1600,7 +1585,8 @@ async def send_image_10(message: types.Message):
     
     try:
         await loading_msg.delete()
-    except: pass
+    except TelegramBadRequest:
+        pass
         
     await message.answer_photo(
         photo=photo_file,
@@ -1718,7 +1704,7 @@ async def send_single(message: types.Message):
 
     # Image sending logic (Keep your existing PIL code here...)
     bg_path = "https://raw.githubusercontent.com/Mantan21/Genshin-Impact-Wish-Simulator/master/src/images/background/splash-background.webp"
-    combined_img = combine_images(file_path, bg_path, splash_name, splash_rarity)
+    combined_img = await combine_images(file_path, bg_path, splash_name, splash_rarity)
     output = io.BytesIO()
     combined_img.save(output, format="PNG")
     output.seek(0)
@@ -1726,7 +1712,7 @@ async def send_single(message: types.Message):
     
     try:
         await loading_msg.delete()
-    except:
+    except TelegramBadRequest:
         pass # In case user deleted it manually
         
     await message.answer_photo(photo=photo_file, caption=result_msg + name)
@@ -1779,7 +1765,7 @@ async def give_wishes(message: types.Message):
                 chat_id=target_id,
                 text=f"🎁 Admin Bonus!\nYou received {amount} wishes! Check  `/stats`",parse_mode="Markdown"
             )
-        except:
+        except Exception:
             pass
     else:
         await message.answer("❌ User not found in database.")
@@ -1848,7 +1834,7 @@ async def share_wishes(message: types.Message):
                  f"Check <code>/stats</code>",
             parse_mode="HTML"
         )
-    except:
+    except Exception:
         pass
 @dp.message(Command("gamble"))
 async def gamble_wishes(message: types.Message, command: CommandObject):
@@ -1989,7 +1975,7 @@ async def check_individual_dailies(bot: Bot):
     bg_path = "https://raw.githubusercontent.com/Mantan21/Genshin-Impact-Wish-Simulator/master/src/images/background/splash-background.webp"
     
     # Use the combine_images logic you already built
-    combined_img = combine_images(file_path, bg_path, CURRENT_RATE_UP_NAME, "Rate-Up")
+    combined_img = await combine_images(file_path, bg_path, CURRENT_RATE_UP_NAME, "Rate-Up")
     
     # Store the raw bytes in memory
     img_byte_arr = io.BytesIO()

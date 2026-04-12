@@ -1,6 +1,10 @@
 import asyncio
 import genshin
 import aiohttp
+from dotenv import load_dotenv
+import os
+
+load_dotenv()
 # Your Central Cookie Store
 def get_quiz_score(difficulty, elapsed):
     # Base points
