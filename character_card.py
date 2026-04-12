@@ -186,7 +186,6 @@ async def characters_card(uid, char_id, telegram_id):
     font_small = ImageFont.truetype(font_path, 20)
 
     async with aiohttp.ClientSession() as session:
-        # Fetch assets INSIDE the session block
         splash_task = asyncio.create_task(fetch_image(session, get_splash_url(avatar_icon)))
         bg_urls = get_namecard_urls(avatar_icon)
         
@@ -199,7 +198,6 @@ async def characters_card(uid, char_id, telegram_id):
         weapon_ic = stats['weapon'].get('icon')
         weapon_img = await fetch_image(session, f"https://enka.network/ui/{weapon_ic}.png")
 
-        # --- Drawing Logic (Must stay inside session block to support artifact drawing) ---
         if not bg_img:
             bg_img = Image.new("RGBA", target_size, (30, 30, 45, 255))
         
@@ -227,20 +225,15 @@ async def characters_card(uid, char_id, telegram_id):
         
             lv_text = f"R{refine}      Lv.{level}/{max_lv}"
             draw_text_with_shadow(draw, lv_text, (w_pos[0] + 170, w_pos[1] + 80), font_path, 24, text_color=(255, 255, 255), anchor="lm")
-
-            # Weapon Stats
             
             w_stats_list = w_info.get("stats", [])
         STARS_PATH = "asstests/icons/stars/" 
         w_rarity = stats['weapon'].get('rarity', 5)
         try:
-                # 1. Open and convert
             star_img = Image.open(f"{STARS_PATH}Star{w_rarity}.png").convert("RGBA")
                 
-                # 2. Resize directly to the target size (Re-assigning the variable!)
             star_img = star_img.resize((140, 40), Image.Resampling.BILINEAR)
                 
-                # 3. Paste
             ui_layer.paste(star_img, (w_pos[0] + 10, w_pos[1] + 120), star_img)
         except Exception as e:
             print(f"Error loading star image Star{w_rarity}.png: {e}")
@@ -249,10 +242,8 @@ async def characters_card(uid, char_id, telegram_id):
         for i, s in enumerate(w_stats_list):
             curr_stat_x = stat_x_start + (i * 125) 
             
-            # Draw Box
             draw.rounded_rectangle([curr_stat_x, stat_y, curr_stat_x + 115, stat_y + 40], radius=5, fill=(255, 255, 255, 100))
             
-            # Draw Stat Icon
             icon_path = W_STAT_ICONS.get(s['prop'], "asstests/icons/atk.png")
             try:
                 s_icon = Image.open(icon_path).convert("RGBA").resize((22, 22))
@@ -260,9 +251,7 @@ async def characters_card(uid, char_id, telegram_id):
             except:
                 pass
             
-            # Draw Value
             val_str = f"{s['val']}"
-            # Simplified percentage check
             if any(x in str(s['prop']) for x in ["PERCENT", "CHARGE", "CRITICAL"]):
                 val_str += "%"
             
@@ -292,15 +281,13 @@ async def characters_card(uid, char_id, telegram_id):
             draw_text_with_shadow(draw, label, (start_x, curr_y + 18), font_path, 24, anchor="lm")
             draw_text_with_shadow(draw, fmt.format(stats.get(key, 0)), (start_x + gap, curr_y + 18), font_path, 26, anchor="rm")
 
-        # --- 2. Sticker vs Graph Logic (Strictly outside the loop) ---
-        # --- [START OF FIXED STICKER LOGIC] ---
+        # --- 2. Sticker  Graph Logic---
         graph_position = (1450, 150)
         content_drawn = False 
         
         graph_enabled = settings.get("graph_on", True)
         stickers_dict = settings.get("stickers", {})
 
-        # 1) PRIORITY: Try graph if enabled
         if graph_enabled:
             try:
                 complete_graph = get_complete_radar_module(stats, char_id, final_size=(380, 380))
@@ -316,14 +303,11 @@ async def characters_card(uid, char_id, telegram_id):
             except Exception as e:
                 print(f"Graph Error: {e}")
 
-        # 2) FALLBACK: If graph is OFF (or failed), try the custom sticker
         if not content_drawn:
             custom_path = stickers_dict.get(str(char_id))
 
             if custom_path:
-                # Docker Path Fix: If stored as /app/custom_assets, check if it exists or trim it
                 if not os.path.exists(custom_path):
-                    # This removes leading slashes and handles the "app/" prefix Docker often adds
                     alt_path = custom_path.lstrip("/").replace("app/", "", 1)
                     if os.path.exists(alt_path):
                         custom_path = alt_path
@@ -344,7 +328,6 @@ async def characters_card(uid, char_id, telegram_id):
                     except Exception as e:
                         print(f"Sticker error: {e}")
 
-        # 3) FINAL FALLBACK: If both failed/off, show "No Data"
         if not content_drawn:
             try:
                 no_data = Image.open("asstests/icons/no_data.png").convert("RGBA")
@@ -353,12 +336,10 @@ async def characters_card(uid, char_id, telegram_id):
                 ui_layer.paste(no_data, (graph_position[0] + (190 - nd_w // 2), graph_position[1] + (190 - nd_h // 2)), no_data)
             except:
                 pass
-        # --- [END OF FIXED STICKER LOGIC] ---
                 
-        # Draw Artifacts (Now session is open!)
+        # Draw Artifacts
         await draw_horizontal_artifacts(session, ui_layer, char_info, 150, 650, ImageFont.truetype(font_path, 22))
         final_img = Image.alpha_composite(bg, ui_layer)
-        # Draw Talents/Consts
         draw_build_column(final_img, 650, me_data, t_icons, c_icons)
 
         buffer = BytesIO()
