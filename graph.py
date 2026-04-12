@@ -40,7 +40,7 @@ def generate_full_radar_chart(values, color="#bb86fc", element="Physical"):
 
     fig, ax = plt.subplots(figsize=(10, 10), subplot_kw=dict(polar=True))
 
-    plt.subplots_adjust(left=0.15, right=0.85, bottom=0.15, top=0.85)
+    plt.subplots_adjust(left=0.10, right=0.90, bottom=0.10, top=0.90)
 
     ax.set_facecolor('none')
     fig.patch.set_alpha(0.0)
