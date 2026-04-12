@@ -210,8 +210,31 @@ async def characters_card(uid, char_id, telegram_id):
             ui_layer = paste_splash_left(ui_layer, splash_img, target_size)
 
         # Header & Weapon
-        draw_text_with_shadow(draw,text=char_name,position=(50, 50),font_path=font_path,font_size=36,text_color=(255, 255, 255, 255), anchor="lm")
-        draw_text_with_shadow(draw,text=me['nickname'],position=(200, 50),font_path=font_path,font_size=26,text_color=(255, 255, 255, 255), anchor="lm")
+        base_x, base_y = 50, 50
+        spacing = 15  # Pixels between name and nickname
+
+        # 2. Draw the Character Name first
+        draw_text_with_shadow(
+            draw, 
+            text=char_name, 
+            position=(base_x, base_y), 
+            font_path=font_path, 
+            font_size=36, 
+            text_color=(255, 255, 255, 255), 
+            anchor="lm"
+        )
+        name_font = ImageFont.truetype(font_path, 36)
+        bbox = draw.textbbox((base_x, base_y), char_name, font=name_font, anchor="lm")
+        next_x = bbox[2] + spacing
+        draw_text_with_shadow(
+            draw, 
+            text=me['nickname'], 
+            position=(next_x, base_y), 
+            font_path=font_path, 
+            font_size=26, 
+            text_color=(255, 255, 255, 255), 
+            anchor="lm"
+        )
         draw_text_with_shadow(draw,text=f"Lvl: {char_level}/90",position=(50, 90),font_path=font_path,font_size=24,text_color=(255, 255, 255, 255), anchor="lm")
         draw_text_with_shadow(draw,text=f"Friendship: {f_level}",position=(50, 125),font_path=font_path,font_size=24,text_color=(255, 255, 255, 255), anchor="lm")
         if weapon_img:
