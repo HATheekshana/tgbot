@@ -195,14 +195,30 @@ async def characters_card(uid, char_id, telegram_id):
     font_small = ImageFont.truetype(font_path, 20)
 
     async with aiohttp.ClientSession() as session:
-        splash_task = asyncio.create_task(fetch_image(session, get_splash_url(avatar_icon)))
         bg_urls = get_namecard_urls(avatar_icon)
 
         bg_tasks = [fetch_image(session, url) for url in bg_urls]
         bg_results = await asyncio.gather(*bg_tasks, return_exceptions=True)
         bg_img = next((img for img in bg_results if img and not isinstance(img, Exception)), None)
 
-        splash_img = await splash_task
+        splash_dict = settings.get("splash_arts", {})
+        custom_splash_path = splash_dict.get(str(char_id))
+        if custom_splash_path:
+            if not os.path.exists(custom_splash_path):
+                filename = os.path.basename(custom_splash_path)
+                local_path = os.path.join("custom_assets/splash_arts", filename)
+                if os.path.exists(local_path):
+                    custom_splash_path = local_path
+            if os.path.exists(custom_splash_path):
+                try:
+                    splash_img = Image.open(custom_splash_path).convert("RGBA")
+                except:
+                    splash_img = await fetch_image(session, get_splash_url(avatar_icon))
+            else:
+                splash_img = await fetch_image(session, get_splash_url(avatar_icon))
+        else:
+            splash_img = await fetch_image(session, get_splash_url(avatar_icon))
+
         weapon_ic = stats['weapon'].get('icon')
         weapon_img = await fetch_image(session, f"https://enka.network/ui/{weapon_ic}.png")
 
