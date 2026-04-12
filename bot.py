@@ -2043,34 +2043,56 @@ async def show_stats(message: types.Message):
         f"Current 5★ Pity: {pity}\n"
         f"Current 4★ Pity: {count4}" # Changed label to be more accurate
     )
+To ensure the broadcast is sent successfully to all groups, we need to fix the logic that handles both images and text. The issue in your previous version was likely how the command and the caption were being split, which often caused the message to be empty or misaligned.
+
+Here is the complete, robust code for your broadcastg command:
+
+Python
+import asyncio
+import logging
+from aiogram import Bot, types
+from aiogram.filters import Command
+from aiogram.types import Message
+
+# Assuming ADMIN_ID and db are defined elsewhere in your setup
 @dp.message(Command("broadcastg"))
 async def broadcast_groups_smart(message: types.Message, bot: Bot):
     if message.from_user.id != ADMIN_ID:
         await message.answer("🚫 **Access Denied**")
         return
 
-    # Reference the 'groups' collection specifically
     groups_col = db["groups"] 
+    photo_id = None
+    broadcast_text = ""
 
-    # 1. Extract content (Supports photo + caption or just text)
-    raw_content = message.caption if message.photo else message.text
-    parts = raw_content.split(maxsplit=1)
-    broadcast_text = parts[1] if len(parts) > 1 else ""
-    photo_id = message.photo[-1].file_id if message.photo else None
+    # 1. Improved Content Extraction
+    if message.photo:
+        # If it's a photo, use the caption as the text (entirely)
+        photo_id = message.photo[-1].file_id
+        broadcast_text = message.caption or ""
+    else:
+        # If it's a text message, strip the /broadcastg command
+        parts = message.text.split(maxsplit=1)
+        if len(parts) > 1:
+            broadcast_text = parts[1]
 
+    # 2. Validation Check
     if not broadcast_text and not photo_id:
-        await message.answer("❓ **Usage:**\n1. Send image + `/broadcastg [text]`\n2. Send `/broadcastg [text]`")
+        await message.answer(
+            "❓ **Usage:**\n"
+            "1. Send an image with a caption.\n"
+            "2. Send `/broadcastg [your text]`"
+        )
         return
 
-    status_msg = await message.answer("⏳ **Broadcasting to all registered groups...**")
+    status_msg = await message.answer("⏳ **Broadcasting to groups...**")
     
-    # 2. Get all documents from the 'groups' collection
+    # 3. Fetching all group IDs
     cursor = groups_col.find({})
     success, fail = 0, 0
 
     async for group in cursor:
         try:
-            # Using 'chat_id' as seen in your screenshot
             target_id = group["chat_id"]
             
             if photo_id:
@@ -2088,17 +2110,19 @@ async def broadcast_groups_smart(message: types.Message, bot: Bot):
                 )
             
             success += 1
-            await asyncio.sleep(0.2) # Higher delay for groups to stay safe
+            # Group anti-spam delay is more sensitive than private chats
+            await asyncio.sleep(0.3) 
             
         except Exception as e:
-            logging.error(f"Failed to send to group {group.get('chat_id')}: {e}")
+            logging.error(f"Group {group.get('chat_id')} broadcast error: {e}")
             fail += 1
 
+    # 4. Final Status Update
     await status_msg.edit_text(
         f"✅ **Group Broadcast Complete**\n"
         f"⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯\n"
-        f"👥 **Total Groups:** {success}\n"
-        f"🚫 **Failed/Kicked:** {fail}"
+        f"👥 **Delivered:** {success}\n"
+        f"🚫 **Failed/Blocked:** {fail}"
     )
 @dp.message(Command("broadcast"))
 async def broadcast_smart(message: types.Message, bot: Bot):
