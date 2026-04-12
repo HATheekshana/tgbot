@@ -2055,13 +2055,18 @@ async def broadcast_groups_smart(message: types.Message, bot: Bot):
     photo_id = None
     broadcast_text = ""
 
-    # 1. Improved Content Extraction
+    # 1. Fixed Content Extraction
     if message.photo:
-        # If it's a photo, use the caption as the text (entirely)
         photo_id = message.photo[-1].file_id
-        broadcast_text = message.caption or ""
+        raw_caption = message.caption or ""
+        # Check if the caption starts with the command and strip it
+        if raw_caption.startswith("/broadcastg"):
+            parts = raw_caption.split(maxsplit=1)
+            broadcast_text = parts[1] if len(parts) > 1 else ""
+        else:
+            broadcast_text = raw_caption
     else:
-        # If it's a text message, strip the /broadcastg command
+        # Strip command from text messages
         parts = message.text.split(maxsplit=1)
         if len(parts) > 1:
             broadcast_text = parts[1]
@@ -2070,8 +2075,8 @@ async def broadcast_groups_smart(message: types.Message, bot: Bot):
     if not broadcast_text and not photo_id:
         await message.answer(
             "❓ **Usage:**\n"
-            "1. Send an image with a caption.\n"
-            "2. Send `/broadcastg [your text]`"
+            "1. Send an image with caption: `/broadcastg [text]`\n"
+            "2. Send text: `/broadcastg [text]`"
         )
         return
 
@@ -2100,7 +2105,6 @@ async def broadcast_groups_smart(message: types.Message, bot: Bot):
                 )
             
             success += 1
-            # Group anti-spam delay is more sensitive than private chats
             await asyncio.sleep(0.3) 
             
         except Exception as e:
