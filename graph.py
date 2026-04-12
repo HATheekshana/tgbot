@@ -26,29 +26,29 @@ def generate_full_radar_chart(values, color="#bb86fc", element="Physical"):
     num_vars = len(LABELS)
     angles = np.linspace(np.pi/2, np.pi/2 - 2*np.pi, num_vars, endpoint=False).tolist()
     
-    # --- THE LIMIT LOGIC ---
-    # We clip values at 1.1. 
-    # This means even if EM is 500%, it visually stops just past the 100% line.
-    plot_values = [np.clip(v, 0, 1.1) for v in values]
+    # 1. Clip values at 1.0 to stay on the 2nd line, or 1.1 to poke out slightly
+    plot_values = [np.clip(v, 0, 1.0) for v in values] 
     plot_values += [plot_values[0]] 
-    
     plot_angles = angles + [angles[0]]
 
     fig, ax = plt.subplots(figsize=(10, 10), subplot_kw=dict(polar=True))
-    plt.subplots_adjust(left=0.1, right=0.9, bottom=0.1, top=0.9)
+    
+    # Keep margins wide enough for the labels
+    plt.subplots_adjust(left=0.15, right=0.85, bottom=0.15, top=0.85)
     
     ax.set_facecolor('none')
     fig.patch.set_alpha(0.0)
     
-    # Scale the grid slightly larger than our clip limit
-    ax.set_ylim(0, 1.3) 
+    # 2. Set Limit to 1.2 and draw rings at 0.2 intervals
+    # This makes 1.0 the second line from the edge (1.2 is 1st, 1.0 is 2nd)
+    ax.set_ylim(0, 1.2) 
     
     ax.spines['polar'].set_color('white')
     ax.spines['polar'].set_alpha(0.3)
     ax.spines['polar'].set_linewidth(2.0)
     
-    # 5 rings: 0.2, 0.4, 0.6, 0.8, 1.0 (Target)
-    ax.set_yticks([0.2, 0.4, 0.6, 0.8, 1.0])
+    # Draw 6 rings: 0.2, 0.4, 0.6, 0.8, 1.0 (Target), 1.2 (Outer Edge)
+    ax.set_yticks([0.2, 0.4, 0.6, 0.8, 1.0, 1.2])
     ax.set_yticklabels([]) 
     ax.grid(True, color='white', alpha=0.2, linestyle='-')
 
@@ -63,8 +63,8 @@ def generate_full_radar_chart(values, color="#bb86fc", element="Physical"):
         if 0.1 < angle < 3.0: ha = 'left' 
         elif 3.2 < angle < 6.0: ha = 'right'
         
-        # Position labels safely outside the 1.3 limit
-        ax.text(angle, 1.42, label, size=24, color='white', 
+        # 3. Position labels at 1.35 to be completely clear of the 1.2 outer ring
+        ax.text(angle, 1.35, label, size=24, color='white', 
                 weight='bold', ha=ha, va='center', alpha=1)
 
     ax.set_xticklabels([])
