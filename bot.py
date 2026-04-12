@@ -192,7 +192,7 @@ async def start_splash_process(callback: types.CallbackQuery):
     builder.row(types.InlineKeyboardButton(text="⬅️ Back", callback_data="set_card_menu"))
     await callback.message.edit_text("🌅 <b>Select a character for custom splash art:</b>", parse_mode="HTML", reply_markup=builder.as_markup())
 
-@dp.callback_query(F.data.startswith("pick_char_") and not F.data.startswith("pick_char_splash_"))
+@dp.callback_query(F.data.startswith("pick_char_") & ~F.data.startswith("pick_char_splash_"))
 async def process_character_pick(callback: types.CallbackQuery, state: FSMContext):
     char_id = callback.data.split("_")[2]
     settings = await get_user_card_settings(callback.from_user.id)
