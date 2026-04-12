@@ -29,12 +29,12 @@ def generate_full_radar_chart(values, color="#bb86fc", element="Physical"):
     # --- THE LIMIT LOGIC ---
     # We clip values at 1.1. 
     # This means even if EM is 500%, it visually stops just past the 100% line.
-    plot_values = [np.clip(v, 0, 1.2) for v in values]
+    plot_values = [np.clip(v, 0, 1.1) for v in values]
     plot_values += [plot_values[0]] 
     
     plot_angles = angles + [angles[0]]
 
-    fig, ax = plt.subplots(figsize=(10, 10), subplot_kw=dict(polar=True))
+    fig, ax = plt.subplots(figsize=(12, 12), subplot_kw=dict(polar=True))
     plt.subplots_adjust(left=0.1, right=0.9, bottom=0.1, top=0.9)
     
     ax.set_facecolor('none')
