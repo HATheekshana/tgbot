@@ -73,7 +73,7 @@ def generate_full_radar_chart(values, color="#bb86fc", element="Physical"):
         if 0.1 < angle < 3.0: ha = 'left'   # Top-Right to Bottom-Right
         elif 3.2 < angle < 6.0: ha = 'right' # Bottom-Left to Top-Left
         
-        ax.text(angle, 1.15, label, size=16, color='white', 
+        ax.text(angle, 1.15, label, size=20, color='white', 
                 weight='bold', ha=ha, va='center', alpha=1)
 
     # Hide standard degree ticks/labels
@@ -103,15 +103,17 @@ def get_complete_radar_module(char_stats, char_id, final_size=(450, 450)):
     char_color = ELEMENT_COLORS.get(element, "#FFFFFF")
 
     # Map the relative values against your manual targets database
+    multiplier = 0.9  # Increase this to stretch the graph further
+    
     values_list = [
-        min(char_stats.get('hp', 0) / targets['hp'], 1.0),
-        min(char_stats.get('atk', 0) / targets['atk'], 1.0),
-        min(char_stats.get('def', 0) / targets['def'], 1.0),
-        min(char_stats.get('em', 0) / targets['em'], 1.0),
-        min(char_stats.get('cd', 0) / targets['cd'], 1.0),
-        min(char_stats.get('cr', 0) / targets['cr'], 1.0),
-        min(char_stats.get('er', 0) / targets['er'], 1.0), # Duplicate Crit DMG point on image
-        min(char_stats.get('elem_bonus', 0) / targets.get('dmg_val', 46.6), 1.0), # Generic DMG
+        min((char_stats.get('hp', 0) / targets['hp']) * multiplier, 1.0),
+        min((char_stats.get('atk', 0) / targets['atk']) * multiplier, 1.0),
+        min((char_stats.get('def', 0) / targets['def']) * multiplier, 1.0),
+        min((char_stats.get('em', 0) / targets['em']) * multiplier, 1.0),
+        min((char_stats.get('cd', 0) / targets['cd']) * multiplier, 1.0),
+        min((char_stats.get('cr', 0) / targets['cr']) * multiplier, 1.0),
+        min((char_stats.get('er', 0) / targets['er']) * multiplier, 1.0),
+        min((char_stats.get('elem_bonus', 0) / targets.get('dmg_val', 46.6)) * multiplier, 1.0),
     ]
 
     # Generate the complete image (Web + Data + Text) in one step
