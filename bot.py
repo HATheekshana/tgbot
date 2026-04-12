@@ -186,19 +186,53 @@ async def start_sticker_process(callback: types.CallbackQuery):
 @dp.callback_query(F.data.startswith("pick_char_"))
 async def process_character_pick(callback: types.CallbackQuery, state: FSMContext):
     char_id = callback.data.split("_")[2]
+    settings = await get_user_card_settings(callback.from_user.id)
+    
+    # Check if graph is specifically off for this character
+    # We will store disabled graphs in a list called 'disabled_graphs'
+    disabled_list = settings.get("disabled_graphs", [])
+    is_disabled = char_id in disabled_list
+    
     char_name = CHARACTER_MAP.get(char_id, {}).get("name", f"ID: {char_id}")
-
-    # Store the selected character ID in the user's state
-    await state.update_data(selected_char_id=char_id)
-    await state.set_state(CardSettings.waiting_for_sticker)
+    
+    builder = InlineKeyboardBuilder()
+    
+    # Button to toggle graph for THIS character
+    status_text = "Graph: OFF (Click to ON)" if is_disabled else "Graph: ON (Click to OFF)"
+    builder.button(text=status_text, callback_data=f"toggle_char_graph_{char_id}")
+    
+    # Button to set sticker
+    builder.button(text="🖼 Set Custom Sticker", callback_data=f"set_sticker_{char_id}")
+    
+    builder.adjust(1)
+    builder.row(types.InlineKeyboardButton(text="Back", callback_data="setup_sticker_start"))
 
     await callback.message.edit_text(
-        f"Selected: <b>{char_name}</b>\n\n"
-        "Please send the <b>Sticker</b> or <b>Image</b> you want to use for this character's card.\n"
-        "<i>(Note: This only works if 'Graph' is toggled OFF)</i>",
-        parse_mode="HTML"
+        f"Settings for <b>{char_name}</b>:",
+        parse_mode="HTML",
+        reply_markup=builder.as_markup()
     )
-    await callback.answer()
+@dp.callback_query(F.data.startswith("toggle_char_graph_"))
+async def toggle_specific_graph(callback: types.CallbackQuery):
+    char_id = callback.data.split("_")[3]
+    settings = await get_user_card_settings(callback.from_user.id)
+    disabled_list = settings.get("disabled_graphs", [])
+
+    if char_id in disabled_list:
+        disabled_list.remove(char_id)
+        msg = "Graph enabled for this character!"
+    else:
+        disabled_list.append(char_id)
+        msg = "Graph disabled for this character!"
+
+    await users_col.update_one(
+        {"user_id": str(callback.from_user.id)},
+        {"$set": {"card_settings.disabled_graphs": disabled_list}},
+        upsert=True
+    )
+    
+    await callback.answer(msg)
+    await process_character_pick(callback, None) # Refresh menu
 @dp.message(CardSettings.waiting_for_sticker)
 async def handle_sticker_upload(message: types.Message, state: FSMContext):
     data = await state.get_data()

@@ -284,29 +284,42 @@ async def characters_card(uid, char_id, telegram_id):
         # --- 2. Sticker  Graph Logic---
         graph_position = (1450, 150)
         content_drawn = False 
-        
-        graph_enabled = settings.get("graph_on", True)
+
+        # 1. Pull settings from your MongoDB result
+        graph_enabled_globally = settings.get("graph_on", True)
+        disabled_chars = settings.get("disabled_graphs", [])
         stickers_dict = settings.get("stickers", {})
 
-        if graph_enabled:
+        # 2. Check if this specific character should show a graph
+        # Logic: Global must be ON AND this specific char must NOT be in the disabled list
+        char_graph_enabled = str(char_id) not in disabled_chars
+
+        if graph_enabled_globally and char_graph_enabled:
             try:
+                # Generate the radar chart we optimized earlier
                 complete_graph = get_complete_radar_module(stats, char_id, final_size=(380, 380))
+                
                 if complete_graph is not None:
-                    # Draw the radar background
+                    # Draw the radar background (the decorative outer ring)
                     radar_bg = Image.open("asstests/icons/radar_bg.png").convert("RGBA")
                     radar_bg = radar_bg.resize((530, 525), Image.Resampling.BILINEAR)
+                    
+                    # Center the background behind the graph
                     ui_layer.paste(radar_bg, (graph_position[0] - 75, graph_position[1] - 60), radar_bg)
                     
-                    # Draw the graph
+                    # Paste the actual radar data
                     ui_layer.paste(complete_graph, graph_position, complete_graph)
                     content_drawn = True
+                    
             except Exception as e:
-                print(f"Graph Error: {e}")
+                print(f"Graph Generation Error: {e}")
 
+        # 3. If graph is disabled OR failed to generate, try to draw the Custom Sticker
         if not content_drawn:
             custom_path = stickers_dict.get(str(char_id))
 
             if custom_path:
+                # Handle potential Docker pathing issues
                 if not os.path.exists(custom_path):
                     alt_path = custom_path.lstrip("/").replace("app/", "", 1)
                     if os.path.exists(alt_path):
@@ -316,9 +329,11 @@ async def characters_card(uid, char_id, telegram_id):
                     try:
                         with Image.open(custom_path) as sticker:
                             sticker = sticker.convert("RGBA").copy()
-                            # Resize to fit the graph area
-                            sticker = ImageOps.contain(sticker, (380, 380))
                             
+                            # Resize sticker to fit the 380x380 area while maintaining aspect ratio
+                            sticker.thumbnail((380, 380), Image.Resampling.LANCZOS)
+                            
+                            # Calculate centering within the graph_position box
                             s_w, s_h = sticker.size
                             paste_x = graph_position[0] + (190 - s_w // 2)
                             paste_y = graph_position[1] + (190 - s_h // 2)
@@ -326,16 +341,22 @@ async def characters_card(uid, char_id, telegram_id):
                             ui_layer.paste(sticker, (paste_x, paste_y), sticker)
                             content_drawn = True
                     except Exception as e:
-                        print(f"Sticker error: {e}")
+                        print(f"Custom Sticker Paste Error: {e}")
 
+        # 4. Final Fallback: If no graph and no sticker, show "No Data" icon
         if not content_drawn:
             try:
                 no_data = Image.open("asstests/icons/no_data.png").convert("RGBA")
                 no_data = no_data.resize((300, 300), Image.Resampling.LANCZOS)
+                
                 nd_w, nd_h = no_data.size
-                ui_layer.paste(no_data, (graph_position[0] + (190 - nd_w // 2), graph_position[1] + (190 - nd_h // 2)), no_data)
-            except:
-                pass
+                # Center the "No Data" icon
+                paste_x = graph_position[0] + (190 - nd_w // 2)
+                paste_y = graph_position[1] + (190 - nd_h // 2)
+                
+                ui_layer.paste(no_data, (paste_x, paste_y), no_data)
+            except Exception as e:
+                print(f"Final Fallback Error: {e}")
                 
         # Draw Artifacts
         await draw_horizontal_artifacts(session, ui_layer, char_info, 150, 650, ImageFont.truetype(font_path, 22))
