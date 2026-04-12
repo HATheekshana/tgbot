@@ -2043,16 +2043,6 @@ async def show_stats(message: types.Message):
         f"Current 5★ Pity: {pity}\n"
         f"Current 4★ Pity: {count4}" # Changed label to be more accurate
     )
-To ensure the broadcast is sent successfully to all groups, we need to fix the logic that handles both images and text. The issue in your previous version was likely how the command and the caption were being split, which often caused the message to be empty or misaligned.
-
-Here is the complete, robust code for your broadcastg command:
-
-Python
-import asyncio
-import logging
-from aiogram import Bot, types
-from aiogram.filters import Command
-from aiogram.types import Message
 
 # Assuming ADMIN_ID and db are defined elsewhere in your setup
 @dp.message(Command("broadcastg"))
