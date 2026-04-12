@@ -297,7 +297,7 @@ async def characters_card(uid, char_id, telegram_id):
         # Draw graph ONLY if Global is ON and this specific char is NOT disabled
         if graph_enabled_globally and char_graph_enabled:
             try:
-                complete_graph = get_complete_radar_module(stats, char_id, final_size=(380, 380))
+                complete_graph = get_complete_radar_module(stats, char_id, final_size=(400, 400))
                 
                 if complete_graph is not None:
                     # Draw background
