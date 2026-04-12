@@ -76,7 +76,7 @@ def draw_text_with_shadow(draw, text, position, font_path, font_size,
 async def get_enkadata(uid):
     url = f"https://enka.network/api/uid/{uid}"
     async with aiohttp.ClientSession() as session:
-        async with session.get(url, timeout=aiohttp.ClientTimeout(total=10)) as response:
+        async with session.get(url, timeout=aiohttp.ClientTimeout(total=5)) as response:
             if response.status == 200:
                 data = await response.json()
                 player_info = data.get("playerInfo", {})
@@ -150,7 +150,7 @@ def get_weapon_name(weapon_info):
 
 async def fetch_image(session, url):
     try:
-        async with session.get(url, timeout=aiohttp.ClientTimeout(total=10)) as resp:
+        async with session.get(url, timeout=aiohttp.ClientTimeout(total=3)) as resp:
             if resp.status != 200: return None
             return Image.open(BytesIO(await resp.read())).convert("RGBA")
     except: return None
