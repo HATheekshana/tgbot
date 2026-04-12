@@ -303,7 +303,7 @@ async def characters_card(uid, char_id, telegram_id):
                     # Draw background
                     radar_bg = Image.open("asstests/icons/radar_bg.png").convert("RGBA")
                     radar_bg = radar_bg.resize((530, 525), Image.Resampling.BILINEAR)
-                    ui_layer.paste(radar_bg, (graph_position[0] - 75, graph_position[1] - 60), radar_bg)
+                    ui_layer.paste(radar_bg, (graph_position[0] - 70, graph_position[1] - 55), radar_bg)
                     
                     # Draw graph
                     ui_layer.paste(complete_graph, graph_position, complete_graph)
