@@ -22,54 +22,51 @@ with open("targets.json", "r", encoding="utf-8") as f:
 # Exact labels from your reference, matching the angles (clockwise from 12 o'clock)
 LABELS = ['HP', 'ATK', 'DEF', 'EM', 'Crit DMG', 'Crit Rate', 'ER', 'Elem DMG']
 
-def generate_full_radar_chart(values, color="#E0B0FF", element="Electro"):
+def generate_full_radar_chart(values, color="#bb86fc", element="Physical"):
     num_vars = len(LABELS)
     angles = np.linspace(np.pi/2, np.pi/2 - 2*np.pi, num_vars, endpoint=False).tolist()
     
-    # Clip at 1.15 - sits between the 2nd line (1.0) and the outer edge (1.2)
-    plot_values = [np.clip(v, 0, 1.15) for v in values]
-    plot_values += [plot_values[0]] 
+    # 1. Close the loop
+    plot_values = values + [values[0]]
     plot_angles = angles + [angles[0]]
 
     fig, ax = plt.subplots(figsize=(10, 10), subplot_kw=dict(polar=True))
     
-    # INCREASE MARGINS: This shrinks the spider web slightly so labels stay 
-    # away from your Max HP / ATK text on the card.
-    plt.subplots_adjust(left=0.2, right=0.8, bottom=0.2, top=0.8)
+    # Tighten margins to allow the graph to expand
+    plt.subplots_adjust(left=0.05, right=0.95, bottom=0.05, top=0.95)
     
     ax.set_facecolor('none')
     fig.patch.set_alpha(0.0)
     
-    # SCALE: 1.2 is the boundary
-    ax.set_ylim(0, 1.2) 
+    # 2. THE SCALE: Setting ylim to 1.25 makes the 1.0 (Target) 
+    # the second line from the outside.
+    ax.set_ylim(0, 1.25) 
     
-    # Subtle Web Styling
     ax.spines['polar'].set_color('white')
-    ax.spines['polar'].set_alpha(0.15)
-    ax.spines['polar'].set_linewidth(1.0)
+    ax.spines['polar'].set_alpha(0.3)
+    ax.spines['polar'].set_linewidth(2.0)
     
-    # Grid lines at 0.2 intervals
-    ax.set_yticks([0.2, 0.4, 0.6, 0.8, 1.0, 1.2])
+    # 3. THE GRID: explicitly draw rings up to the target
+    ax.set_yticks([0.2, 0.4, 0.6, 0.8, 1.0])
     ax.set_yticklabels([]) 
-    ax.grid(True, color='white', alpha=0.1, linestyle='-')
+    ax.grid(True, color='white', alpha=0.2, linestyle='-')
 
-    # Draw Data with dots (Akasha Style)
-    ax.plot(plot_angles, plot_values, color=color, linewidth=2.0, 
-            marker='o', markersize=4, markerfacecolor='white', 
-            markeredgecolor=color, markeredgewidth=1)
-    
-    ax.fill(plot_angles, plot_values, color=color, alpha=0.2)
+    # Draw the data
+    ax.plot(plot_angles, plot_values, color=color, linewidth=6.0, solid_capstyle='round')
+    ax.fill(plot_angles, plot_values, color=color, alpha=0.45)
 
     display_labels = [l if l != 'Elem DMG' else f"{element} DMG" for l in LABELS]
     
     for angle, label in zip(angles, display_labels):
         ha = 'center'
+        # Dynamic alignment based on angle
         if 0.1 < angle < 3.0: ha = 'left' 
         elif 3.2 < angle < 6.0: ha = 'right'
         
-        # Position at 1.4 to keep words clear of the outer ring
-        ax.text(angle, 1.4, label, size=16, color='white', 
-                weight='normal', ha=ha, va='center', alpha=0.8)
+        # 4. LABEL POSITION: Set to 1.35 or 1.4 to be outside the whole graph
+        # Since ylim is 1.25, anything > 1.25 is outside the web.
+        ax.text(angle, 1.38, label, size=22, color='white', 
+                weight='bold', ha=ha, va='center', alpha=1)
 
     ax.set_xticklabels([])
 
@@ -79,7 +76,8 @@ def generate_full_radar_chart(values, color="#E0B0FF", element="Electro"):
     buf.seek(0)
     
     return Image.open(buf).convert("RGBA")
-def get_complete_radar_module(char_stats, char_id, final_size=(520, 520)):
+
+def get_complete_radar_module(char_stats, char_id, final_size=(450, 450)):
     """
     Looks up targets from targets.json and calls the dynamic chart generator.
     """
