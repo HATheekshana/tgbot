@@ -231,9 +231,12 @@ async def start_sticker_upload_prompt(callback: types.CallbackQuery, state: FSMC
 
 @dp.message(CardSettings.waiting_for_sticker)
 async def handle_sticker_upload(message: types.Message, state: FSMContext):
+    # 1. Retrieve the character ID from FSM state
     data = await state.get_data()
     char_id_str = str(data.get("selected_char_id"))
+    user_id = message.from_user.id
 
+    # 2. Identify the file type (Sticker, Photo, or Document)
     if message.sticker:
         file = message.sticker
     elif message.photo:
@@ -241,46 +244,124 @@ async def handle_sticker_upload(message: types.Message, state: FSMContext):
     elif message.document and message.document.mime_type.startswith("image/"):
         file = message.document
     else:
-        return await message.answer("❌ Invalid format. Please send an image or sticker.")
+        return await message.answer("❌ Please send a valid Image, Sticker, or Photo.")
 
-    # Get file info
+    # 3. File Size Guard (300KB - 500KB is usually enough for a 400x400 PNG)
+    if file.file_size > 500 * 1024:
+        return await message.answer("❌ File too large! Please keep it under 500KB.")
+
+    # 4. Setup Paths
+    # Using relative paths for DB and absolute for OS operations
+    relative_dir = "custom_assets/stickers"
+    abs_dir = os.path.abspath(relative_dir)
+    os.makedirs(abs_dir, exist_ok=True)
+
+    filename = f"{user_id}_{char_id_str}.png"
+    full_save_path = os.path.join(abs_dir, filename)
+    db_path = os.path.join(relative_dir, filename)
+
+    # 5. Download the file from Telegram servers
     file_info = await message.bot.get_file(file.file_id)
     image_bytes = BytesIO()
     await message.bot.download_file(file_info.file_path, image_bytes)
     image_bytes.seek(0)
 
     try:
-        # 1. Process Image
+        # 6. Process and Optimize Image
         img = Image.open(image_bytes).convert("RGBA")
         
-        # 2. Optimization: Lower resolution to match card UI
+        # Resize to match the Radar Graph area (approx 400x400)
         img.thumbnail((400, 400), Image.Resampling.LANCZOS)
 
-        # 3. Path Management
-        relative_dir = "custom_assets/stickers"
-        abs_dir = os.path.abspath(relative_dir)
-        os.makedirs(abs_dir, exist_ok=True)
-        
-        filename = f"{message.from_user.id}_{char_id_str}.png"
-        full_save_path = os.path.join(abs_dir, filename)
-        db_path = os.path.join(relative_dir, filename) # Store relative path
-
-        # 4. Save with Compression
+        # Save with optimization to keep VPS storage clean
         img.save(full_save_path, "PNG", optimize=True)
 
-        # 5. Database Update
+        # 7. Update MongoDB
+        # We use str(user_id) and str(char_id) for key consistency
         await users_col.update_one(
-            {"user_id": str(message.from_user.id)},
+            {"user_id": str(user_id)},
             {"$set": {f"card_settings.stickers.{char_id_str}": db_path}},
             upsert=True
         )
 
-        await message.answer("✅ Custom sticker optimized and saved!")
+        # 8. Success message to the user
+        await message.answer("✅ Your custom sticker has been saved and optimized!")
         await state.clear()
+
+        # 9. ADMIN ALERT (Real-time Moderation)
+        char_name = CHARACTER_MAP.get(char_id_str, {}).get("name", f"ID: {char_id_str}")
+        username = f"@{message.from_user.username}" if message.from_user.username else "No Username"
         
+        admin_msg = (
+            "⚠️ <b>New Sticker Alert</b>\n\n"
+            f"👤 <b>User:</b> <code>{user_id}</code> ({username})\n"
+            f"🎭 <b>Character:</b> {char_name}\n"
+            f"🆔 <b>Char ID:</b> <code>{char_id_str}</code>\n"
+            f"📁 <b>Path:</b> <code>{db_path}</code>\n\n"
+            f"<i>Use /nuke_sticker {user_id} {char_id_str} to remove if inappropriate.</i>"
+        )
+
+        # Send the uploaded image directly to you
+        await message.bot.send_photo(
+            chat_id=ADMIN_ID,
+            photo=types.FSInputFile(full_save_path),
+            caption=admin_msg,
+            parse_mode="HTML"
+        )
+
     except Exception as e:
-        print(f"Upload Error: {e}")
-        await message.answer(f"❌ Failed to process image: {e}")
+        print(f"Sticker Process Error: {e}")
+        await message.answer(f"❌ An error occurred while processing the image: {e}")
+@dp.message(Command("ban_sticker"), F.from_user.id == ADMIN_ID)
+async def ban_sticker_command(message: types.Message):
+    # Expected format: /ban_sticker 123456789 10000002
+    args = message.text.split()
+    
+    if len(args) < 3:
+        return await message.answer(
+            "⚠️ <b>Usage:</b>\n<code>/ban_sticker [user_id] [char_id]</code>", 
+            parse_mode="HTML"
+        )
+
+    target_user_id = args[1]
+    target_char_id = args[2]
+    
+    # 1. Construct File Path
+    filename = f"{target_user_id}_{target_char_id}.png"
+    # Ensure this matches the relative_dir in your upload handler
+    sticker_path = os.path.join("custom_assets/stickers", filename)
+    abs_path = os.path.abspath(sticker_path)
+
+    status_report = [f"🛡 <b>Moderation Report for {target_user_id}</b>"]
+
+    # 2. Delete from Disk
+    try:
+        if os.path.exists(abs_path):
+            os.remove(abs_path)
+            status_report.append("✅ File deleted from VPS storage.")
+        else:
+            status_report.append("❓ File not found on disk (already gone?).")
+    except Exception as e:
+        status_report.append(f"❌ Error deleting file: {e}")
+
+    # 3. Delete from MongoDB
+    try:
+        # We use $unset to remove the specific key from the stickers dictionary
+        result = await users_col.update_one(
+            {"user_id": str(target_user_id)},
+            {"$unset": {f"card_settings.stickers.{target_char_id}": ""}}
+        )
+
+        if result.modified_count > 0:
+            status_report.append("✅ Removed from Database.")
+        else:
+            status_report.append("❌ Not found in Database (check IDs).")
+            
+    except Exception as e:
+        status_report.append(f"❌ MongoDB Error: {e}")
+
+    # 4. Final Response
+    await message.answer("\n".join(status_report), parse_mode="HTML")        
 def get_banner_keyboard(mode="current", char_index=0):
     builder = InlineKeyboardBuilder()
     
