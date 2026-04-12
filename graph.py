@@ -27,8 +27,15 @@ def generate_full_radar_chart(values, color="#bb86fc", element="Physical"):
     angles = np.linspace(np.pi/2, np.pi/2 - 2*np.pi, num_vars, endpoint=False).tolist()
     
     # 1. Close the loop
-    MAX_LIMIT = 1.3   # 100% max
-    clamped_values = [min(v, MAX_LIMIT) for v in values]
+    def soft_cap(v):
+        if v <= 1.0:
+            return v
+        return 1.0 + (v - 1.0) * 0.25
+
+    clamped_values = [min(soft_cap(v), 1.15) for v in values]
+    plot_values = clamped_values + [clamped_values[0]]
+
+    ax.set_ylim(0, 1.15)
     plot_values = clamped_values + [clamped_values[0]]
     plot_angles = angles + [angles[0]]
 
@@ -42,7 +49,6 @@ def generate_full_radar_chart(values, color="#bb86fc", element="Physical"):
     
     # 2. THE SCALE: Setting ylim to 1.25 makes the 1.0 (Target) 
     # the second line from the outside.
-    ax.set_ylim(0, MAX_LIMIT) 
     
     ax.spines['polar'].set_color('white')
     ax.spines['polar'].set_alpha(0.3)
