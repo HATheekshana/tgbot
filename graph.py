@@ -50,7 +50,13 @@ def generate_full_radar_chart(values, color="#bb86fc", element="Physical"):
     ax.spines['polar'].set_linewidth(1.5)
     
     # Draw 5 Concentric "Web" Circles (20%, 40%, 60%, 80%, 100% radial marks)
-    ax.set_ylim(0, 1.2) # Relative percentages (0.0 to 1.0)
+    plot_values = [min(v, 1.3) for v in values]
+    plot_values += [plot_values[0]] # Close the loop
+    
+    # Set ylim to 1.3 so we can see the "breakout" points
+    ax.set_ylim(0, 1.3) 
+    
+    # Keep yticks at 1.0 so the "Goal" web stays where it is
     ax.set_yticks([0.2, 0.4, 0.6, 0.8, 1.0])
     ax.set_yticklabels([]) # We don't want to show the numbers
     ax.grid(True, color='white', alpha=0.2, linestyle='-')
@@ -103,19 +109,16 @@ def get_complete_radar_module(char_stats, char_id, final_size=(450, 450)):
     char_color = ELEMENT_COLORS.get(element, "#FFFFFF")
 
     # Map the relative values against your manual targets database
-    multiplier = 0.9  # Increase this to stretch the graph further
-    
-    multiplier = 0.9  # 0.9 keeps most stats inside the web, > 1.0 pushes them out
     
     values_list = [
-        (char_stats.get('hp', 0) / targets['hp']) * multiplier,
-        (char_stats.get('atk', 0) / targets['atk']) * multiplier,
-        (char_stats.get('def', 0) / targets['def']) * multiplier,
-        (char_stats.get('em', 0) / targets['em']) * multiplier,
-        (char_stats.get('cd', 0) / targets['cd']) * multiplier,
-        (char_stats.get('cr', 0) / targets['cr']) * multiplier,
-        (char_stats.get('er', 0) / targets['er']) * multiplier,
-        (char_stats.get('elem_bonus', 0) / targets.get('dmg_val', 46.6)) * multiplier,
+        char_stats.get('hp', 0) / targets['hp'],
+        char_stats.get('atk', 0) / targets['atk'],
+        char_stats.get('def', 0) / targets['def'],
+        char_stats.get('em', 0) / targets['em'],
+        char_stats.get('cd', 0) / targets['cd'],
+        char_stats.get('cr', 0) / targets['cr'],
+        char_stats.get('er', 0) / targets['er'],
+        char_stats.get('elem_bonus', 0) / targets.get('dmg_val', 46.6),
     ]
 
     # Generate the complete image (Web + Data + Text) in one step
