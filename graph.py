@@ -75,7 +75,7 @@ def generate_full_radar_chart(values, color="#bb86fc", element="Physical"):
     buf.seek(0)
     
     return Image.open(buf).convert("RGBA")
-def get_complete_radar_module(char_stats, char_id, final_size=(450, 450)):
+def get_complete_radar_module(char_stats, char_id, final_size=(470, 470)):
     """
     Looks up targets from targets.json and calls the dynamic chart generator.
     """
