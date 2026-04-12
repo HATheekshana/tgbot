@@ -54,7 +54,7 @@ def generate_full_radar_chart(values, color="#bb86fc", element="Physical"):
     plot_values += [plot_values[0]] # Close the loop
     
     # Set ylim to 1.3 so we can see the "breakout" points
-    ax.set_ylim(0, 1.3) 
+    ax.set_ylim(0, 1.35) 
     
     # Keep yticks at 1.0 so the "Goal" web stays where it is
     ax.set_yticks([0.2, 0.4, 0.6, 0.8, 1.0])
