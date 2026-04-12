@@ -45,9 +45,12 @@ quiz_track = {}
 group_message_counts = {}
 QUIZ_THRESHOLD = 40
 COOKIES = {
-    "ltuid_v2": "449108883",
-    "ltoken_v2": "v2_CAISDGM5b3FhcTNzM2d1OBokNDcwMGJhYzAtMTAxZi00YjRlLTk2YmItN2M4YjhjMjMxZDAwIPWn780GKOuk4-0HMJO3k9YBQgtiYnNfb3ZlcnNlYVhqagJTRw.9dO7aQAAAAAB.MEUCIA5OHCjpxUDGrSJ8AQVHNuK4nwpW7XdJhtZhYnXcMhiFAiEAn0azB_VtrCvO57QPc72lKVKK_lTyMHAjDM2LrvENUco"
+    "ltuid_v2": os.getenv("LTUID_V2"),
+    "ltoken_v2": os.getenv("LTOKEN_V2")
 }
+cookie_token = os.getenv("COOKIE_TOKEN_V2")
+if cookie_token:
+    COOKIES["cookie_token_v2"] = cookie_token
 client = genshin.Client(COOKIES)
 client.region = genshin.Region.OVERSEAS
 ITEMS_PER_PAGE = 10
@@ -2007,7 +2010,7 @@ async def get_enka_data(uid: str):
     """Directly fetches data from Enka.Network API"""
     url = f"https://enka.network/api/uid/{uid}/"
     async with aiohttp.ClientSession() as session:
-        async with session.get(url) as resp:
+        async with session.get(url, timeout=aiohttp.ClientTimeout(total=5)) as resp:
             if resp.status == 200:
                 return await resp.json()
             return None

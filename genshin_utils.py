@@ -15,9 +15,12 @@ def get_quiz_score(difficulty, elapsed):
 
     return base + bonus
 COOKIES = {
-    "ltuid_v2": "449108883",
-    "ltoken_v2": "v2_CAISDGM5b3FhcTNzM2d1OBokNDcwMGJhYzAtMTAxZi00YjRlLTk2YmItN2M4YjhjMjMxZDAwIPWn780GKOuk4-0HMJO3k9YBQgtiYnNfb3ZlcnNlYVhqagJTRw.9dO7aQAAAAAB.MEUCIA5OHCjpxUDGrSJ8AQVHNuK4nwpW7XdJhtZhYnXcMhiFAiEAn0azB_VtrCvO57QPc72lKVKK_lTyMHAjDM2LrvENUco"
+    "ltuid_v2": os.getenv("LTUID_V2"),
+    "ltoken_v2": os.getenv("LTOKEN_V2")
 }
+cookie_token = os.getenv("COOKIE_TOKEN_V2")
+if cookie_token:
+    COOKIES["cookie_token_v2"] = cookie_token
 client = genshin.Client(COOKIES)
 client.region = genshin.Region.OVERSEAS
 
@@ -42,7 +45,7 @@ async def get_player_full_data(uid):
 async def get_enkadata(uid):
     url = f"https://enka.network/api/uid/{uid}"
     async with aiohttp.ClientSession() as session:
-        async with session.get(url) as response:
+        async with session.get(url, timeout=aiohttp.ClientTimeout(total=5)) as response:
             if response.status == 200:
                 data = await response.json()
                 player_info = data.get("playerInfo", {})

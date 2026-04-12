@@ -32,7 +32,7 @@ async def draw_artifact_card(session, base_image, x, y, art_data, font):
     if icon_name:
         url = f"https://enka.network/ui/{icon_name}.png"
         try:
-            async with session.get(url) as response:
+            async with session.get(url, timeout=aiohttp.ClientTimeout(total=3)) as response:
                 if response.status == 200:
                     art_img = Image.open(BytesIO(await response.read())).convert("RGBA").resize((95, 95))
                     draw.rounded_rectangle([x, y, x +110, y + 110], radius=12, fill=(0,0,0,100), outline=(255, 255, 255, 30))

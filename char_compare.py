@@ -23,9 +23,12 @@ W_STAT_ICONS = {
         "FIGHT_PROP_DEFENSE_PERCENT": "asstests/icons/def.png"
     }
 COOKIES = {
-    "ltuid_v2": "449108883",
-    "ltoken_v2": "v2_CAISDGM5b3FhcTNzM2d1OBokNDcwMGJhYzAtMTAxZi00YjRlLTk2YmItN2M4YjhjMjMxZDAwIPWn780GKOuk4-0HMJO3k9YBQgtiYnNfb3ZlcnNlYVhqagJTRw.9dO7aQAAAAAB.MEUCIA5OHCjpxUDGrSJ8AQVHNuK4nwpW7XdJhtZhYnXcMhiFAiEAn0azB_VtrCvO57QPc72lKVKK_lTyMHAjDM2LrvENUco"
+    "ltuid_v2": os.getenv("LTUID_V2"),
+    "ltoken_v2": os.getenv("LTOKEN_V2")
 }
+cookie_token = os.getenv("COOKIE_TOKEN_V2")
+if cookie_token:
+    COOKIES["cookie_token_v2"] = cookie_token
 
 ELEMENT_BG_MAP = {
     "Pyro": "asstests/backgrounds/PYRO.png",
@@ -43,7 +46,7 @@ client.region = genshin.Region.OVERSEAS
 async def get_enkadata(uid):
     url = f"https://enka.network/api/uid/{uid}"
     async with aiohttp.ClientSession() as session:
-        async with session.get(url) as response:
+        async with session.get(url, timeout=aiohttp.ClientTimeout(total=5)) as response:
             if response.status == 200:
                 data = await response.json()
                 player_info = data.get("playerInfo", {})
@@ -147,7 +150,7 @@ def get_weapon_name(weapon_info):
     name_hash = str(weapon_info.get('hash', ''))
     return TEXT.get(name_hash, f"Weapon {weapon_info.get('id')}")
 async def fetch_image(session, url):
-    async with session.get(url) as response:
+    async with session.get(url, timeout=aiohttp.ClientTimeout(total=3)) as response:
         if response.status == 200:
             return Image.open(BytesIO(await response.read())).convert("RGBA")
     return None

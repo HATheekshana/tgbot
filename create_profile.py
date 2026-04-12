@@ -5,10 +5,17 @@ import genshin
 import json
 from io import BytesIO
 from genshin_utils import get_player_full_data, get_enkadata
+from dotenv import load_dotenv
+import os
+
+load_dotenv()
 COOKIES = {
-    "ltuid_v2": "449108883",
-    "ltoken_v2": "v2_CAISDGM5b3FhcTNzM2d1OBokNDcwMGJhYzAtMTAxZi00YjRlLTk2YmItN2M4YjhjMjMxZDAwIPWn780GKOuk4-0HMJO3k9YBQgtiYnNfb3ZlcnNlYVhqagJTRw.9dO7aQAAAAAB.MEUCIA5OHCjpxUDGrSJ8AQVHNuK4nwpW7XdJhtZhYnXcMhiFAiEAn0azB_VtrCvO57QPc72lKVKK_lTyMHAjDM2LrvENUco"
+    "ltuid_v2": os.getenv("LTUID_V2"),
+    "ltoken_v2": os.getenv("LTOKEN_V2")
 }
+cookie_token = os.getenv("COOKIE_TOKEN_V2")
+if cookie_token:
+    COOKIES["cookie_token_v2"] = cookie_token
 client = genshin.Client(COOKIES)
 client.region = genshin.Region.OVERSEAS
 
@@ -73,11 +80,11 @@ async def create_genshin_profile(uid):
 
     async with aiohttp.ClientSession() as session:
         namecard_url = await get_namecard_image_url(user_info_enka['nameCardId'])
-        async with session.get(namecard_url) as resp:
+        async with session.get(namecard_url, timeout=aiohttp.ClientTimeout(total=5)) as resp:
             namecard_img = Image.open(BytesIO(await resp.read())).convert("RGBA")
             namecard_img = ImageOps.fit(namecard_img, (528, 201), Image.Resampling.LANCZOS)
 
-        async with session.get(avatar_url) as resp:
+        async with session.get(avatar_url, timeout=aiohttp.ClientTimeout(total=5)) as resp:
             avatar_img = Image.open(BytesIO(await resp.read())).convert("RGBA")
             avatar_img = ImageOps.fit(avatar_img, mask.size, centering=(0.5, 0.5))
             clean_avatar = Image.new("RGBA", mask.size, (0, 0, 0, 0))
@@ -89,25 +96,39 @@ async def create_genshin_profile(uid):
     base.paste(clean_avatar, (220, 100), clean_avatar)
 
     final_list = await get_character_data(uid)
-    async with aiohttp.ClientSession() as session:
-        for i, char in enumerate(final_list):
-            async with session.get(char["icon"]) as response:
+    
+    async def fetch_char_image(session, char):
+        try:
+            async with session.get(char["icon"], timeout=aiohttp.ClientTimeout(total=3)) as response:
                 if response.status == 200:
                     char_content = await response.read()
                     charimage = Image.open(BytesIO(char_content)).convert("RGBA")
                     charimage = ImageOps.fit(charimage, char_mask.size, centering=(0.5, 0.5))
-
+                    
                     clean_char = Image.new("RGBA", char_mask.size, (0, 0, 0, 0))
                     clean_char.paste(charimage, (0, 0), char_mask)
-
-                    x = 615 + ((i % 4) * 150)
-                    y = 290 + ((i // 4) * 150)
-
+                    
                     bg_file = "CHARTER_5.png" if char['rarity'] == 5 else "CHARTER_4.png"
                     char_bg = Image.open(bg_file).convert("RGBA")
-
-                    base.paste(char_bg, (x, y), char_bg)
-                    base.paste(clean_char, (x, y), clean_char)
+                    
+                    return char, clean_char, char_bg
+        except Exception:
+            pass
+        return None
+    
+    async with aiohttp.ClientSession() as session:
+        tasks = [fetch_char_image(session, char) for char in final_list]
+        results = await asyncio.gather(*tasks, return_exceptions=True)
+        
+        for result in results:
+            if result and not isinstance(result, Exception):
+                char, clean_char, char_bg = result
+                i = final_list.index(char)
+                x = 615 + ((i % 4) * 150)
+                y = 290 + ((i // 4) * 150)
+                
+                base.paste(char_bg, (x, y), char_bg)
+                base.paste(clean_char, (x, y), clean_char)
 
     def render_profile():
         """CPU-intensive: Text drawing and PNG encoding"""

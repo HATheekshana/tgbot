@@ -31,7 +31,7 @@ async def draw_artifact_card(session, base_image, x, y, art_data, font):
     icon_name = flat.get("icon")
     if icon_name:
         url = f"https://enka.network/ui/{icon_name}.png"
-        async with session.get(url) as response:
+        async with session.get(url, timeout=aiohttp.ClientTimeout(total=3)) as response:
             if response.status == 200:
                 img_data = await response.read()
                 art_img = Image.open(BytesIO(img_data)).convert("RGBA").resize((140, 140), Image.Resampling.LANCZOS)
