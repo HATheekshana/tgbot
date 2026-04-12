@@ -50,7 +50,7 @@ def generate_full_radar_chart(values, color="#bb86fc", element="Physical"):
     ax.spines['polar'].set_linewidth(1.5)
     
     # Draw 5 Concentric "Web" Circles (20%, 40%, 60%, 80%, 100% radial marks)
-    ax.set_ylim(0, 1) # Relative percentages (0.0 to 1.0)
+    ax.set_ylim(0, 1.2) # Relative percentages (0.0 to 1.0)
     ax.set_yticks([0.2, 0.4, 0.6, 0.8, 1.0])
     ax.set_yticklabels([]) # We don't want to show the numbers
     ax.grid(True, color='white', alpha=0.2, linestyle='-')
@@ -106,14 +106,14 @@ def get_complete_radar_module(char_stats, char_id, final_size=(450, 450)):
     multiplier = 0.9  # Increase this to stretch the graph further
     
     values_list = [
-        min((char_stats.get('hp', 0) / targets['hp']) * multiplier, 1.0),
-        min((char_stats.get('atk', 0) / targets['atk']) * multiplier, 1.0),
-        min((char_stats.get('def', 0) / targets['def']) * multiplier, 1.0),
-        min((char_stats.get('em', 0) / targets['em']) * multiplier, 1.0),
-        min((char_stats.get('cd', 0) / targets['cd']) * multiplier, 1.0),
-        min((char_stats.get('cr', 0) / targets['cr']) * multiplier, 1.0),
-        min((char_stats.get('er', 0) / targets['er']) * multiplier, 1.0),
-        min((char_stats.get('elem_bonus', 0) / targets.get('dmg_val', 46.6)) * multiplier, 1.0),
+        (char_stats.get('hp', 0) / targets['hp']) * multiplier, 1.0,
+        (char_stats.get('atk', 0) / targets['atk']) * multiplier, 1.0,
+        (char_stats.get('def', 0) / targets['def']) * multiplier, 1.0,
+        (char_stats.get('em', 0) / targets['em']) * multiplier, 1.0,
+        (char_stats.get('cd', 0) / targets['cd']) * multiplier, 1.0,
+        (char_stats.get('cr', 0) / targets['cr']) * multiplier, 1.0,
+        (char_stats.get('er', 0) / targets['er']) * multiplier, 1.0,
+        (char_stats.get('elem_bonus', 0) / targets.get('dmg_val', 46.6)) * multiplier, 1.0,
     ]
 
     # Generate the complete image (Web + Data + Text) in one step
