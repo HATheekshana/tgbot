@@ -26,7 +26,7 @@ def generate_full_radar_chart(values, color="#bb86fc", element="Physical"):
     num_vars = len(LABELS)
     angles = np.linspace(np.pi/2, np.pi/2 - 2*np.pi, num_vars, endpoint=False).tolist()
 
-    MAX_LIMIT = 1.15
+    MAX_LIMIT = 1.2
 
     def soft_cap(v):
         if v <= 1.0:
@@ -63,7 +63,7 @@ def generate_full_radar_chart(values, color="#bb86fc", element="Physical"):
         for l in LABELS
     ]
 
-    label_radius = MAX_LIMIT + 0.08
+    label_radius = MAX_LIMIT + 0.5
 
     for angle, label in zip(angles, display_labels):
         ha = 'center'
