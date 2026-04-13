@@ -119,6 +119,7 @@ async def card_settings_menu(callback: types.CallbackQuery):
         builder.button(text="🔄 Reset All Chars to ON", callback_data="reset_all_graphs")
 
     builder.adjust(1)
+    builder.row(types.InlineKeyboardButton(text="⬅️ Back", callback_data="main_settings_menu"))
     await callback.message.edit_text("🎴 <b>Character Card Settings</b>\n\nTurning Global Graph OFF will hide radar charts for all characters.",
                                     parse_mode="HTML", reply_markup=builder.as_markup())
 
@@ -134,6 +135,12 @@ async def toggle_global_graph(callback: types.CallbackQuery):
     )
     await callback.answer(f"Global Graph: {'ON' if new_stat else 'OFF'}")
     await card_settings_menu(callback)
+
+@dp.callback_query(F.data == "main_settings_menu")
+async def main_settings_menu(callback: types.CallbackQuery):
+    builder = InlineKeyboardBuilder()
+    builder.button(text="🎴 Character Card", callback_data="set_card_menu")
+    await callback.message.edit_text("⚙️ <b>Bot Settings</b>", parse_mode="HTML", reply_markup=builder.as_markup())
 
 @dp.callback_query(F.data == "reset_all_graphs")
 async def reset_all_graphs(callback: types.CallbackQuery):
