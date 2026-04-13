@@ -192,8 +192,11 @@ async def start_splash_process(callback: types.CallbackQuery):
     builder.row(types.InlineKeyboardButton(text="⬅️ Back", callback_data="set_card_menu"))
     await callback.message.edit_text("🌅 <b>Select a character for custom splash art:</b>", parse_mode="HTML", reply_markup=builder.as_markup())
 
-@dp.callback_query(F.data.startswith("pick_char_") & ~F.data.startswith("pick_char_splash_"))
+@dp.callback_query(lambda c: c.data and c.data.startswith("pick_char_") and not c.data.startswith("pick_char_splash_"))
 async def process_character_pick(callback: types.CallbackQuery, state: FSMContext):
+    if state is not None:
+        await state.clear()
+
     char_id = callback.data.split("_")[2]
     settings = await get_user_card_settings(callback.from_user.id)
 
@@ -218,6 +221,9 @@ async def process_character_pick(callback: types.CallbackQuery, state: FSMContex
 
 @dp.callback_query(F.data.startswith("pick_char_splash_"))
 async def process_character_pick_splash(callback: types.CallbackQuery, state: FSMContext):
+    if state is not None:
+        await state.clear()
+
     char_id = callback.data.split("_")[3]
     settings = await get_user_card_settings(callback.from_user.id)
 
@@ -261,7 +267,7 @@ async def start_sticker_upload_prompt(callback: types.CallbackQuery, state: FSMC
     char_id = callback.data.split("_")[2]
     char_name = CHARACTER_MAP.get(char_id, {}).get("name", f"ID: {char_id}")
 
-    await state.update_data(selected_char_id=char_id)
+    await state.update_data(selected_char_id=char_id, prompt_message_id=callback.message.message_id)
     await state.set_state(CardSettings.waiting_for_sticker)
 
     await callback.message.edit_text(
@@ -276,7 +282,7 @@ async def start_splash_upload_prompt(callback: types.CallbackQuery, state: FSMCo
     char_id = callback.data.split("_")[2]
     char_name = CHARACTER_MAP.get(char_id, {}).get("name", f"ID: {char_id}")
 
-    await state.update_data(selected_char_id=char_id)
+    await state.update_data(selected_char_id=char_id, prompt_message_id=callback.message.message_id)
     await state.set_state(CardSettings.waiting_for_splash)
 
     await callback.message.edit_text(
@@ -330,8 +336,15 @@ async def handle_sticker_upload(message: types.Message, state: FSMContext):
             upsert=True
         )
 
-        await message.answer("✅ Your custom sticker has been saved and optimized!")
+        prompt_message_id = data.get("prompt_message_id")
+        if prompt_message_id:
+            try:
+                await message.bot.delete_message(chat_id=message.chat.id, message_id=prompt_message_id)
+            except Exception:
+                pass
+
         await state.clear()
+        await message.answer("✅ Your custom sticker has been saved and optimized!")
 
         char_name = CHARACTER_MAP.get(char_id_str, {}).get("name", f"ID: {char_id_str}")
         username = f"@{message.from_user.username}" if message.from_user.username else "No Username"
@@ -399,8 +412,15 @@ async def handle_splash_upload(message: types.Message, state: FSMContext):
             upsert=True
         )
 
-        await message.answer("✅ Your custom splash art has been saved and optimized!")
+        prompt_message_id = data.get("prompt_message_id")
+        if prompt_message_id:
+            try:
+                await message.bot.delete_message(chat_id=message.chat.id, message_id=prompt_message_id)
+            except Exception:
+                pass
+
         await state.clear()
+        await message.answer("✅ Your custom splash art has been saved and optimized!")
 
         char_name = CHARACTER_MAP.get(char_id_str, {}).get("name", f"ID: {char_id_str}")
         username = f"@{message.from_user.username}" if message.from_user.username else "No Username"
