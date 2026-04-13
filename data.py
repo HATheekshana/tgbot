@@ -33,7 +33,7 @@ characters5 = {
     "sigewinne":"Sigewinne", "skirk":"Skirk", "tartaglia":"Tartaglia", "tighnari":"Tighnari", "varesa":"Varesa",
     "varka":"Varka", "venti":"Venti", "wanderer":"Wanderer", "wriothesley":"Wriothesley", "xianyun":"Xianyun",
     "xiao":"Xiao", "xilonen":"Xilonen", "yae-miko":"YaeMiko", "yelan":"Yelan", "yoimiya":"Yoimiya",
-    "yumemizuki-mizuki":"Yumemizuki Mizuki", "zhongli":"Zhongli", "zibai":"Zibai"
+    "yumemizuki-mizuki":"Yumemizuki Mizuki", "zhongli":"Zhongli", "zibai":"Zibai","linnea":"Linnea"
 }
 rare = {
     "r-barbara":"Summertime Barbara","r-ayaka":"Springbloom Ayaka","r-lisa":"Under Shade Lisa","r-jean":"Dandelion Jean",
