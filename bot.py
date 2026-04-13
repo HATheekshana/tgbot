@@ -208,11 +208,6 @@ async def process_character_pick(callback: types.CallbackQuery, state: FSMContex
     status_text = "📊 Graph: OFF (Click to ON)" if is_disabled else "📊 Graph: ON (Click to OFF)"
     builder.button(text=status_text, callback_data=f"toggle_char_graph_{char_id}")
     builder.button(text="🖼 Set Custom Sticker", callback_data=f"set_sticker_{char_id}")
-    builder.button(text="🌅 Set Custom Splash Art", callback_data=f"set_splash_{char_id}")
-    
-    splash_dict = settings.get("splash_arts", {})
-    if char_id in splash_dict:
-        builder.button(text="🔄 Reset Custom Splash Art", callback_data=f"reset_splash_{char_id}")
     
     builder.adjust(1)
     builder.row(types.InlineKeyboardButton(text="⬅️ Back", callback_data="setup_sticker_start"))
