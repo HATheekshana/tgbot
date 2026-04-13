@@ -1,14 +1,18 @@
-from PIL import Image, ImageDraw, ImageFont, ImageOps
 import asyncio
 import aiohttp
-import genshin
 import json
-from io import BytesIO
-from genshin_utils import get_player_full_data, get_enkadata
-from dotenv import load_dotenv
 import os
+from io import BytesIO
+from PIL import Image, ImageDraw, ImageFont, ImageOps
+from dotenv import load_dotenv
+import genshin
+
+from genshin_utils import get_player_full_data, get_enkadata
 
 load_dotenv()
+
+# ------------------ GLOBALS ------------------
+
 COOKIES = {
     "ltuid_v2": os.getenv("LTUID_V2"),
     "ltoken_v2": os.getenv("LTOKEN_V2")
@@ -16,148 +20,167 @@ COOKIES = {
 cookie_token = os.getenv("COOKIE_TOKEN_V2")
 if cookie_token:
     COOKIES["cookie_token_v2"] = cookie_token
+
 client = genshin.Client(COOKIES)
 client.region = genshin.Region.OVERSEAS
 
+# Load JSON ONCE (important)
 with open('char.json', 'r') as f:
     CHARACTER_MAP = json.load(f)
 
-async def get_character_data(uid):
-    user_info_enka = await get_enkadata(uid)
-    showcase_items = user_info_enka.get("showAvatarInfoList", [])
+with open('data.json', 'r') as f:
+    NAMECARD_DATA = json.load(f)
 
-    if not showcase_items:
-        print(f"⚠️ No characters found in Enka showcase for UID {uid}.")
-        return []
+# Global session
+session = aiohttp.ClientSession()
 
-    final_list = []
-    for item in showcase_items:
-        aid = str(item.get("avatarId"))
-        char_info = CHARACTER_MAP.get(aid)
+# Image cache
+CACHE_DIR = "cache"
+os.makedirs(CACHE_DIR, exist_ok=True)
 
-        if char_info:
-            icon_name = char_info["avataricon"]
-            final_list.append({
-                "id": int(aid),
-                "rarity": char_info["rarity"],
-                "icon": f"https://enka.network/ui/{icon_name}.png",
-                "level": item.get("propMap", {}).get("4001", {}).get("val", 1),
-                "constellations": len(item.get("talentIdList", []))
-            })
-        else:
-            final_list.append({
-                "id": int(aid),
-                "rarity": 4,
-                "icon": "https://enka.network/ui/UI_AvatarIcon_Side_None.png",
-                "level": 0
-            })
-    return final_list
+# Asset cache (RAM)
+ASSETS = {
+    "background": Image.open("PROFILE-BACKGROUND.png").convert("RGBA"),
+    "frame": Image.open("AVATAR.png").convert("RGBA"),
+    "banner": Image.open("BANNER_FRAME.png").convert("RGBA"),
+    "mask": ImageOps.invert(Image.open("AVATAR_MASKA.png").convert("L")),
+    "char_mask": ImageOps.invert(Image.open("CHARTER_MASK.png").convert("L")),
+    "char4": Image.open("CHARTER_4.png").convert("RGBA"),
+    "char5": Image.open("CHARTER_5.png").convert("RGBA"),
+}
 
-async def get_namecard_image_url(card_id):
-    with open('data.json', 'r') as file:
-        namecard_data = json.load(file)
-    card_info = namecard_data.get(str(card_id))
-    if card_info:
-        asset_name = card_info["icon"]
-        return f"https://enka.network/ui/{asset_name}.png"
+# ------------------ IMAGE CACHE ------------------
+
+async def fetch_image(url):
+    filename = url.split("/")[-1]
+    path = os.path.join(CACHE_DIR, filename)
+
+    if os.path.exists(path):
+        try:
+            return Image.open(path).convert("RGBA")
+        except:
+            pass
+
+    try:
+        async with session.get(url) as resp:
+            if resp.status != 200:
+                return None
+
+            data = await resp.read()
+
+            with open(path, "wb") as f:
+                f.write(data)
+
+            return Image.open(BytesIO(data)).convert("RGBA")
+    except:
+        return None
+
+# ------------------ HELPERS ------------------
+
+def get_namecard_url(card_id):
+    card = NAMECARD_DATA.get(str(card_id))
+    if card:
+        return f"https://enka.network/ui/{card['icon']}.png"
     return "https://enka.network/ui/UI_NameCardPic_0_P.png"
 
+async def get_character_data(uid):
+    data = await get_enkadata(uid)
+    showcase = data.get("showAvatarInfoList", [])
+
+    result = []
+    for item in showcase:
+        aid = str(item.get("avatarId"))
+        info = CHARACTER_MAP.get(aid)
+
+        if info:
+            result.append({
+                "id": int(aid),
+                "rarity": info["rarity"],
+                "icon": f"https://enka.network/ui/{info['avataricon']}.png"
+            })
+    return result
+
+# ------------------ MAIN FUNCTION ------------------
+
 async def create_genshin_profile(uid):
+
+    # Fetch data in parallel
+    player_task = get_player_full_data(uid)
+    enka_task = get_enkadata(uid)
+
     try:
-        user_info = await get_player_full_data(uid)
-        avatar_url = user_info['in_game_avatar']
-    except Exception:
+        user_info, enka = await asyncio.gather(player_task, enka_task)
+        avatar_url = user_info.get("in_game_avatar")
+    except:
+        enka = await get_enkadata(uid)
         avatar_url = "https://enka.network/ui/UI_AvatarIcon_PlayerBoy.png"
 
-    user_info_enka = await get_enkadata(uid)
+    # Fetch images in parallel
+    namecard_url = get_namecard_url(enka.get("nameCardId"))
+    char_list = await get_character_data(uid)
 
-    base = Image.open("PROFILE-BACKGROUND.png").convert("RGBA")
-    frame = Image.open("AVATAR.png").convert("RGBA")
-    banner_frame = Image.open("BANNER_FRAME.png").convert("RGBA")
+    tasks = [
+        fetch_image(namecard_url),
+        fetch_image(avatar_url),
+        *[fetch_image(c["icon"]) for c in char_list]
+    ]
 
-    mask = ImageOps.invert(Image.open("AVATAR_MASKA.png").convert("L"))
-    char_mask = ImageOps.invert(Image.open("CHARTER_MASK.png").convert("L"))
+    results = await asyncio.gather(*tasks)
 
-    async with aiohttp.ClientSession() as session:
-        namecard_url = await get_namecard_image_url(user_info_enka['nameCardId'])
-        
-        async def fetch_namecard():
-            async with session.get(namecard_url, timeout=aiohttp.ClientTimeout(total=5)) as resp:
-                return Image.open(BytesIO(await resp.read())).convert("RGBA")
-        
-        async def fetch_avatar():
-            async with session.get(avatar_url, timeout=aiohttp.ClientTimeout(total=5)) as resp:
-                img = Image.open(BytesIO(await resp.read())).convert("RGBA")
-                img = ImageOps.fit(img, mask.size, centering=(0.5, 0.5))
-                clean = Image.new("RGBA", mask.size, (0, 0, 0, 0))
-                clean.paste(img, (0, 0), mask)
-                return clean
-        
-        namecard_img, clean_avatar = await asyncio.gather(fetch_namecard(), fetch_avatar())
-        namecard_img = ImageOps.fit(namecard_img, (528, 201), Image.Resampling.LANCZOS)
+    namecard_img = results[0]
+    avatar_img = results[1]
+    char_imgs = results[2:]
 
-    base.paste(namecard_img, (35, 15), namecard_img)
-    base.paste(banner_frame, (35, 15), banner_frame)
-    base.paste(frame, (220, 100), frame)
-    base.paste(clean_avatar, (220, 100), clean_avatar)
+    # ------------------ BUILD IMAGE ------------------
 
-    final_list = await get_character_data(uid)
-    
-    async def fetch_char_image(session, char):
-        try:
-            async with session.get(char["icon"], timeout=aiohttp.ClientTimeout(total=3)) as response:
-                if response.status == 200:
-                    char_content = await response.read()
-                    charimage = Image.open(BytesIO(char_content)).convert("RGBA")
-                    charimage = ImageOps.fit(charimage, char_mask.size, centering=(0.5, 0.5))
-                    
-                    clean_char = Image.new("RGBA", char_mask.size, (0, 0, 0, 0))
-                    clean_char.paste(charimage, (0, 0), char_mask)
-                    
-                    bg_file = "CHARTER_5.png" if char['rarity'] == 5 else "CHARTER_4.png"
-                    char_bg = Image.open(bg_file).convert("RGBA")
-                    
-                    return char, clean_char, char_bg
-        except Exception:
-            pass
-        return None
-    
-    async with aiohttp.ClientSession() as session:
-        tasks = [fetch_char_image(session, char) for char in final_list]
-        results = await asyncio.gather(*tasks, return_exceptions=True)
-        
-        for result in results:
-            if result and not isinstance(result, Exception):
-                char, clean_char, char_bg = result
-                i = final_list.index(char)
-                x = 615 + ((i % 4) * 150)
-                y = 290 + ((i // 4) * 150)
-                
-                base.paste(char_bg, (x, y), char_bg)
-                base.paste(clean_char, (x, y), clean_char)
+    base = ASSETS["background"].copy()
 
-    def render_profile():
-        """CPU-intensive: Text drawing and PNG encoding"""
+    if namecard_img:
+        namecard_img = ImageOps.fit(namecard_img, (528, 201))
+        base.paste(namecard_img, (35, 15), namecard_img)
+
+    base.paste(ASSETS["banner"], (35, 15), ASSETS["banner"])
+
+    # Avatar
+    if avatar_img:
+        avatar_img = ImageOps.fit(avatar_img, ASSETS["mask"].size)
+        clean = Image.new("RGBA", ASSETS["mask"].size, (0, 0, 0, 0))
+        clean.paste(avatar_img, (0, 0), ASSETS["mask"])
+
+        base.paste(ASSETS["frame"], (220, 100), ASSETS["frame"])
+        base.paste(clean, (220, 100), clean)
+
+    # Characters
+    for i, (char, img) in enumerate(zip(char_list, char_imgs)):
+        if not img:
+            continue
+
+        img = ImageOps.fit(img, ASSETS["char_mask"].size)
+        clean = Image.new("RGBA", ASSETS["char_mask"].size, (0, 0, 0, 0))
+        clean.paste(img, (0, 0), ASSETS["char_mask"])
+
+        bg = ASSETS["char5"] if char["rarity"] == 5 else ASSETS["char4"]
+
+        x = 615 + ((i % 4) * 150)
+        y = 290 + ((i // 4) * 150)
+
+        base.paste(bg, (x, y), bg)
+        base.paste(clean, (x, y), clean)
+
+    # ------------------ TEXT (THREAD) ------------------
+
+    def draw_text():
         draw = ImageDraw.Draw(base)
+
         try:
-            f_big = ImageFont.truetype("Genshin_Impact.ttf", 23)
-            f_small = ImageFont.truetype("Genshin_Impact.ttf", 20)
-            f_xsmall = ImageFont.truetype("Genshin_Impact.ttf", 18)
+            f1 = ImageFont.truetype("Genshin_Impact.ttf", 23)
+            f2 = ImageFont.truetype("Genshin_Impact.ttf", 20)
         except:
-            f_big = f_small = f_xsmall = ImageFont.load_default()
+            f1 = f2 = ImageFont.load_default()
 
-        draw.text((300, 290), str(user_info_enka['nickname']), font=f_big, fill=(135, 110, 95), anchor="mm")
-        draw.text((90, 365), f"AR: {user_info_enka['level']}", font=f_small, fill=(135, 110, 95))
-        draw.text((90, 415), f"World Level: {user_info_enka['worldLevel']}", font=f_small, fill=(135, 110, 95))
-        draw.text((75, 475), str(user_info_enka['signature']), font=f_small, fill=(135, 110, 95))
-
-        draw.text((660, 244), "CHARACTERS", font=f_big, fill=(135, 110, 95))
-        draw.text((720, 140), "ACHIEVEMENTS", font=f_xsmall, fill=(135, 110, 95))
-        draw.text((760, 175), str(user_info_enka['achievements']), font=f_big, fill=(135, 110, 95))
-
-        abyss_text = f"{user_info_enka['abyssfloor']}-{user_info_enka['abysslevel']}"
-        draw.text((1010, 140), "SPIRAL ABYSS", font=f_xsmall, fill=(135, 110, 95))
-        draw.text((1050, 175), abyss_text, font=f_big, fill=(135, 110, 95))
+        draw.text((300, 290), enka.get("nickname", ""), font=f1, fill=(135,110,95), anchor="mm")
+        draw.text((90, 365), f"AR: {enka.get('level')}", font=f2, fill=(135,110,95))
+        draw.text((90, 415), f"WL: {enka.get('worldLevel')}", font=f2, fill=(135,110,95))
 
         buffer = BytesIO()
         base.save(buffer, format="PNG")
@@ -165,6 +188,4 @@ async def create_genshin_profile(uid):
         return buffer
 
     loop = asyncio.get_event_loop()
-    buffer = await loop.run_in_executor(None, render_profile)
-    return buffer
-
+    return await loop.run_in_executor(None, draw_text)
