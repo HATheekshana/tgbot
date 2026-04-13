@@ -11,7 +11,7 @@ from io import BytesIO
 from PIL import Image
 import aiohttp
 from character_card import characters_card
-from datetime import datetime
+from datetime import datetime, timedelta
 from aiogram.exceptions import TelegramBadRequest
 from pymongo import ReturnDocument
 from dotenv import load_dotenv
@@ -19,23 +19,22 @@ import os
 import json
 import html
 import time
-from aiogram import types, F
+from aiogram import types, F, Bot, Dispatcher
+from aiogram.fsm.context import FSMContext
+from aiogram.fsm.state import State, StatesGroup
 from char_compare import compare_characters
 from database import users_col, cluster, groups_col
 from enka_api import fetch_enka_data
-from aiogram.filters import Command
+from aiogram.filters import Command, CommandObject
 from comapre_image import create_masked_showcase
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
-from datetime import datetime, timedelta
-from aiogram.types import FSInputFile, URLInputFile, InputMediaPhoto,FSInputFile, BufferedInputFile, InlineKeyboardMarkup, InlineKeyboardButton
-from aiogram import Bot, Dispatcher, types
-from aiogram.filters import Command ,CommandObject
+from aiogram.types import FSInputFile, InputMediaPhoto, BufferedInputFile, InlineKeyboardMarkup, InlineKeyboardButton
 from pytz import timezone
 from wishing import combine_images
 from create_profile import create_genshin_profile
 from genshin_utils import  get_enkadata,get_quiz_score,to_int,get_val,get_exploration_data,get_abyss_data,get_player_full_data,calculate_world_level,format_abyss_info
-from data import weapons3, characters4, characters5, rare,TEAMS_DB  
+from data import weapons3, characters4, characters5, rare,TEAMS_DB
 from cryptography.fernet import Fernet
 from tasks import setup_scheduler
 from paimon import fetch_and_save_wishes, calculate_pity
@@ -46,9 +45,12 @@ quiz_track = {}
 group_message_counts = {}
 QUIZ_THRESHOLD = 40
 COOKIES = {
-    "ltuid_v2": "449108883",
-    "ltoken_v2": "v2_CAISDGM5b3FhcTNzM2d1OBokNDcwMGJhYzAtMTAxZi00YjRlLTk2YmItN2M4YjhjMjMxZDAwIPWn780GKOuk4-0HMJO3k9YBQgtiYnNfb3ZlcnNlYVhqagJTRw.9dO7aQAAAAAB.MEUCIA5OHCjpxUDGrSJ8AQVHNuK4nwpW7XdJhtZhYnXcMhiFAiEAn0azB_VtrCvO57QPc72lKVKK_lTyMHAjDM2LrvENUco"
+    "ltuid_v2": os.getenv("LTUID_V2"),
+    "ltoken_v2": os.getenv("LTOKEN_V2")
 }
+cookie_token = os.getenv("COOKIE_TOKEN_V2")
+if cookie_token:
+    COOKIES["cookie_token_v2"] = cookie_token
 client = genshin.Client(COOKIES)
 client.region = genshin.Region.OVERSEAS
 ITEMS_PER_PAGE = 10
@@ -61,7 +63,6 @@ TOKEN = os.getenv("BOT_TOKEN")
 MONGO_URL = os.getenv("MONGO_URL")
 ADMIN_VAL = os.getenv("ADMIN_ID")
 
-
 ADMIN_ID = int(ADMIN_VAL)
 
 cluster = AsyncIOMotorClient(MONGO_URL)
@@ -69,9 +70,7 @@ db = cluster["genshin_bot"]
 users_col = db["user_stats"]
 wish_col = db["user_wishes"]
 
-# Add this line near the top of your file, outside of any functions
 active_polls = {}
-# ---------------- Dictionaries ----------------
 BANNER_NAMES = {
     301: "Character Event",
     400: "Character Event 2",
@@ -79,7 +78,7 @@ BANNER_NAMES = {
     200: "Standard"
 }
 
-CURRENT_RATE_UP_KEY = "flins" 
+CURRENT_RATE_UP_KEY = "flins"
 CURRENT_RATE_UP_NAME = characters5.get(CURRENT_RATE_UP_KEY, "Flins")
 
 try:
@@ -89,18 +88,16 @@ except Exception as e:
     print(f"Error loading char.json: {e}")
     CHARACTER_MAP = {}
 
-# --- FSM STATES ---
 class CardSettings(StatesGroup):
     waiting_for_sticker = State()
+    waiting_for_splash = State()
 
-# --- DATABASE HELPERS ---
 async def get_user_card_settings(user_id):
     user = await users_col.find_one({"user_id": str(user_id)})
     if not user or "card_settings" not in user:
         return {"graph_on": True, "disabled_graphs": [], "stickers": {}}
     return user["card_settings"]
 
-# --- MAIN SETTINGS MENU ---
 @dp.message(Command("settings"), F.chat.type == "private")
 async def cmd_settings(message: types.Message):
     builder = InlineKeyboardBuilder()
@@ -110,28 +107,27 @@ async def cmd_settings(message: types.Message):
 @dp.callback_query(F.data == "set_card_menu")
 async def card_settings_menu(callback: types.CallbackQuery):
     settings = await get_user_card_settings(callback.from_user.id)
-    
+
     builder = InlineKeyboardBuilder()
     builder.button(text="🖼 Manage Custom Stickers", callback_data="setup_sticker_start")
-    
-    # Global Graph Toggle
+    builder.button(text="🌅 Manage Custom Splash Arts", callback_data="setup_splash_start")
+
     graph_status = "ON" if settings.get("graph_on", True) else "OFF"
     builder.button(text=f"Global Graph: {graph_status}", callback_data="toggle_graph_stat")
-    
-    # Optional: Reset all character-specific settings
+
     if settings.get("disabled_graphs"):
         builder.button(text="🔄 Reset All Chars to ON", callback_data="reset_all_graphs")
-    
+
     builder.adjust(1)
-    await callback.message.edit_text("🎴 <b>Character Card Settings</b>\n\nTurning Global Graph OFF will hide radar charts for all characters.", 
+    builder.row(types.InlineKeyboardButton(text="⬅️ Back", callback_data="main_settings_menu"))
+    await callback.message.edit_text("🎴 <b>Character Card Settings</b>\n\nTurning Global Graph OFF will hide radar charts for all characters.",
                                     parse_mode="HTML", reply_markup=builder.as_markup())
 
-# --- TOGGLE HANDLERS ---
 @dp.callback_query(F.data == "toggle_graph_stat")
 async def toggle_global_graph(callback: types.CallbackQuery):
     settings = await get_user_card_settings(callback.from_user.id)
     new_stat = not settings.get("graph_on", True)
-    
+
     await users_col.update_one(
         {"user_id": str(callback.from_user.id)},
         {"$set": {"card_settings.graph_on": new_stat}},
@@ -139,6 +135,12 @@ async def toggle_global_graph(callback: types.CallbackQuery):
     )
     await callback.answer(f"Global Graph: {'ON' if new_stat else 'OFF'}")
     await card_settings_menu(callback)
+
+@dp.callback_query(F.data == "main_settings_menu")
+async def main_settings_menu(callback: types.CallbackQuery):
+    builder = InlineKeyboardBuilder()
+    builder.button(text="🎴 Character Card", callback_data="set_card_menu")
+    await callback.message.edit_text("⚙️ <b>Bot Settings</b>", parse_mode="HTML", reply_markup=builder.as_markup())
 
 @dp.callback_query(F.data == "reset_all_graphs")
 async def reset_all_graphs(callback: types.CallbackQuery):
@@ -149,7 +151,6 @@ async def reset_all_graphs(callback: types.CallbackQuery):
     await callback.answer("All character-specific graphs reset to ON.")
     await card_settings_menu(callback)
 
-# --- CHARACTER SELECTION FLOW ---
 @dp.callback_query(F.data == "setup_sticker_start")
 async def start_sticker_process(callback: types.CallbackQuery):
     user_data = await users_col.find_one({"user_id": str(callback.from_user.id)})
@@ -174,23 +175,73 @@ async def start_sticker_process(callback: types.CallbackQuery):
     builder.row(types.InlineKeyboardButton(text="⬅️ Back", callback_data="set_card_menu"))
     await callback.message.edit_text("✨ <b>Select a character to customize:</b>", parse_mode="HTML", reply_markup=builder.as_markup())
 
-@dp.callback_query(F.data.startswith("pick_char_"))
+@dp.callback_query(F.data == "setup_splash_start")
+async def start_splash_process(callback: types.CallbackQuery):
+    user_data = await users_col.find_one({"user_id": str(callback.from_user.id)})
+    if not user_data or "genshin_uid" not in user_data:
+        return await callback.answer("❌ Please /login <uid> first.", show_alert=True)
+
+    db_uid = str(user_data["genshin_uid"]).strip()
+    user_info_enka = await get_enkadata(db_uid)
+    showcase_items = user_info_enka.get("showAvatarInfoList", [])
+
+    if not showcase_items:
+        return await callback.message.edit_text("No characters found! Enable 'Show Character Details' in-game.")
+
+    builder = InlineKeyboardBuilder()
+    for char in showcase_items:
+        char_id = str(char.get("avatarId"))
+        char_entry = CHARACTER_MAP.get(char_id, {})
+        display_name = char_entry.get("name", f"ID: {char_id}")
+        builder.button(text=display_name, callback_data=f"pick_char_splash_{char_id}")
+
+    builder.adjust(3)
+    builder.row(types.InlineKeyboardButton(text="⬅️ Back", callback_data="set_card_menu"))
+    await callback.message.edit_text("🌅 <b>Select a character for custom splash art:</b>", parse_mode="HTML", reply_markup=builder.as_markup())
+
+@dp.callback_query(lambda c: c.data and c.data.startswith("pick_char_") and not c.data.startswith("pick_char_splash_"))
 async def process_character_pick(callback: types.CallbackQuery, state: FSMContext):
+    if state is not None:
+        await state.clear()
+
     char_id = callback.data.split("_")[2]
     settings = await get_user_card_settings(callback.from_user.id)
-    
+
     disabled_list = settings.get("disabled_graphs", [])
     is_disabled = char_id in disabled_list
     char_name = CHARACTER_MAP.get(char_id, {}).get("name", f"ID: {char_id}")
-    
+
     builder = InlineKeyboardBuilder()
     status_text = "📊 Graph: OFF (Click to ON)" if is_disabled else "📊 Graph: ON (Click to OFF)"
     builder.button(text=status_text, callback_data=f"toggle_char_graph_{char_id}")
     builder.button(text="🖼 Set Custom Sticker", callback_data=f"set_sticker_{char_id}")
+    
     builder.adjust(1)
     builder.row(types.InlineKeyboardButton(text="⬅️ Back", callback_data="setup_sticker_start"))
 
     await callback.message.edit_text(f"Settings for <b>{char_name}</b>:", parse_mode="HTML", reply_markup=builder.as_markup())
+
+@dp.callback_query(F.data.startswith("pick_char_splash_"))
+async def process_character_pick_splash(callback: types.CallbackQuery, state: FSMContext):
+    if state is not None:
+        await state.clear()
+
+    char_id = callback.data.split("_")[3]
+    settings = await get_user_card_settings(callback.from_user.id)
+
+    char_name = CHARACTER_MAP.get(char_id, {}).get("name", f"ID: {char_id}")
+
+    builder = InlineKeyboardBuilder()
+    builder.button(text="🌅 Set Custom Splash Art", callback_data=f"set_splash_{char_id}")
+    
+    splash_dict = settings.get("splash_arts", {})
+    if char_id in splash_dict:
+        builder.button(text="🔄 Reset Custom Splash Art", callback_data=f"reset_splash_{char_id}")
+    
+    builder.adjust(1)
+    builder.row(types.InlineKeyboardButton(text="⬅️ Back", callback_data="setup_splash_start"))
+
+    await callback.message.edit_text(f"🌅 <b>Custom Splash Art: {char_name}</b>", parse_mode="HTML", reply_markup=builder.as_markup())
 
 @dp.callback_query(F.data.startswith("toggle_char_graph_"))
 async def toggle_specific_graph(callback: types.CallbackQuery):
@@ -213,13 +264,12 @@ async def toggle_specific_graph(callback: types.CallbackQuery):
     await callback.answer(msg)
     await process_character_pick(callback, None)
 
-# --- STICKER UPLOAD LOGIC ---
 @dp.callback_query(F.data.startswith("set_sticker_"))
 async def start_sticker_upload_prompt(callback: types.CallbackQuery, state: FSMContext):
     char_id = callback.data.split("_")[2]
     char_name = CHARACTER_MAP.get(char_id, {}).get("name", f"ID: {char_id}")
 
-    await state.update_data(selected_char_id=char_id)
+    await state.update_data(selected_char_id=char_id, prompt_message_id=callback.message.message_id)
     await state.set_state(CardSettings.waiting_for_sticker)
 
     await callback.message.edit_text(
@@ -229,14 +279,27 @@ async def start_sticker_upload_prompt(callback: types.CallbackQuery, state: FSMC
         reply_markup=InlineKeyboardBuilder().button(text="❌ Cancel", callback_data=f"pick_char_{char_id}").as_markup()
     )
 
+@dp.callback_query(F.data.startswith("set_splash_"))
+async def start_splash_upload_prompt(callback: types.CallbackQuery, state: FSMContext):
+    char_id = callback.data.split("_")[2]
+    char_name = CHARACTER_MAP.get(char_id, {}).get("name", f"ID: {char_id}")
+
+    await state.update_data(selected_char_id=char_id, prompt_message_id=callback.message.message_id)
+    await state.set_state(CardSettings.waiting_for_splash)
+
+    await callback.message.edit_text(
+        f"🌅 <b>Custom Splash Art: {char_name}</b>\n\nPlease send the <b>Photo</b> or <b>Image Document</b>.\n"
+        "<i>Note: This will replace the default splash art background.</i>",
+        parse_mode="HTML",
+        reply_markup=InlineKeyboardBuilder().button(text="❌ Cancel", callback_data=f"pick_char_splash_{char_id}").as_markup()
+    )
+
 @dp.message(CardSettings.waiting_for_sticker)
 async def handle_sticker_upload(message: types.Message, state: FSMContext):
-    # 1. Retrieve the character ID from FSM state
     data = await state.get_data()
     char_id_str = str(data.get("selected_char_id"))
     user_id = message.from_user.id
 
-    # 2. Identify the file type (Sticker, Photo, or Document)
     if message.sticker:
         file = message.sticker
     elif message.photo:
@@ -246,12 +309,9 @@ async def handle_sticker_upload(message: types.Message, state: FSMContext):
     else:
         return await message.answer("❌ Please send a valid Image, Sticker, or Photo.")
 
-    # 3. File Size Guard (300KB - 500KB is usually enough for a 400x400 PNG)
     if file.file_size > 500 * 1024:
         return await message.answer("❌ File too large! Please keep it under 500KB.")
 
-    # 4. Setup Paths
-    # Using relative paths for DB and absolute for OS operations
     relative_dir = "custom_assets/stickers"
     abs_dir = os.path.abspath(relative_dir)
     os.makedirs(abs_dir, exist_ok=True)
@@ -260,38 +320,37 @@ async def handle_sticker_upload(message: types.Message, state: FSMContext):
     full_save_path = os.path.join(abs_dir, filename)
     db_path = os.path.join(relative_dir, filename)
 
-    # 5. Download the file from Telegram servers
     file_info = await message.bot.get_file(file.file_id)
     image_bytes = BytesIO()
     await message.bot.download_file(file_info.file_path, image_bytes)
     image_bytes.seek(0)
 
     try:
-        # 6. Process and Optimize Image
         img = Image.open(image_bytes).convert("RGBA")
-        
-        # Resize to match the Radar Graph area (approx 400x400)
+
         img.thumbnail((400, 400), Image.Resampling.LANCZOS)
 
-        # Save with optimization to keep VPS storage clean
         img.save(full_save_path, "PNG", optimize=True)
 
-        # 7. Update MongoDB
-        # We use str(user_id) and str(char_id) for key consistency
         await users_col.update_one(
             {"user_id": str(user_id)},
             {"$set": {f"card_settings.stickers.{char_id_str}": db_path}},
             upsert=True
         )
 
-        # 8. Success message to the user
-        await message.answer("✅ Your custom sticker has been saved and optimized!")
-        await state.clear()
+        prompt_message_id = data.get("prompt_message_id")
+        if prompt_message_id:
+            try:
+                await message.bot.delete_message(chat_id=message.chat.id, message_id=prompt_message_id)
+            except Exception:
+                pass
 
-        # 9. ADMIN ALERT (Real-time Moderation)
+        await state.clear()
+        await message.answer("✅ Your custom sticker has been saved and optimized!")
+
         char_name = CHARACTER_MAP.get(char_id_str, {}).get("name", f"ID: {char_id_str}")
         username = f"@{message.from_user.username}" if message.from_user.username else "No Username"
-        
+
         admin_msg = (
             "⚠️ <b>New Sticker Alert</b>\n\n"
             f"👤 <b>User:</b> <code>{user_id}</code> ({username})\n"
@@ -301,7 +360,6 @@ async def handle_sticker_upload(message: types.Message, state: FSMContext):
             f"<i>Use /nuke_sticker {user_id} {char_id_str} to remove if inappropriate.</i>"
         )
 
-        # Send the uploaded image directly to you
         await message.bot.send_photo(
             chat_id=ADMIN_ID,
             photo=types.FSInputFile(full_save_path),
@@ -312,29 +370,123 @@ async def handle_sticker_upload(message: types.Message, state: FSMContext):
     except Exception as e:
         print(f"Sticker Process Error: {e}")
         await message.answer(f"❌ An error occurred while processing the image: {e}")
+
+@dp.message(CardSettings.waiting_for_splash)
+async def handle_splash_upload(message: types.Message, state: FSMContext):
+    data = await state.get_data()
+    char_id_str = str(data.get("selected_char_id"))
+    user_id = message.from_user.id
+
+    if message.photo:
+        file = message.photo[-1]
+    elif message.document and message.document.mime_type.startswith("image/"):
+        file = message.document
+    else:
+        return await message.answer("❌ Please send a valid Photo or Image Document.")
+
+    if file.file_size > 2 * 1024 * 1024:  # 2MB limit for splash
+        return await message.answer("❌ File too large! Please keep it under 2MB.")
+
+    relative_dir = "custom_assets/splash_arts"
+    abs_dir = os.path.abspath(relative_dir)
+    os.makedirs(abs_dir, exist_ok=True)
+
+    filename = f"{user_id}_{char_id_str}.png"
+    full_save_path = os.path.join(abs_dir, filename)
+    db_path = os.path.join(relative_dir, filename)
+
+    file_info = await message.bot.get_file(file.file_id)
+    image_bytes = BytesIO()
+    await message.bot.download_file(file_info.file_path, image_bytes)
+    image_bytes.seek(0)
+
+    try:
+        img = Image.open(image_bytes).convert("RGBA")
+
+        # Resize to fit splash area, but keep aspect ratio
+        img.thumbnail((1200, 890), Image.Resampling.LANCZOS)
+
+        img.save(full_save_path, "PNG", optimize=True)
+
+        await users_col.update_one(
+            {"user_id": str(user_id)},
+            {"$set": {f"card_settings.splash_arts.{char_id_str}": db_path}},
+            upsert=True
+        )
+
+        prompt_message_id = data.get("prompt_message_id")
+        if prompt_message_id:
+            try:
+                await message.bot.delete_message(chat_id=message.chat.id, message_id=prompt_message_id)
+            except Exception:
+                pass
+
+        await state.clear()
+        await message.answer("✅ Your custom splash art has been saved and optimized!")
+
+        char_name = CHARACTER_MAP.get(char_id_str, {}).get("name", f"ID: {char_id_str}")
+        username = f"@{message.from_user.username}" if message.from_user.username else "No Username"
+
+        admin_msg = (
+            "🌅 <b>New Splash Art Alert</b>\n\n"
+            f"👤 <b>User:</b> <code>{user_id}</code> ({username})\n"
+            f"🎭 <b>Character:</b> {char_name}\n"
+            f"🆔 <b>Char ID:</b> <code>{char_id_str}</code>\n"
+            f"📁 <b>Path:</b> <code>{db_path}</code>\n\n"
+            f"<i>Use /nuke_splash {user_id} {char_id_str} to remove if inappropriate.</i>"
+        )
+
+        await message.bot.send_photo(
+            chat_id=ADMIN_ID,
+            photo=types.FSInputFile(full_save_path),
+            caption=admin_msg,
+            parse_mode="HTML"
+        )
+
+    except Exception as e:
+        print(f"Splash Process Error: {e}")
+        await message.answer(f"❌ An error occurred while processing the image: {e}")
+
+@dp.callback_query(F.data.startswith("reset_splash_"))
+async def reset_splash_art(callback: types.CallbackQuery):
+    char_id = callback.data.split("_")[2]
+    user_id = callback.from_user.id
+
+    filename = f"{user_id}_{char_id}.png"
+    splash_path = os.path.join("custom_assets/splash_arts", filename)
+    abs_path = os.path.abspath(splash_path)
+
+    if os.path.exists(abs_path):
+        os.remove(abs_path)
+
+    await users_col.update_one(
+        {"user_id": str(user_id)},
+        {"$unset": {f"card_settings.splash_arts.{char_id}": ""}}
+    )
+
+    await callback.answer("✅ Custom splash art reset to default.")
+    callback.data = f"pick_char_splash_{char_id}"
+    await process_character_pick_splash(callback, None)
+
 @dp.message(Command("ban_sticker"), F.from_user.id == ADMIN_ID)
 async def ban_sticker_command(message: types.Message):
-    # Expected format: /ban_sticker 123456789 10000002
     args = message.text.split()
-    
+
     if len(args) < 3:
         return await message.answer(
-            "⚠️ <b>Usage:</b>\n<code>/ban_sticker [user_id] [char_id]</code>", 
+            "⚠️ <b>Usage:</b>\n<code>/ban_sticker [user_id] [char_id]</code>",
             parse_mode="HTML"
         )
 
     target_user_id = args[1]
     target_char_id = args[2]
-    
-    # 1. Construct File Path
+
     filename = f"{target_user_id}_{target_char_id}.png"
-    # Ensure this matches the relative_dir in your upload handler
     sticker_path = os.path.join("custom_assets/stickers", filename)
     abs_path = os.path.abspath(sticker_path)
 
     status_report = [f"🛡 <b>Moderation Report for {target_user_id}</b>"]
 
-    # 2. Delete from Disk
     try:
         if os.path.exists(abs_path):
             os.remove(abs_path)
@@ -344,9 +496,7 @@ async def ban_sticker_command(message: types.Message):
     except Exception as e:
         status_report.append(f"❌ Error deleting file: {e}")
 
-    # 3. Delete from MongoDB
     try:
-        # We use $unset to remove the specific key from the stickers dictionary
         result = await users_col.update_one(
             {"user_id": str(target_user_id)},
             {"$unset": {f"card_settings.stickers.{target_char_id}": ""}}
@@ -356,30 +506,71 @@ async def ban_sticker_command(message: types.Message):
             status_report.append("✅ Removed from Database.")
         else:
             status_report.append("❌ Not found in Database (check IDs).")
-            
+
     except Exception as e:
         status_report.append(f"❌ MongoDB Error: {e}")
 
-    # 4. Final Response
-    await message.answer("\n".join(status_report), parse_mode="HTML")        
+    await message.answer("\n".join(status_report), parse_mode="HTML")
+
+@dp.message(Command("ban_splash"), F.from_user.id == ADMIN_ID)
+async def ban_splash_command(message: types.Message):
+    args = message.text.split()
+
+    if len(args) < 3:
+        return await message.answer(
+            "⚠️ <b>Usage:</b>\n<code>/ban_splash [user_id] [char_id]</code>",
+            parse_mode="HTML"
+        )
+
+    target_user_id = args[1]
+    target_char_id = args[2]
+
+    filename = f"{target_user_id}_{target_char_id}.png"
+    splash_path = os.path.join("custom_assets/splash_arts", filename)
+    abs_path = os.path.abspath(splash_path)
+
+    status_report = [f"🌅 <b>Moderation Report for {target_user_id}</b>"]
+
+    try:
+        if os.path.exists(abs_path):
+            os.remove(abs_path)
+            status_report.append("✅ File deleted from VPS storage.")
+        else:
+            status_report.append("❓ File not found on disk (already gone?).")
+    except Exception as e:
+        status_report.append(f"❌ Error deleting file: {e}")
+
+    try:
+        result = await users_col.update_one(
+            {"user_id": str(target_user_id)},
+            {"$unset": {f"card_settings.splash_arts.{target_char_id}": ""}}
+        )
+
+        if result.modified_count > 0:
+            status_report.append("✅ Removed from Database.")
+        else:
+            status_report.append("❌ Not found in Database (check IDs).")
+
+    except Exception as e:
+        status_report.append(f"❌ MongoDB Error: {e}")
+
+    await message.answer("\n".join(status_report), parse_mode="HTML")
+
 def get_banner_keyboard(mode="current", char_index=0):
     builder = InlineKeyboardBuilder()
-    
-    # Button 1: Switch between Character 1 and Character 2
+
     next_char = 1 if char_index == 0 else 0
     char_label = "View 2nd Character" if char_index == 0 else "View 1st Character"
     builder.row(types.InlineKeyboardButton(text=char_label, callback_data=f"swap:{mode}:{next_char}"))
-    
-    # Button 2: Switch between Current and Next Banner sets
+
     other_mode = "next" if mode == "current" else "current"
     mode_label = "Upcoming Banners" if mode == "current" else "Current Banners"
     builder.row(types.InlineKeyboardButton(text=mode_label, callback_data=f"swap:{other_mode}:0"))
-    
+
     return builder.as_markup()
 
 @dp.message(Command("banner"))
 async def cmd_banner(message: types.Message):
-    # Initial state: Current Banner, 1st Character
     if not os.path.exists(CURRENT_IMAGES[0]):
         return await message.reply("❌ Banner image not found on server.")
 
@@ -392,17 +583,14 @@ async def cmd_banner(message: types.Message):
 
 @dp.callback_query(F.data.startswith("swap:"))
 async def handle_banner_swap(callback: types.CallbackQuery):
-    # Data: swap:MODE:INDEX
     _, mode, index = callback.data.split(":")
     index = int(index)
-    
-    # Select the correct image list
+
     image_list = CURRENT_IMAGES if mode == "current" else NEXT_IMAGES
-    
+
     if not os.path.exists(image_list[index]):
         return await callback.answer("❌ Image file missing!", show_alert=True)
 
-    # Edit the existing message's photo and caption
     await callback.message.edit_media(
         media=InputMediaPhoto(
             media=FSInputFile(image_list[index]),
@@ -420,16 +608,15 @@ async def cmd_teams_menu(message: types.Message):
     print(f"DEBUG: Command /teams triggered by {message.from_user.id}")
     print(f"DEBUG: TEAMS_DB contains: {list(TEAMS_DB.keys())}")
     builder = InlineKeyboardBuilder()
-    
-    # Create a button for every character in our DB
+
     for char in TEAMS_DB.keys():
         builder.button(
-            text=char.title(), 
+            text=char.title(),
             callback_data=f"selectchar:{char}"
         )
-    
+
     builder.adjust(3)
-    
+
     await message.reply(
         "<b>Genshin Team Compendium</b>\nSelect a character to see their best builds:",
         reply_markup=builder.as_markup(),parse_mode="HTML"
@@ -437,18 +624,16 @@ async def cmd_teams_menu(message: types.Message):
 @dp.callback_query(F.data.startswith("selectchar:"))
 async def process_char_selection(callback: types.CallbackQuery):
     char_name = callback.data.split(":")[1]
-    
+
     builder = InlineKeyboardBuilder()
     for team_type in TEAMS_DB[char_name].keys():
         builder.button(
-            text=f"{team_type.upper()}", 
+            text=f"{team_type.upper()}",
             callback_data=f"showteam:{char_name}:{team_type}"
         )
-    
-    # --- FIX 1: Change to 1 button per row ---
-    builder.adjust(1) 
-    
-    # Add a "Back" button to return to the character list
+
+    builder.adjust(1)
+
     builder.row(types.InlineKeyboardButton(text="Back", callback_data="back_to_chars"))
 
     await callback.message.edit_text(
@@ -462,18 +647,16 @@ async def process_char_selection(callback: types.CallbackQuery):
 async def display_team_image(callback: types.CallbackQuery):
     _, char, team_type = callback.data.split(":")
     image_path = TEAMS_DB[char][team_type]
-    
+
     photo = FSInputFile(image_path)
-    
-    # Send the photo
+
     await callback.message.answer_photo(
         photo=photo,
         caption=f"<b>{char.title()} - {team_type.upper()} Build</b>\n<b>Credits: </b>\n@tokii_ink (Instagram)\n@FlipMeAC(Twitter)",
         parse_mode="HTML"
     )
 
-    # --- FIX 2: Delete the selection menu after sending the image ---
-    await callback.message.delete() 
+    await callback.message.delete()
     await callback.answer()
 @dp.callback_query(F.data == "back_to_chars")
 async def back_to_main(callback: types.CallbackQuery):
@@ -481,20 +664,13 @@ async def back_to_main(callback: types.CallbackQuery):
     for char in TEAMS_DB.keys():
         builder.button(text=char.title(), callback_data=f"selectchar:{char}")
     builder.adjust(3)
-    
+
     await callback.message.edit_text(
         text="<b>Genshin Team Compendium</b>\nSelect a character to see their best builds:",
         reply_markup=builder.as_markup(),
         parse_mode="HTML"
     )
     await callback.answer()
-def encrypt_cookies(ltuid, ltoken):
-    data = json.dumps({"ltuid": ltuid, "ltoken": ltoken}).encode()
-    return cipher.encrypt(data).decode()
-
-def decrypt_cookies(encrypted_str):
-    decrypted_data = cipher.decrypt(encrypted_str.encode()).decode()
-    return json.loads(decrypted_data)
 if not TOKEN or not MONGO_URL or not ADMIN_VAL:
     print("ERROR: Missing environment variables in .env file!")
     sys.exit(1)
@@ -512,36 +688,29 @@ async def cmd_cookie_login(message: types.Message, command: CommandObject):
         )
 
     args = command.args.split()
-    
-    # Construct the dictionary based on how many args were provided
+
     cookie_dict = {
         "ltuid_v2": args[0],
         "ltoken_v2": args[1]
     }
-    
-    # If they provided the third token, add it to the dict
+
     if len(args) >= 3:
         cookie_dict["cookie_token_v2"] = args[2]
 
-    # Setup validation client
     check_client = genshin.Client(cookie_dict)
     check_client.region = genshin.Region.OVERSEAS
-    
+
     try:
-        # 1. Validate tokens are working
-        await check_client.get_reward_info(game=genshin.Game.GENSHIN) 
-        
-        # 2. Get Account Info
+        await check_client.get_reward_info(game=genshin.Game.GENSHIN)
+
         all_accounts = await check_client.get_game_accounts()
         genshin_acc = next((acc for acc in all_accounts if acc.game == genshin.Game.GENSHIN), None)
-        
+
         if not genshin_acc:
             return await message.reply("❌ <b>Error:</b> No Genshin accounts found.")
 
-        # 3. Encrypt the FULL dictionary (Saving all 3 tokens)
         encrypted_str = cipher.encrypt(json.dumps(cookie_dict).encode()).decode()
-        
-        # 4. Save to MongoDB
+
         await users_col.update_one(
             {"user_id": str(message.from_user.id)},
             {"$set": {
@@ -552,11 +721,11 @@ async def cmd_cookie_login(message: types.Message, command: CommandObject):
             }},
             upsert=True
         )
-        
+
         status_msg = "all 3 tokens" if "cookie_token_v2" in cookie_dict else "2 tokens"
         await message.reply(
             f"<b>Success!</b> Logged in as <b>{genshin_acc.nickname}</b>.\n"
-            f"Saved <b>{status_msg}</b> securely.", 
+            f"Saved <b>{status_msg}</b> securely.",
             parse_mode="HTML"
         )
 
@@ -567,8 +736,7 @@ async def cmd_cookie_login(message: types.Message, command: CommandObject):
 @dp.message(Command("wishes"))
 async def cmd_wishes(message: types.Message):
     user_id = str(message.from_user.id)
-    
-    # Group 301 and 400 as they share pity in Genshin Impact
+
     char = await calculate_pity(user_id, [301, 400], wish_col)
     weapon = await calculate_pity(user_id, [302], wish_col)
     std = await calculate_pity(user_id, [200], wish_col)
@@ -576,18 +744,16 @@ async def cmd_wishes(message: types.Message):
     if char['total'] == 0 and std['total'] == 0 and weapon['total'] == 0:
         return await message.reply("📭 <b>No data found!</b> Use /import_wishes first.", parse_mode="HTML")
 
-    # Helper for 5-star history formatting
     def fmt_hist(history):
         if not history: return "<i>No 5✮ history</i>"
         return "\n".join([f"• {h['name']} [<b>{h['pulls']}</b>]" for h in history])
 
-    # Standard "Last 10" text for the top
     history_text = "\n".join([f"• {name}" for name in char['last_10']]) if char['last_10'] else "<i>No history found</i>"
 
     response = (
         "<b>LIFETIME WISH TRACKER</b>\n"
         "━━━━━━━━━━━━━━━━━━\n"
-        
+
         "<b>Last 10 Limited Pulls:</b>\n"
         f"{history_text}\n"
         "━━━━━━━━━━━━━━━━━━\n\n"
@@ -597,13 +763,13 @@ async def cmd_wishes(message: types.Message):
         f"├ 5✮ Pity: <b>{char['pity_5']}</b>\n"
         f"├ 4✮ Pity: <b>{char['pity_4']}</b>\n"
         f"└ <b>Recent 5✮:</b>\n{fmt_hist(char['five_star_history'])}\n\n"
-        
+
         "<b>Weapon Banner</b>\n"
         f"├ Total Pulls: <b>{weapon['total']}</b>\n"
         f"├ 5✮ Pity: <b>{weapon['pity_5']}</b>\n"
         f"├ 4✮ Pity: <b>{weapon['pity_4']}</b>\n"
         f"└ <b>Recent 5✮:</b>\n{fmt_hist(weapon['five_star_history'])}\n\n"
-        
+
         "<b>Standard Banner</b>\n"
         f"├ Total Pulls: <b>{std['total']}</b>\n"
         f"├ 5✮ Pity: <b>{std['pity_5']}</b>\n"
@@ -627,12 +793,11 @@ async def cmd_import_wishes(message: types.Message, command: CommandObject):
             "5️⃣ The script will copy a URL to your clipboard. Paste it here like this:\n"
             "<code>/import_wishes [PASTE_URL_HERE]</code>"
         )
-        return await message.reply(instruction_text, parse_mode="HTML") # Added 'return' here
+        return await message.reply(instruction_text, parse_mode="HTML")
 
     user_id = str(message.from_user.id)
     raw_url = command.args.strip()
-    
-    # 1. Extract the Authkey
+
     try:
         authkey = genshin.utility.extract_authkey(raw_url)
     except Exception:
@@ -640,25 +805,21 @@ async def cmd_import_wishes(message: types.Message, command: CommandObject):
 
     status_msg = await message.reply("<b>Syncing lifetime wishes...</b>\nThis can take 30-60 seconds or more than that depends how much pulls", parse_mode="HTML")
 
-    # 2. Setup Client
     client = genshin.Client()
     client.game = genshin.Game.GENSHIN
     client.set_authkey(authkey)
     client.region = genshin.Region.OVERSEAS
 
-    # Note: Using new_count to track actual inserts
     new_count = 0
     total_found = 0
 
     try:
-        # 3. Loop through all relevant banners
         for banner in [301, 400, 302, 200]:
             async for wish in client.wish_history(banner):
                 total_found += 1
-                
-                # 4. Save to DB (Upsert)
+
                 result = await wish_col.update_one(
-                    {"id": wish.id}, 
+                    {"id": wish.id},
                     {"$set": {
                         "user_id": user_id,
                         "uid": wish.uid,
@@ -670,14 +831,14 @@ async def cmd_import_wishes(message: types.Message, command: CommandObject):
                     }},
                     upsert=True
                 )
-                
+
                 if result.upserted_id:
                     new_count += 1
 
         await status_msg.edit_text(
             f"<b>Sync Complete!</b> ✅ \n\n"
             f"Total in Database: <b>{total_found}</b>\n"
-            f"New wishes added: <b>{new_count}</b>", # Fixed variable name here to new_count
+            f"New wishes added: <b>{new_count}</b>",
             parse_mode="HTML"
         )
 
@@ -687,18 +848,17 @@ async def cmd_import_wishes(message: types.Message, command: CommandObject):
         await status_msg.edit_text(f"<b>Bot Error:</b> <code>{str(e)}</code>", parse_mode="HTML")
 def get_diary_markup(viewing_month: int):
     builder = InlineKeyboardBuilder()
-    
+
     actual_month = datetime.now().month
-    
+
     allowed_months = []
     for i in range(3):
         m = actual_month - i
         if m <= 0: m += 12
         allowed_months.append(m)
-    
+
     prev_month = viewing_month - 1 if viewing_month > 1 else 12
-    
-    # 4. Loop Logic: If the next "previous" isn't allowed, jump to the actual current month
+
     if prev_month not in allowed_months:
         btn_text = f"Back to {calendar.month_name[actual_month]}"
         btn_data = "diary_view_current"
@@ -707,11 +867,10 @@ def get_diary_markup(viewing_month: int):
         btn_data = f"diary_view_{prev_month}"
 
     builder.row(types.InlineKeyboardButton(text=btn_text, callback_data=btn_data))
-    
-    # Optional: Always keep a "Home" button if not on the current month
+
     if viewing_month != actual_month:
         builder.row(types.InlineKeyboardButton(text="Current Month", callback_data="diary_view_current"))
-    
+
     return builder.as_markup()
 def format_diary_report(diary: genshin.models.Diary) -> str:
     perc = diary.data.primogems_rate
@@ -727,10 +886,10 @@ def format_diary_report(diary: genshin.models.Diary) -> str:
         "─────── ୨୧ ───────\n"
         f"⚡︎ Primogems: <b>{diary.data.current_primogems}</b>\n"
         f"⚡︎ Mora: <b>{diary.data.current_mora}</b>\n\n"
-        
+
         f"{trend_emoji} <b>Monthly Change:</b>\n"
         f"You got <b>{abs(perc)}%</b> {trend_text} than last month.\n\n"
-        
+
         f"<b>Source Breakdown:</b>\n"
         f"{sources}"
         "─────── ୨୧ ───────"
@@ -741,11 +900,10 @@ async def get_diary_client(user_id: str):
     user = await users_col.find_one({"user_id": str(user_id)})
     if not user or "hoyolab_data" not in user:
         return None
-    
-    # Use your exact resin decryption logic
+
     decrypted_data = cipher.decrypt(user["hoyolab_data"].encode()).decode()
     cookies = json.loads(decrypted_data)
-    
+
     client = genshin.Client(cookies)
     client.region = genshin.Region.OVERSEAS
     return client
@@ -753,7 +911,7 @@ async def get_diary_client(user_id: str):
 @dp.message(Command("diary"))
 async def cmd_diary(message: types.Message):
     client = await get_diary_client(message.from_user.id)
-    
+
     if not client:
         return await message.reply("<b>Not Logged In!</b>\nUse /cookie_login first.", parse_mode="HTML")
 
@@ -774,7 +932,7 @@ async def handle_diary_pagination(callback: types.CallbackQuery):
     user_id = callback.from_user.id
     data_parts = callback.data.split("_")
     month_val = None if data_parts[-1] == "current" else int(data_parts[-1])
-    
+
     await callback.answer("Updating Diary...")
     client = await get_diary_client(user_id)
 
@@ -782,36 +940,34 @@ async def handle_diary_pagination(callback: types.CallbackQuery):
         diary = await client.get_genshin_diary(month=month_val)
         new_text = format_diary_report(diary)
         new_markup = get_diary_markup(diary.month)
-        
+
         await callback.message.edit_text(
-            new_text, 
-            parse_mode="HTML", 
+            new_text,
+            parse_mode="HTML",
             reply_markup=new_markup
         )
-        
+
     except TelegramBadRequest as e:
         if "message is not modified" in str(e):
-            return 
+            return
         raise e
-        
+
 @dp.message(Command("dailylogin"))
 async def cmd_daily_login(message: types.Message):
     user = await users_col.find_one({"user_id": str(message.from_user.id)})
-    
+
     if not user or "hoyolab_data" not in user:
         return await message.reply("<b>Not Logged In!</b>\nUse /cookie_login first.", parse_mode="HTML")
 
     try:
-        # Decrypt the full cookie dictionary
         decrypted_data = cipher.decrypt(user["hoyolab_data"].encode()).decode()
         cookies = json.loads(decrypted_data)
-        
+
         client = genshin.Client(cookies)
         client.region = genshin.Region.OVERSEAS
-        
 
         reward = await client.claim_daily_reward(game=genshin.Game.GENSHIN)
-        
+
         safe_name = html.escape(message.from_user.full_name)
         await message.reply(
             f"<b>Daily Reward Claimed!</b>\n"
@@ -819,7 +975,7 @@ async def cmd_daily_login(message: types.Message):
             f"Reward: <b>{reward.amount}x {reward.name}</b>",
             parse_mode="HTML"
         )
-        
+
     except genshin.AlreadyClaimed:
         await message.reply("<b>Already Done:</b> You've already claimed your reward today!", parse_mode="HTML")
     except genshin.InvalidCookies:
@@ -828,20 +984,18 @@ async def cmd_daily_login(message: types.Message):
         await message.reply(f"<b>Error:</b> <code>{html.escape(str(e))}</code>", parse_mode="HTML")
 def get_guide_keyboard(step: int):
     builder = InlineKeyboardBuilder()
-    
-    # Navigation buttons
+
     if step > 1:
         builder.button(text="Back", callback_data=f"cookie_guide:{step-1}")
-    
-    if step < 5: # Total steps
+
+    if step < 5:
         builder.button(text="Next", callback_data=f"cookie_guide:{step+1}")
     else:
         builder.button(text="Done", callback_data="cookie_guide:close")
-    
+
     builder.adjust(2)
     return builder.as_markup()
 
-# --- Content for each step ---
 GUIDE_TEXTS = {
     1: "<b>Step 1: Login to HoYoLAB</b>\n\nOpen your browser and login to <a href='https://www.hoyolab.com'>hoyolab.com</a>. Make sure you are on the home page.",
     2: "<b>Step 2: Open Developer Tools</b>\n\nPress <code>Ctrl + Shift + I</code> (or <code>F12</code>) to open the Inspect panel. Click on the (1) aplication tab on top, then on the left side under (2)<code>Cookies</code>, click on Cookies and select the one under it.",
@@ -851,16 +1005,14 @@ GUIDE_TEXTS = {
 }
 
 GUIDE_IMAGES = {
-    1: "images/tutorial/tutorial1.jpg", # Path to your local images
+    1: "images/tutorial/tutorial1.jpg",
     2: "images/tutorial/tutorial2.jpg",
     3: "images/tutorial/tutorial3.jpg",
     4: "images/tutorial/tutorial4.jpg",
     5: "images/tutorial/tutorial5.jpg"
 }
-# 1. Start the guide
 @dp.message(Command("cookiehelp"))
 async def cmd_cookiehelp(message: types.Message):
-    # Check if it's a Private Chat (DM)
     if message.chat.type != "private":
         return await message.reply("This command only works in Private DMs to protect your privacy.")
 
@@ -872,24 +1024,22 @@ async def cmd_cookiehelp(message: types.Message):
         parse_mode="HTML"
     )
 
-# 2. Handle Button Clicks
 @dp.callback_query(F.data.startswith("cookie_guide:"))
 async def handle_guide_navigation(callback: types.CallbackQuery):
     step = callback.data.split(":")[1]
-    
+
     if step == "close":
         await callback.message.delete()
         return await callback.answer("Guide closed.")
 
     step = int(step)
-    
-    # Update the photo and caption
+
     new_photo = InputMediaPhoto(
         media=FSInputFile(GUIDE_IMAGES[step]),
         caption=GUIDE_TEXTS[step],
         parse_mode="HTML"
     )
-    
+
     await callback.message.edit_media(
         media=new_photo,
         reply_markup=get_guide_keyboard(step)
@@ -898,46 +1048,39 @@ async def handle_guide_navigation(callback: types.CallbackQuery):
 @dp.message(Command("resin"))
 async def cmd_resin(message: types.Message):
     user = await users_col.find_one({"user_id": str(message.from_user.id)})
-    
+
     if not user or "hoyolab_data" not in user:
         return await message.reply("<b>Not Logged In!</b>\nUse /cookie_login first.", parse_mode="HTML")
 
     try:
-        # 1. Decrypt the cookie dictionary
         decrypted_data = cipher.decrypt(user["hoyolab_data"].encode()).decode()
         cookies = json.loads(decrypted_data)
-        
-        # 2. Setup client
+
         client = genshin.Client(cookies)
         client.region = genshin.Region.OVERSEAS
-        
-        # 3. Fetch Real-Time Notes
-        # Note: The user's Hoyolab profile MUST have "Real-time Notes" set to public in privacy settings
+
         notes = await client.get_genshin_notes()
-        
-        # 4. Format the response
+
         response = (
             f"<b>Current Resin:</b> {notes.current_resin}/{notes.max_resin}\n"
         )
-        
+
         if notes.current_resin < notes.max_resin:
-            # notes.remaining_resin_recovery_time is a timedelta object
             recovery_time = notes.remaining_resin_recovery_time
             response += f"<b>Full Recovery:</b> {recovery_time}\n"
         else:
             response += "<b>Your Resin is full!</b>\n"
 
-        # Optional: Add extra info like Realm Currency or Dailies
         response += f"\n<b>Daily Commissions:</b> {notes.completed_commissions}/{notes.max_commissions}"
-        
+
         await message.reply(response, parse_mode="HTML")
-        
+
     except genshin.InvalidCookies:
         await message.reply("<b>Expired:</b> Your cookies have expired. Please login again.", parse_mode="HTML")
     except genshin.DataNotPublic:
         await message.reply(
             "<b>Error:</b> Your Real-Time Notes are private.\n\n"
-            "Go to HoYoLAB -> Settings -> Privacy Settings -> Enable 'Real-time Notes'.", 
+            "Go to HoYoLAB -> Settings -> Privacy Settings -> Enable 'Real-time Notes'.",
             parse_mode="HTML"
         )
     except Exception as e:
@@ -951,31 +1094,26 @@ async def cmd_redeem_code(message: types.Message, command: CommandObject):
     promo_code = command.args.strip()
     user_id = str(message.from_user.id)
     user = await users_col.find_one({"user_id": user_id})
-    
+
     if not user or "hoyolab_data" not in user:
         return await message.reply("🚫 <b>Not Logged In!</b> Use <code>/cookie_login</code> first.")
 
     try:
-        # 1. Decrypt Cookies
         decrypted_data = cipher.decrypt(user["hoyolab_data"].encode()).decode()
         cookies = json.loads(decrypted_data)
         print(f"DEBUG: Tokens found for user {user_id}: {list(cookies.keys())}")
-        # 2. Setup Client
-        client = genshin.Client() # Start clean
-        client.set_cookies(cookies) # This correctly maps all tokens (ltoken, ltuid, cookie_token)
+        client = genshin.Client()
+        client.set_cookies(cookies)
         client.region = genshin.Region.OVERSEAS
 
-        # 3. Explicitly Fetch the UID to bind the session
-        # This acts as the 'handshake' that confirms your login status
         accounts = await client.get_game_accounts()
         genshin_acc = next((acc for acc in accounts if acc.game == genshin.Game.GENSHIN), None)
-        
+
         if not genshin_acc:
             return await message.reply("❌ <b>Error:</b> No Genshin account found.")
 
-        # 4. Final Redemption
         await client.redeem_code(promo_code, uid=genshin_acc.uid, game=genshin.Game.GENSHIN)
-        
+
         await message.reply(
             f"✅ <b>Redeemed!</b>\nCode: <code>{promo_code}</code>\n"
             f"Sent to: <b>{genshin_acc.nickname}</b> (UID: <code>{genshin_acc.uid}</code>)",
@@ -983,13 +1121,11 @@ async def cmd_redeem_code(message: types.Message, command: CommandObject):
         )
 
     except genshin.RedemptionException as e:
-        # This catches "Already Redeemed" or "Invalid Code"
         await message.reply(f"❌ <b>HoYo Error:</b> <code>{e.msg}</code>", parse_mode="HTML")
     except Exception as e:
         await message.reply(f"❌ <b>Bot Error:</b> <code>{str(e)}</code>", parse_mode="HTML")
 @dp.message(Command("characters"))
 async def cmd_characters(message: types.Message):
-    # 1. Fetch User Data
     user_data = await users_col.find_one({"user_id": str(message.from_user.id)})
 
     if not user_data or "genshin_uid" not in user_data:
@@ -998,7 +1134,6 @@ async def cmd_characters(message: types.Message):
     db_uid = str(user_data["genshin_uid"]).strip()
     msg = await message.reply("Fetching your showcase...")
 
-    # 2. Fetch Enka Data
     try:
         user_info_enka = await get_enkadata(db_uid)
         showcase_items = user_info_enka.get("showAvatarInfoList", [])
@@ -1011,7 +1146,6 @@ async def cmd_characters(message: types.Message):
             "No characters found!\nMake sure 'Show Character Details' is enabled in your profile."
         )
 
-    # 3. Build Buttons
     builder = InlineKeyboardBuilder()
     for index, char in enumerate(showcase_items):
         char_id = str(char.get("avatarId"))
@@ -1024,41 +1158,28 @@ async def cmd_characters(message: types.Message):
         )
     builder.adjust(3)
 
-    # 4. Generate Profile Image (Non-blocking)
-    # Using asyncio.to_thread prevents the bot from freezing for other users
     try:
-        # Call it directly as an async function
-        image_buffer = await create_genshin_profile(db_uid) 
-        
+        image_buffer = await create_genshin_profile(db_uid)
+
         if not image_buffer:
             raise Exception("Empty buffer returned")
-            
+
     except Exception as e:
         print(f"Profile Gen Error: {e}")
         return await msg.edit_text("❌ Failed to generate profile image.")
 
-    # 5. Send Result
     photo = BufferedInputFile(image_buffer.getvalue(), filename=f"{db_uid}.png")
 
     try:
         await msg.delete()
     except TelegramBadRequest:
-        pass # Message already gone
+        pass
 
     await message.reply_photo(
         photo=photo,
         caption="✨ <b>Character Showcase</b>\nSelect a character to see detailed stats:",parse_mode="HTML",
         reply_markup=builder.as_markup()
     )
-
-# Helper for threading if create_genshin_profile is an async function
-def create_genshin_profile_sync(uid):
-    import asyncio
-    return asyncio.run(create_genshin_profile(uid))
-# =========================
-# CHARACTER CARD HANDLER
-# =========================
-
 
 @dp.callback_query(F.data.startswith("gen_"))
 async def handle_card_generation(callback: types.CallbackQuery):
@@ -1070,7 +1191,6 @@ async def handle_card_generation(callback: types.CallbackQuery):
 
     await callback.answer("⏳ Generating your character card...")
 
-    # 1. Fetch character ID from Enka data
     user_info = await get_enkadata(uid)
     showcase = user_info.get("showAvatarInfoList", [])
 
@@ -1079,24 +1199,21 @@ async def handle_card_generation(callback: types.CallbackQuery):
 
     current_char = showcase[char_index]
     char_id = int(current_char.get("avatarId"))
-    
-    # 2. Local Card Generation (Now non-blocking)
+
     try:
-        # DO NOT use asyncio.to_thread for an async function
         image_buffer = await characters_card(uid, char_id, owner_id)
-        
+
         if not image_buffer:
             raise Exception("Image generation returned empty buffer")
-            
+
     except Exception as e:
         print(f"LOCAL GEN ERROR: {e}")
         return await callback.message.edit_caption(
             caption="❌ Failed to generate character card. Please try again later."
         )
 
-    # ... [Ranking Logic remains the same] ...
-    ranking_text = ""  # <--- INITIALIZE IT HERE FIRST
-    
+    ranking_text = ""
+
     ranking_api = f"https://test-xehj.onrender.com/get/ranking/{uid}"
     async with aiohttp.ClientSession() as session:
         try:
@@ -1114,34 +1231,27 @@ async def handle_card_generation(callback: types.CallbackQuery):
                         )
         except Exception as e:
             print(f"Ranking API Error: {e}")
-    # 4. Prepare UI and Send
     char_entry = CHARACTER_MAP.get(str(char_id), {})
     display_name = char_entry.get("name", "Unknown Character")
-    
+
     back_builder = InlineKeyboardBuilder()
     back_builder.button(text="Back to List", callback_data=f"refresh_{uid}_{owner_id}")
 
     photo = BufferedInputFile(image_buffer.getvalue(), filename=f"{char_id}_{uid}.png")
-    
+
     try:
         await callback.message.delete()
     except TelegramBadRequest:
-        pass # Message already deleted or not found
-    
+        pass
+
     target = callback.message.reply_to_message or callback.message
 
     await target.reply_photo(
         photo=photo,
-        caption=f"✨ <b>{display_name}</b>{ranking_text}",
+        caption=f"<b>{display_name}</b>{ranking_text}",
         reply_markup=back_builder.as_markup(),
         parse_mode="HTML"
     )
-def characters_card_sync_wrapper(uid, char_id, owner_id):
-    # This runs the async function in the background thread's loop
-    return asyncio.run(characters_card(uid, char_id, owner_id))
-# =========================
-# BACK BUTTON HANDLER
-# =========================
 @dp.callback_query(F.data.startswith("refresh_"))
 async def handle_back_button(callback: types.CallbackQuery):
     parts = callback.data.split("_")
@@ -1187,20 +1297,16 @@ async def cmd_top_quiz(message: types.Message):
         return await message.reply("❌ Use this in a group!")
 
     chat_id = str(message.chat.id)
-    # This is the path to the score inside your 'Object'
     score_path = f"group_quiz.{chat_id}"
 
     try:
-        # 1. We use a filter to find users who HAVE this key in their group_quiz object
-        # and ensure the value is a number greater than 0
         cursor = users_col.find({score_path: {"$gt": 0}}).sort(score_path, -1).limit(10)
         top_players = await cursor.to_list(length=10)
 
         if not top_players:
-            # If this shows up, it means the ID in the DB doesn't match the Group ID
             return await message.answer(
                 f"🏆 <b>Leaderboard</b>\n\n"
-                "No scores found. Try answering a quiz first! 🧠", 
+                "No scores found. Try answering a quiz first! 🧠",
                 parse_mode="HTML"
             )
 
@@ -1209,11 +1315,10 @@ async def cmd_top_quiz(message: types.Message):
 
         for i, p in enumerate(top_players, 1):
             name = p.get("last_known_name") or f"Player_{str(p['user_id'])[-4:]}"
-            
-            # 2. Extract the points safely from the nested dictionary
+
             all_groups = p.get("group_quiz", {})
             pts = all_groups.get(chat_id, 0)
-            
+
             msg += f"{i}. <b>{name}</b> — <code>{pts} pts</code>\n"
 
         await message.answer(msg, parse_mode="HTML")
@@ -1248,7 +1353,6 @@ async def show_collection(message: types.Message):
         reverse=True
     )
 
-    # Pass user_id here
     text, keyboard = build_collection_page(
         sorted_chars,
         0,
@@ -1257,7 +1361,7 @@ async def show_collection(message: types.Message):
     )
 
     await message.reply(text, reply_markup=keyboard, parse_mode="Markdown")
-def build_collection_page(sorted_chars, page, first_name, user_id): # Added user_id
+def build_collection_page(sorted_chars, page, first_name, user_id):
     start = page * ITEMS_PER_PAGE
     end = start + ITEMS_PER_PAGE
     items = sorted_chars[start:end]
@@ -1275,7 +1379,6 @@ def build_collection_page(sorted_chars, page, first_name, user_id): # Added user
     total_pages = (len(sorted_chars) - 1) // ITEMS_PER_PAGE
     buttons = []
 
-    # Format: col_PAGE_USERID
     if page > 0:
         buttons.append(
             InlineKeyboardButton(text="Back", callback_data=f"col_{page-1}_{user_id}")
@@ -1289,7 +1392,6 @@ def build_collection_page(sorted_chars, page, first_name, user_id): # Added user
     keyboard = InlineKeyboardMarkup(inline_keyboard=[buttons]) if buttons else None
     return response, keyboard
 async def add_to_collection(user_id, char_name):
-    # $inc increases the count by 1. If character doesn't exist, it creates it.
     await users_col.update_one(
         {"user_id": user_id},
         {"$inc": {f"collection.{char_name}": 1}}
@@ -1297,13 +1399,11 @@ async def add_to_collection(user_id, char_name):
 
 @dp.callback_query(lambda c: c.data.startswith("col_"))
 async def change_collection_page(callback: types.CallbackQuery):
-    # Split the data: col, page, owner_id
     data_parts = callback.data.split("_")
     page = int(data_parts[1])
     owner_id = data_parts[2]
     clicker_id = str(callback.from_user.id)
 
-    # The Security Check
     if clicker_id != owner_id:
         await callback.answer("This is not your collection menu!", show_alert=True)
         return
@@ -1329,47 +1429,40 @@ async def change_collection_page(callback: types.CallbackQuery):
     await callback.message.edit_text(text, reply_markup=keyboard, parse_mode="Markdown")
 import asyncio
 
-import math # Add this at the top of your file
+import math
 
 @dp.message(Command("dontuse"))
 async def cmd_dont_use(message: types.Message, bot: Bot):
     user_id = str(message.from_user.id)
     user_name = message.from_user.full_name
-    
-    # 1. Start the countdown
+
     countdown_msg = await message.reply("⚠️ <b>CRITICAL ERROR:</b> You weren't supposed to do that...",parse_mode="HTML")
     await asyncio.sleep(1.5)
 
-    # 2. The Visual Countdown
     for i in range(5, 0, -1):
         await countdown_msg.edit_text(f"🛑 <b>SYSTEM BREACH:</b> Deleting wishes in {i}s...",parse_mode="HTML")
-        await asyncio.sleep(1) # Wait 1 second between updates
+        await asyncio.sleep(1)
 
-    # 2. Fetch data to calculate the NEW integer balance
     user_data = await users_col.find_one({"user_id": user_id})
     current_wishes = user_data.get("wish_count", 0)
-    
+
     if current_wishes <= 0:
         await countdown_msg.edit_text("💢 You have no wishes to lose. Consider yourself lucky.",parse_mode="HTML")
         return
 
-    # Calculate half and use math.floor to remove decimals (e.g., 31 -> 15)
     new_wish_count = math.floor(current_wishes / 2)
     lost_wishes = current_wishes - new_wish_count
 
-    # 3. Update database with the clean Integer
     await users_col.update_one(
         {"user_id": user_id},
-        {"$set": {"wish_count": int(new_wish_count)}} # Force integer type
+        {"$set": {"wish_count": int(new_wish_count)}}
     )
 
-    # 4. Final message to user
     await countdown_msg.edit_text(
         f"I said don't use this command! 😠\n\n"
         f"<b>Punishment:</b> You lost half of your wishes ({lost_wishes} 💫 gone).",parse_mode="HTML"
     )
 
-    # 5. Notify Admin
     try:
         admin_alert = (
             f"💀 <b>Trap Triggered!</b>\n"
@@ -1384,16 +1477,15 @@ async def cmd_dont_use(message: types.Message, bot: Bot):
 async def start_cmd(message: types.Message):
     user_id = str(message.from_user.id)
     first_name = message.from_user.first_name
-    
-    # Check if user exists, if not, create them with 200 starting wishes
+
     user = await users_col.find_one({"user_id": user_id})
     if not user:
         new_user = {
-            "user_id": user_id, 
-            "pity": 0, 
-            "count4": 0, 
-            "total_wishes": 0, 
-            "wish_count": 200, 
+            "user_id": user_id,
+            "pity": 0,
+            "count4": 0,
+            "total_wishes": 0,
+            "wish_count": 200,
             "collection": {},
             "last_daily_wish": datetime.utcnow() - timedelta(days=1)
         }
@@ -1417,7 +1509,6 @@ async def start_cmd(message: types.Message):
 
     await message.answer(commands_list, parse_mode="Markdown")
 
-#wish10------------------------------------------------------------------------------
 @dp.message(Command("abyssinfo"))
 async def abyss_info_command(message: types.Message):
     user_data = await users_col.find_one({"user_id": str(message.from_user.id)})
@@ -1425,18 +1516,15 @@ async def abyss_info_command(message: types.Message):
         return await message.answer("❌ Please /login <uid> first.")
 
     uid = str(user_data["genshin_uid"]).strip()
-    
+
     try:
-        # Fetch fresh data from HoYolab
         abyss = await client.get_spiral_abyss(uid)
-        
-        # ✅ Added 'await' here to resolve the coroutine into a string
+
         formatted_text = await format_abyss_info(abyss)
-        
+
         await message.reply(formatted_text)
-        
+
     except Exception as e:
-        # If the error is regarding privacy settings in HoYoLAB
         if "Stats are not public" in str(e):
             await message.reply("❌ Your Abyss stats are private. Please enable 'Public' in HoYoLAB settings.")
         else:
@@ -1445,7 +1533,7 @@ async def abyss_info_command(message: types.Message):
 @dp.message(Command("wish10"))
 async def send_image_10(message: types.Message):
     user_id = str(message.from_user.id)
-    
+
     user = await users_col.find_one({"user_id": user_id})
     if not user:
         user = {"user_id": user_id, "pity": 0, "count4": 0, "total_wishes": 0 , "wish_count": 200, "collection": {}}
@@ -1462,19 +1550,17 @@ async def send_image_10(message: types.Message):
     if wish_count < 10:
         await message.answer(f"❌ You don't have enough wishes. You only have {wish_count}.")
         return
-    
+
     loading_photo = FSInputFile("Loading_Screen_Startup.webp")
     loading_msg = await message.answer_photo(photo=loading_photo, caption="✨ Invoking the Tides of Fate...")
 
     results = []
     pulled_chars = []
-    
-    # --- FIX 1: Initialize Splash Defaults ---
-    # This prevents UnboundLocalError if the logic fails
-    splash_name = "Debate Club" 
+
+    splash_name = "Debate Club"
     splash_rarity = 3
     file_path = "https://raw.githubusercontent.com/FrenzyYum/GenshinWishingBot/master/assets/images/debate.webp"
-    best_rarity_score = 0 
+    best_rarity_score = 0
     result_msg = ""
 
     for i in range(10):
@@ -1482,12 +1568,10 @@ async def send_image_10(message: types.Message):
         is_5star = False
         is_4star = False
         is_rare = False
-        
-        # --- FIX 2: Initialize loop-local variables ---
+
         current_display_name = ""
         current_file_key = ""
 
-        # --- 1. Determine Rarity ---
         if pity >= 89:
             pity = 0
             is_5star = True
@@ -1506,7 +1590,6 @@ async def send_image_10(message: types.Message):
             else:
                 count4 += 1
 
-        # --- 2. Process the Pull ---
         if is_5star:
             win_roll = random.randint(1, 100)
             if is_guaranteed or win_roll <= 50:
@@ -1514,8 +1597,8 @@ async def send_image_10(message: types.Message):
                 current_display_name = CURRENT_RATE_UP_NAME
                 new_guaranteed_status = False
                 result_msg = " (RATE-UP WIN!)"
-                current_score = 4 
-            else: 
+                current_score = 4
+            else:
                 current_file_key = random.choice(list(characters5.keys()))
                 current_display_name = characters5[current_file_key]
                 new_guaranteed_status = True
@@ -1527,8 +1610,7 @@ async def send_image_10(message: types.Message):
                 splash_rarity = 5
                 file_path = f"https://raw.githubusercontent.com/Mantan21/Genshin-Impact-Wish-Simulator/master/src/images/characters/splash-art/5star/{current_file_key}.webp"
                 best_rarity_score = current_score
-            
-            # Add to results/collection
+
             total_so_far = current_collection.get(current_display_name, 0) + pulled_chars.count(current_display_name)
             if total_so_far >= 7:
                 wish_count += 2
@@ -1540,7 +1622,7 @@ async def send_image_10(message: types.Message):
         elif is_rare:
             current_file_key = random.choice(list(rare.keys()))
             current_display_name = rare[current_file_key]
-            
+
             if 3 > best_rarity_score:
                 splash_name = current_display_name
                 splash_rarity = "Rare"
@@ -1557,28 +1639,26 @@ async def send_image_10(message: types.Message):
         elif is_4star:
             current_file_key = random.choice(list(characters4.keys()))
             current_display_name = characters4[current_file_key]
-            
+
             if 1 > best_rarity_score:
                 splash_name = current_display_name
                 splash_rarity = 4
                 file_path = f"https://raw.githubusercontent.com/Mantan21/Genshin-Impact-Wish-Simulator/master/src/images/characters/splash-art/4star/{current_file_key}.webp"
-                best_rarity_score = 1 
-            
+                best_rarity_score = 1
+
             total_so_far = current_collection.get(current_display_name, 0) + pulled_chars.count(current_display_name)
             if total_so_far >= 7:
                 wish_count += 1
                 results.append(f"꩜ {current_display_name} (C6+ -> +1 Wish) ★★★★")
             else:
                 pulled_chars.append(current_display_name)
-                results.append(f"꩜ {current_display_name} ★★★★") 
-        
+                results.append(f"꩜ {current_display_name} ★★★★")
+
         else:
             current_file_key = random.choice(list(weapons3.keys()))
             current_display_name = weapons3[current_file_key]
             results.append(f"꩜ {current_display_name} ★★★")
 
-    # --- 3. Update Database ---
-    # (Same as your original database logic)
     total_wishes += 10
     wish_count -= 10
     update_query = {"$set": {"wish_count": wish_count, "pity": pity, "count4": count4, "total_wishes": total_wishes, "is_guaranteed": new_guaranteed_status}}
@@ -1589,19 +1669,19 @@ async def send_image_10(message: types.Message):
         update_query["$inc"] = inc_data
     await users_col.update_one({"user_id": user_id}, update_query)
 
-    # --- 4. Image Handling ---
     bg_path = "https://raw.githubusercontent.com/Mantan21/Genshin-Impact-Wish-Simulator/master/src/images/background/splash-background.webp"
-    combined_img = combine_images(file_path, bg_path, splash_name, splash_rarity)
-    
+    combined_img = await combine_images(file_path, bg_path, splash_name, splash_rarity)
+
     output = io.BytesIO()
     combined_img.save(output, format="PNG")
     output.seek(0)
     photo_file = BufferedInputFile(output.read(), filename="wish.png")
-    
+
     try:
         await loading_msg.delete()
-    except: pass
-        
+    except TelegramBadRequest:
+        pass
+
     await message.answer_photo(
         photo=photo_file,
         caption=f"★ Your 10-Pull Results ★"+result_msg+"\n\n"+"\n".join(results),
@@ -1614,7 +1694,7 @@ async def send_single(message: types.Message):
         return
     loading_photo = FSInputFile("Loading_Screen_Startup.webp")
     loading_msg = await message.answer_photo(
-        photo=loading_photo, 
+        photo=loading_photo,
         caption="✨ Invoking the Tides of Fate..."
     )
     user_id = str(message.from_user.id)
@@ -1630,7 +1710,7 @@ async def send_single(message: types.Message):
     current_collection = user.get("collection", {})
     is_guaranteed = user.get("is_guaranteed", False)
     new_guaranteed_status = is_guaranteed
-    
+
     if wish_count < 1:
         await message.answer(f"❌ You don't have enough wishes. You only have {wish_count}.")
         return
@@ -1640,7 +1720,6 @@ async def send_single(message: types.Message):
     is_4star = False
     result_msg=""
 
-    # Logic for Rarity
     if pity >= 89:
         is_5star = True
     else:
@@ -1648,11 +1727,9 @@ async def send_single(message: types.Message):
         if count4 >= 9 or star4check == 10:
             is_4star = True
         else:
-            # Check for random 5-star luck (0.6% chance)
             if random.randint(1, 1000) < 7:
                 is_5star = True
 
-    # Process result
     if is_5star:
         pity = 0
         count4 += 1
@@ -1663,7 +1740,7 @@ async def send_single(message: types.Message):
                 display_name = CURRENT_RATE_UP_NAME
                 new_guaranteed_status = False
                 result_msg = f"(RATE-UP WIN!)"
-        else: 
+        else:
                 file_key = random.choice(list(characters5.keys()))
                 display_name = characters5[file_key]
                 new_guaranteed_status = True
@@ -1672,7 +1749,7 @@ async def send_single(message: types.Message):
         splash_name = display_name
         splash_rarity = 5
         file_path = f"https://raw.githubusercontent.com/Mantan21/Genshin-Impact-Wish-Simulator/master/src/images/characters/splash-art/5star/{file_key}.webp"
-        
+
         if current_collection.get(display_name, 0) >= 7:
             wish_count += 2
             name = f"꩜ {display_name} (Duplicate C6 -> +2 Wish) ★★★★★"
@@ -1688,7 +1765,7 @@ async def send_single(message: types.Message):
         splash_name = display_name
         splash_rarity = 4
         file_path = f"https://raw.githubusercontent.com/Mantan21/Genshin-Impact-Wish-Simulator/master/src/images/characters/splash-art/4star/{file_key}.webp"
-        
+
         if current_collection.get(display_name, 0) >= 7:
             wish_count += 1
             name = f"꩜ {display_name} (Duplicate C6 -> +1 Wish) ★★★★"
@@ -1708,31 +1785,28 @@ async def send_single(message: types.Message):
     wish_count -= 1
     total_wishes += 1
 
-    # Database Update
     if pulled_chars:
         await users_col.update_one({"user_id": user_id}, {"$inc": {f"collection.{pulled_chars[0]}": 1}})
-    
+
     await users_col.update_one({"user_id": user_id}, {"$set": {
         "wish_count": wish_count, "pity": pity, "count4": count4, "total_wishes": total_wishes ,"is_guaranteed": new_guaranteed_status}
     })
 
-    # Image sending logic (Keep your existing PIL code here...)
     bg_path = "https://raw.githubusercontent.com/Mantan21/Genshin-Impact-Wish-Simulator/master/src/images/background/splash-background.webp"
-    combined_img = combine_images(file_path, bg_path, splash_name, splash_rarity)
+    combined_img = await combine_images(file_path, bg_path, splash_name, splash_rarity)
     output = io.BytesIO()
     combined_img.save(output, format="PNG")
     output.seek(0)
     photo_file = BufferedInputFile(output.read(), filename="wish.png")
-    
+
     try:
         await loading_msg.delete()
-    except:
-        pass # In case user deleted it manually
-        
+    except TelegramBadRequest:
+        pass
+
     await message.answer_photo(photo=photo_file, caption=result_msg + name)
 @dp.message(Command("give"))
 async def give_wishes(message: types.Message):
-    # 1. Admin Security Check
     if message.from_user.id != ADMIN_ID:
         await message.answer("🚫 Access Denied.",parse_mode="Markdown")
         return
@@ -1741,9 +1815,7 @@ async def give_wishes(message: types.Message):
     target_id = None
     amount = 0
 
-    # 2. Logic for Reply vs. Manual ID
     if message.reply_to_message:
-        # If replying to a message, get that user's ID
         target_id = str(message.reply_to_message.from_user.id)
         if len(args) < 2:
             await message.answer("❓ Usage: Reply to someone with `/give <amount>`",parse_mode="Markdown")
@@ -1754,7 +1826,6 @@ async def give_wishes(message: types.Message):
             await message.answer("❌ Amount must be a number!")
             return
     else:
-        # Manual mode: /give <user_id> <amount>
         if len(args) < 3:
             await message.answer("❓ Usage: `/give <user_id> <amount>` or reply to a message with `/give <amount>`",parse_mode="Markdown")
             return
@@ -1765,7 +1836,6 @@ async def give_wishes(message: types.Message):
             await message.answer("❌ Amount must be a number!")
             return
 
-    # 3. Database Update
     result = await users_col.update_one(
         {"user_id": target_id},
         {"$inc": {"wish_count": amount}}
@@ -1773,13 +1843,12 @@ async def give_wishes(message: types.Message):
 
     if result.matched_count > 0:
         await message.answer(f"✅ Granted {amount} wishes to user `{target_id}`.",parse_mode="Markdown")
-        # Notify the lucky user
         try:
             await message.bot.send_message(
                 chat_id=target_id,
                 text=f"🎁 Admin Bonus!\nYou received {amount} wishes! Check  `/stats`",parse_mode="Markdown"
             )
-        except:
+        except Exception:
             pass
     else:
         await message.answer("❌ User not found in database.")
@@ -1787,17 +1856,16 @@ async def give_wishes(message: types.Message):
 async def share_wishes(message: types.Message):
     args = message.text.split()
     sender = message.from_user
-    sender_name = sender.first_name  # The person sending the gift
+    sender_name = sender.first_name
     target_id = None
-    target_name = "User" # Default if we can't find a name
+    target_name = "User"
     amount = 0
 
-    # 1. Logic for Reply vs. Manual ID
     if message.reply_to_message:
         target_user = message.reply_to_message.from_user
         target_id = str(target_user.id)
-        target_name = target_user.first_name # The person receiving the gift
-        
+        target_name = target_user.first_name
+
         if len(args) < 2:
             return await message.reply("Usage: Reply to someone with <code>/share [amount]</code>", parse_mode="HTML")
         try:
@@ -1805,7 +1873,6 @@ async def share_wishes(message: types.Message):
         except ValueError:
             return await message.reply("<b>Amount must be a number!</b>", parse_mode="HTML")
     else:
-        # Manual mode: /share <user_id> <amount>
         if len(args) < 3:
             return await message.reply("Usage: <code>/share [user_id] [amount]</code>", parse_mode="HTML")
         target_id = args[1]
@@ -1814,29 +1881,24 @@ async def share_wishes(message: types.Message):
         except ValueError:
             return await message.reply("<b>Amount must be a number!</b>", parse_mode="HTML")
 
-    # 2. Basic Validations
     if amount <= 0:
         return await message.reply("<b>You must share at least 1 wish!</b>", parse_mode="HTML")
-    
+
     if str(sender.id) == target_id:
         return await message.reply("<b>Nice try!</b> You cannot share wishes with yourself.", parse_mode="HTML")
 
-    # 3. Check Sender's Balance
     sender_data = await users_col.find_one({"user_id": str(sender.id)})
     current_balance = sender_data.get("wish_count", 0) if sender_data else 0
 
     if current_balance < amount:
         return await message.reply(f"<b>Insufficient Balance!</b>\nYou have <b>{current_balance}</b> wishes.", parse_mode="HTML")
 
-    # 4. Atomic Transaction
     await users_col.update_one({"user_id": str(sender.id)}, {"$inc": {"wish_count": -amount}})
     await users_col.update_one({"user_id": target_id}, {"$inc": {"wish_count": amount}}, upsert=True)
 
-    # 5. Success Notifications
-    # Using names in the public confirmation
     await message.reply(
         f"<b>Transaction Successful!</b>✅\n"
-        f"<b>{sender_name}</b> sent 💫 <b>{amount}</b> wishes to <b>{target_name}</b>.", 
+        f"<b>{sender_name}</b> sent 💫 <b>{amount}</b> wishes to <b>{target_name}</b>.",
         parse_mode="HTML"
     )
 
@@ -1848,7 +1910,7 @@ async def share_wishes(message: types.Message):
                  f"Check <code>/stats</code>",
             parse_mode="HTML"
         )
-    except:
+    except Exception:
         pass
 @dp.message(Command("gamble"))
 async def gamble_wishes(message: types.Message, command: CommandObject):
@@ -1856,7 +1918,7 @@ async def gamble_wishes(message: types.Message, command: CommandObject):
         return await message.reply("⚠️ <b>Gambling is restricted to Private DMs!</b>", parse_mode="HTML")
 
     user_id = str(message.from_user.id)
-    
+
     if not command.args:
         return await message.answer("🎲 <b>Double or Nothing</b>\nUsage: <code>/gamble &lt;amount&gt;</code>", parse_mode="HTML")
 
@@ -1871,16 +1933,14 @@ async def gamble_wishes(message: types.Message, command: CommandObject):
     if bet <= 0 or current_balance < bet:
         return await message.answer(f"❌ Invalid bet. Balance: {current_balance}")
 
-    # --- Dynamic Odds Logic ---
     if current_balance < 2000:
         win_chance = 0.50
     elif current_balance < 2500:
         win_chance = 0.45
     else:
-        win_chance = 0.40  # The 1000+ bonus
+        win_chance = 0.40
 
     win = random.random() < win_chance
-    # --------------------------
 
     if win:
         new_balance = current_balance + bet
@@ -1904,8 +1964,7 @@ async def daily_wish(message: types.Message):
     user_id = str(message.from_user.id)
     user = await users_col.find_one({"user_id": user_id})
     now = datetime.utcnow()
-    
-    # Defaults
+
     streak = 1
     streak_u = 1
     wishes_to_add = 5
@@ -1913,13 +1972,11 @@ async def daily_wish(message: types.Message):
 
     if user and "last_daily_wish" in user:
         last = user["last_daily_wish"]
-        
-        # 1. Cooldown Check
+
         if now - last < timedelta(days=1):
             remaining = timedelta(days=1) - (now - last)
             hours = remaining.seconds // 3600
             minutes = (remaining.seconds % 3600) // 60
-            # Get existing streaks for the message
             s_val = user.get("daily_streak", 0)
             u_val = user.get("streak_new", 0)
             return await message.answer(
@@ -1929,17 +1986,13 @@ async def daily_wish(message: types.Message):
                 parse_mode="HTML"
             )
 
-        # 2. Streak Update Logic
         if now - last > timedelta(days=2):
-            # Missed more than 48 hours: Reset both
             streak = 1
             streak_u = 1
         else:
-            # Within 48 hours: Increment both
             streak = user.get("daily_streak", 0) + 1
             streak_u = user.get("streak_new", 0) + 1
-    
-    # 3. Milestone Rewards (using the 'streak' that resets)
+
     if streak == 7:
         wishes_to_add += 10
         bonus_msg = "\n🔥 <b>WEEKLY BONUS: +10 Wishes!</b>"
@@ -1949,9 +2002,8 @@ async def daily_wish(message: types.Message):
     elif streak == 21:
         wishes_to_add += 30
         bonus_msg = "\n🔥 <b>ULTIMATE BONUS: +30 Wishes!</b>\n<i>(Milestone streak reset!)</i>"
-        streak = 0 # This resets the reward cycle, but streak_u keeps climbing
+        streak = 0
 
-    # 4. Update Database
     await users_col.update_one(
         {"user_id": user_id},
         {
@@ -1966,7 +2018,6 @@ async def daily_wish(message: types.Message):
         upsert=True
     )
 
-    # 5. Final Message
     await message.answer(
         f"<b>Daily Reward Claimed! 🎁</b>\n"
         f"⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯\n"
@@ -1978,53 +2029,48 @@ async def daily_wish(message: types.Message):
 async def check_individual_dailies(bot: Bot):
     now = datetime.utcnow()
     threshold = now - timedelta(days=1)
-    
+
     cursor = users_col.find({
         "last_daily_wish": {"$lte": threshold},
         "notification_sent": {"$ne": True}
     })
 
-    # 1. Generate the image once to save CPU/Memory
     file_path = f"https://raw.githubusercontent.com/Mantan21/Genshin-Impact-Wish-Simulator/master/src/images/characters/splash-art/5star/{CURRENT_RATE_UP_KEY}.webp"
     bg_path = "https://raw.githubusercontent.com/Mantan21/Genshin-Impact-Wish-Simulator/master/src/images/background/splash-background.webp"
-    
-    # Use the combine_images logic you already built
-    combined_img = combine_images(file_path, bg_path, CURRENT_RATE_UP_NAME, "Rate-Up")
-    
-    # Store the raw bytes in memory
+
+    combined_img = await combine_images(file_path, bg_path, CURRENT_RATE_UP_NAME, "Rate-Up")
+
     img_byte_arr = io.BytesIO()
     combined_img.save(img_byte_arr, format="PNG")
-    img_data = img_byte_arr.getvalue() # Get the actual bytes
+    img_data = img_byte_arr.getvalue()
 
     async for user in cursor:
         try:
-            # 2. Create a fresh file object for EACH user
             photo_file = BufferedInputFile(img_data, filename="wish.png")
-            
+
             await bot.send_photo(
                 chat_id=user["user_id"],
                 photo=photo_file,
-                caption=( # Use 'caption' instead of 'text'
+                caption=(
                     f"✨ **Your Daily Wish is ready!** ✨\n"
                     f"Claim it now to keep your streak alive!\n"
                     f"Current Rate up: {CURRENT_RATE_UP_NAME}"
                 ),
                 parse_mode="Markdown"
             )
-            
+
             await users_col.update_one(
                 {"user_id": user["user_id"]},
                 {"$set": {"notification_sent": True}}
             )
-            await asyncio.sleep(0.05) # Prevent Telegram flood limits
+            await asyncio.sleep(0.05)
         except Exception as e:
             logging.error(f"Failed to notify {user['user_id']}: {e}")
 
 @dp.message(Command("stats"))
 async def show_stats(message: types.Message):
     user_id = str(message.from_user.id)
-    
-    # 1. Fetch user or create if new
+
     user = await users_col.find_one({"user_id": user_id})
     if not user:
         user = {"user_id": user_id, "pity": 0, "count4": 0, "total_wishes": 0 , "wish_count":200}
@@ -2041,37 +2087,32 @@ async def show_stats(message: types.Message):
         f"Wishes: {wish_count}\n"
         f"🔥 Guaranteed: {guaranteed}\n"
         f"Current 5★ Pity: {pity}\n"
-        f"Current 4★ Pity: {count4}" # Changed label to be more accurate
+        f"Current 4★ Pity: {count4}"
     )
 
-# Assuming ADMIN_ID and db are defined elsewhere in your setup
 @dp.message(Command("broadcastg"))
 async def broadcast_groups_smart(message: types.Message, bot: Bot):
     if message.from_user.id != ADMIN_ID:
         await message.answer("🚫 **Access Denied**")
         return
 
-    groups_col = db["groups"] 
+    groups_col = db["groups"]
     photo_id = None
     broadcast_text = ""
 
-    # 1. Fixed Content Extraction
     if message.photo:
         photo_id = message.photo[-1].file_id
         raw_caption = message.caption or ""
-        # Check if the caption starts with the command and strip it
         if raw_caption.startswith("/broadcastg"):
             parts = raw_caption.split(maxsplit=1)
             broadcast_text = parts[1] if len(parts) > 1 else ""
         else:
             broadcast_text = raw_caption
     else:
-        # Strip command from text messages
         parts = message.text.split(maxsplit=1)
         if len(parts) > 1:
             broadcast_text = parts[1]
 
-    # 2. Validation Check
     if not broadcast_text and not photo_id:
         await message.answer(
             "❓ **Usage:**\n"
@@ -2081,37 +2122,35 @@ async def broadcast_groups_smart(message: types.Message, bot: Bot):
         return
 
     status_msg = await message.answer("⏳ **Broadcasting to groups...**")
-    
-    # 3. Fetching all group IDs
+
     cursor = groups_col.find({})
     success, fail = 0, 0
 
     async for group in cursor:
         try:
             target_id = group["chat_id"]
-            
+
             if photo_id:
                 await bot.send_photo(
-                    chat_id=target_id, 
-                    photo=photo_id, 
-                    caption=broadcast_text, 
-                    parse_mode="HTML" 
+                    chat_id=target_id,
+                    photo=photo_id,
+                    caption=broadcast_text,
+                    parse_mode="HTML"
                 )
             else:
                 await bot.send_message(
-                    chat_id=target_id, 
-                    text=broadcast_text, 
+                    chat_id=target_id,
+                    text=broadcast_text,
                     parse_mode="HTML"
                 )
-            
+
             success += 1
-            await asyncio.sleep(0.3) 
-            
+            await asyncio.sleep(0.3)
+
         except Exception as e:
             logging.error(f"Group {group.get('chat_id')} broadcast error: {e}")
             fail += 1
 
-    # 4. Final Status Update
     await status_msg.edit_text(
         f"✅ **Group Broadcast Complete**\n"
         f"⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯\n"
@@ -2120,18 +2159,15 @@ async def broadcast_groups_smart(message: types.Message, bot: Bot):
     )
 @dp.message(Command("broadcast"))
 async def broadcast_smart(message: types.Message, bot: Bot):
-    # Uses your global ADMIN_ID variable again
     if message.from_user.id != ADMIN_ID:
         await message.answer("🚫 **Access Denied**")
         return
 
-    # 1. Extract the text and photo correctly
     raw_content = message.caption if message.photo else message.text
-    
-    # Remove the /broadcast command cleanly
+
     parts = raw_content.split(maxsplit=1)
     broadcast_text = parts[1] if len(parts) > 1 else ""
-    
+
     photo_id = message.photo[-1].file_id if message.photo else None
 
     if not broadcast_text and not photo_id:
@@ -2139,7 +2175,7 @@ async def broadcast_smart(message: types.Message, bot: Bot):
         return
 
     status_msg = await message.answer("⏳ **Broadcasting to all travelers...**")
-    
+
     cursor = users_col.find({})
     success, fail = 0, 0
 
@@ -2147,23 +2183,22 @@ async def broadcast_smart(message: types.Message, bot: Bot):
         try:
             target_id = user["user_id"]
             if photo_id:
-                # Switched to HTML for better support of links and dots
                 await bot.send_photo(
-                    chat_id=target_id, 
-                    photo=photo_id, 
-                    caption=broadcast_text, 
-                    parse_mode="HTML" 
+                    chat_id=target_id,
+                    photo=photo_id,
+                    caption=broadcast_text,
+                    parse_mode="HTML"
                 )
             else:
                 await bot.send_message(
-                    chat_id=target_id, 
-                    text=broadcast_text, 
+                    chat_id=target_id,
+                    text=broadcast_text,
                     parse_mode="HTML"
                 )
-            
+
             success += 1
-            await asyncio.sleep(0.05) # Prevent Telegram flood limits
-            
+            await asyncio.sleep(0.05)
+
         except Exception as e:
             logging.error(f"Failed to send to {user.get('user_id')}: {e}")
             fail += 1
@@ -2177,7 +2212,7 @@ async def broadcast_smart(message: types.Message, bot: Bot):
 @dp.message(Command("setrateup"))
 async def set_rate_up(message: types.Message):
     global CURRENT_RATE_UP_KEY, CURRENT_RATE_UP_NAME
-    
+
     if message.from_user.id != ADMIN_ID:
         await message.answer("🚫 **Access Denied.**")
         return
@@ -2193,17 +2228,16 @@ async def set_rate_up(message: types.Message):
         CURRENT_RATE_UP_NAME = characters5[new_key]
         await message.answer(f"✅ Banner Updated!\n**New Rate-Up:** {CURRENT_RATE_UP_NAME}")
     else:
-        await message.answer(f"❌ Character `{new_key}` not found in 5-star list.")  
+        await message.answer(f"❌ Character `{new_key}` not found in 5-star list.")
 
 async def get_enka_data(uid: str):
     """Directly fetches data from Enka.Network API"""
     url = f"https://enka.network/api/uid/{uid}/"
     async with aiohttp.ClientSession() as session:
-        async with session.get(url) as resp:
+        async with session.get(url, timeout=aiohttp.ClientTimeout(total=5)) as resp:
             if resp.status == 200:
                 return await resp.json()
             return None
-# ---------------- Main Enka ----------------
 @dp.message(Command("login"))
 async def login_uid(message: types.Message):
     args = message.text.split()
@@ -2216,7 +2250,7 @@ async def login_uid(message: types.Message):
 
     status_msg = await message.answer(f"🔍 Verifying UID {uid}...")
     data = await fetch_enka_data(uid)
-    
+
     if not data or "playerInfo" not in data:
         return await status_msg.edit_text("❌ UID not found or Showcase is private.")
 
@@ -2229,55 +2263,43 @@ async def login_uid(message: types.Message):
     await status_msg.edit_text(f"✅ <b>Login Successful! <code>{uid}</code></b>\n👤 <b>Player:</b> {player.get('name')} (AR {player.get('level')})", parse_mode="HTML")
 @dp.message(Command("logout"))
 async def logout_uid(message: types.Message):
-    # 1. Check if the user even has a UID linked
     user_id = str(message.from_user.id)
     user_data = await users_col.find_one({"user_id": user_id})
 
     if not user_data or "genshin_uid" not in user_data:
         return await message.answer("ℹ️ You are not logged in yet.")
 
-    # 2. Remove only the UID field using $unset
-    # This keeps other data (like registration date) but removes the Genshin link
     await users_col.update_one(
         {"user_id": user_id},
-        {"$unset": {"genshin_uid": ""}} 
+        {"$unset": {"genshin_uid": ""}}
     )
 
     await message.answer("✅ <b>Logout Successful!</b>\nYour UID has been unlinked from this account.", parse_mode="HTML")
-# --- MyProfile Command ---
 @dp.message(Command("myprofile"))
 async def my_profile(message: types.Message):
-    # 1. Get UID from MongoDB
     user_data = await users_col.find_one({"user_id": str(message.from_user.id)})
     if not user_data or "genshin_uid" not in user_data:
         return await message.answer("❌ Please /login <uid> first.")
 
     db_uid = str(user_data["genshin_uid"]).strip()
-    
-    # 2. Loading State
+
     status = await message.answer("🔄 <b>Creating Profile...</b>", parse_mode="HTML")
-    
-    # 3. Fetch Data (Exploration and Abyss functions assumed to be defined elsewhere)
+
     try:
-        # 2. Fetch Data
-        # We wrap these because if Battle Chronicle is private, these usually fail
         user_info = await get_player_full_data(db_uid)
         exploration_data = await get_exploration_data(db_uid)
         abyss_data = await get_abyss_data(db_uid)
-        
-        # Enka usually works even if HoYoLAB is private (it uses the in-game showcase)
-        user_info_enka = await get_enkadata(db_uid)
-        image_buffer = await create_genshin_profile(db_uid)    
 
-        # 3. Check if HoYoLAB data is actually there
+        user_info_enka = await get_enkadata(db_uid)
+        image_buffer = await create_genshin_profile(db_uid)
+
         if not user_info or not exploration_data:
             raise ValueError("PrivateProfile")
 
     except Exception as e:
         logging.error(f"Data fetch failed for {db_uid}: {e}")
         await status.delete()
-        
-        # The "Private Profile" Message
+
         private_msg = (
             "<b>⚠️ Profile is Private</b>\n\n"
             "I couldn't fetch your exploration data. Please follow these steps:\n"
@@ -2287,53 +2309,44 @@ async def my_profile(message: types.Message):
             "4. Disable <b>'Hide Battle Chronicle'</b>."
         )
         return await message.answer(private_msg, parse_mode="HTML")
-    
-    
+
     msg = "<b>PLAYER INFO</b>\n"
     msg += "─────────୨ৎ─────────\n"
     msg += f"𖹭 <b>{user_info_enka['nickname']}</b> | UID: <code>{db_uid}</code>\n"
     msg += f"𖹭 <b>AR {user_info_enka['level']}</b> | WL : {user_info_enka['worldLevel']}\n"
     msg += f"𖹭 <b>Achievements:</b> {user_info_enka['achievements']}\n"
-    msg += f"𖹭 <b>Days Active:</b> {user_info.get('days_active', 'N/A')}\n"   
+    msg += f"𖹭 <b>Days Active:</b> {user_info.get('days_active', 'N/A')}\n"
     if user_info_enka['signature']:
      msg += f"<i>\"{user_info_enka['signature']}\"</i>\n"
-        
+
     msg += "────────────────────\n\n"
 
-    # Exploration Section
     msg += "<b> EXPLORATION</b>\n"
     msg += "⊹ ࣪ ﹏﹏﹏﹏𓊝﹏𓂁﹏﹏﹏﹏⊹ ࣪ ˖\n\n"
     for area in exploration_data:
-        # :15 ensures the percentages stay aligned in a column
         msg += f"❀ <code>{area['name']:15}</code>: {area['percent']}%\n"
     await status.delete()
-    # Abyss Section
     if abyss_data:
         msg += f"\n<b>⚔︎ SPIRAL ABYSS</b>\n{abyss_data}"
     if image_buffer:
-        # Create the file object from buffer
         photo = BufferedInputFile(image_buffer.getvalue(), filename=f"{db_uid}.png")
-    # 5. Send final text message
         await message.answer_photo(
             photo=photo,
             caption=msg,
             parse_mode="HTML"
         )
-        
-        # 6. CRITICAL: Close the buffer to free RAM
+
         image_buffer.close()
     else:
-        # Fallback if image generation fails
         await message.answer(msg, parse_mode="HTML")
 from aiogram import types, F
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 
-# 1. THE COMMAND HANDLER
 @dp.message(F.text.startswith("/comparechar"))
 async def cmd_compare(message: types.Message):
     if not message.reply_to_message:
         return await message.reply("Please reply to a user's message to compare characters.")
-    
+
     sender_data = await users_col.find_one({"user_id": str(message.from_user.id)})
     target_data = await users_col.find_one({"user_id": str(message.reply_to_message.from_user.id)})
 
@@ -2341,92 +2354,75 @@ async def cmd_compare(message: types.Message):
         return await message.reply("Both users must be registered.")
 
     u1, u2 = sender_data['genshin_uid'], target_data['genshin_uid']
-    owner_id = message.from_user.id # The person who typed the command
-    
+    owner_id = message.from_user.id
+
     await show_comparison_menu(message, u1, u2, owner_id)
 async def show_comparison_menu(event, u1, u2, owner_id, is_callback=False):
     """Helper function to show the character list (used by command and back button)"""
-    
-    # 1. Show a temporary "Fetching" state so the user knows it's working
+
     if is_callback:
-        # If they clicked 'Back', just update the current button to show we are loading
         await event.answer("Refreshing common characters...")
     else:
-        # If it's the first time (/comparechar), send a temp message
         temp_msg = await event.reply("Searching for common characters...")
 
-    # 2. Fetch data
     d1, d2 = await asyncio.gather(get_enkadata(u1), get_enkadata(u2))
-    
+
     ids1 = {str(c['avatarId']) for c in d1.get("showAvatarInfoList", [])}
     ids2 = {str(c['avatarId']) for c in d2.get("showAvatarInfoList", [])}
     common = ids1.intersection(ids2)
 
-    # 3. Handle No Common Characters
     if not common:
         error_text = " No common characters found in your showcases!"
-        if not is_callback: await temp_msg.delete() # Clean up temp message
+        if not is_callback: await temp_msg.delete()
         return await event.message.edit_text(error_text) if is_callback else await event.reply(error_text)
 
-    # 4. Build the Menu
     builder = InlineKeyboardBuilder()
     with open('char.json', 'r') as f:
         char_map = json.load(f)
     orig_msg_id = event.message.message_id if is_callback else event.message_id
-    for cid in list(common)[:18]: 
+    for cid in list(common)[:18]:
         name = char_map.get(str(cid), {}).get("name", f"ID: {cid}")
-    # ADD orig_msg_id to the end of the data string
         builder.button(text=name, callback_data=f"comp:{u1}:{u2}:{cid}:{owner_id}:{orig_msg_id}")
-    
+
     builder.adjust(3)
     text = "<b>Character Comparison</b>\nSelect a common character to compare stats:"
-    
-    # 5. The "Clean" Swap
+
     if is_callback:
-        # Coming from the Result Card: Delete the card and send the fresh menu
         await event.message.delete()
         await event.message.answer(text, reply_markup=builder.as_markup(), parse_mode="HTML")
     else:
-        # Coming from the Command: Delete the "Searching..." message and send the menu
         await temp_msg.delete()
         await event.reply(text, reply_markup=builder.as_markup(), parse_mode="HTML")
 
 @dp.callback_query(F.data.startswith("comp:"))
 async def handle_comp(callback: types.CallbackQuery):
     data = callback.data.split(":")
-    # Now we have index 5 for the message ID
     u1, u2, cid, owner_id, orig_msg_id = data[1], data[2], data[3], int(data[4]), int(data[5])
-    
-    # 1. Security Check
+
     if callback.from_user.id != owner_id:
         return await callback.answer("This menu isn't for you!", show_alert=True)
 
-    # 2. Handshake & Loading State
-    await callback.answer() # Stops button spinner
-    
+    await callback.answer()
+
     try:
-        # Swap the menu image to a loading image
         await callback.message.edit_media(
             media=InputMediaPhoto(
-                media=FSInputFile("asstests/Loading_Screen_Startup.webp"), # Use your loading image path
+                media=FSInputFile("asstests/Loading_Screen_Startup.webp"),
                 caption="<b>Creating comparison card... Please wait.</b>",
                 parse_mode="HTML"
             )
         )
     except Exception:
-        # Fallback if image edit fails (e.g., if the user deleted the message)
         pass
 
-    # 3. Generate the Image (Pillow logic)
     img_bytes = await compare_characters(int(u1), int(u2), int(cid))
 
     if img_bytes is None:
-        # If generation failed, tell the user instead of crashing
         await callback.message.edit_caption(
             caption="<b>❌ Error:</b> Failed to generate the comparison. This usually happens if Enka.network is lagging or profile details are hidden.",
             parse_mode="HTML"
         )
-        return 
+        return
 
     await callback.message.delete()
     await callback.message.answer_photo(
@@ -2435,7 +2431,7 @@ async def handle_comp(callback: types.CallbackQuery):
         parse_mode="HTML",
         reply_to_message_id=orig_msg_id
     )
-    
+
 @dp.message(Command("compare"))
 async def cmd_compare_reply(message: types.Message):
     if not message.reply_to_message:
@@ -2443,48 +2439,40 @@ async def cmd_compare_reply(message: types.Message):
 
     sender_id = str(message.from_user.id)
     target_id = str(message.reply_to_message.from_user.id)
-    
+
     sender_data = await users_col.find_one({"user_id": sender_id})
     target_data = await users_col.find_one({"user_id": target_id})
 
     if not sender_data or not target_data:
         return await message.reply("Both users must be /login-ed to compare.")
 
-    # Show a "Loading" message so the user knows the image is being generated
     status_msg = await message.reply("Generating comparison showcase...")
 
     try:
-        # 1. Generate the image buffer using your previous function
-        # Using the genshin_uids stored in your database
         uid1 = sender_data['genshin_uid']
         uid2 = target_data['genshin_uid']
-        
+
         photo_buffer = await create_masked_showcase(uid1, uid2)
-        
-        # 2. Wrap the buffer in an InputFile
+
         photo = BufferedInputFile(photo_buffer.read(), filename="compare.png")
 
-        # 3. Create the keyboard
         uids = f"{uid1}_{uid2}"
         builder = InlineKeyboardBuilder()
         builder.row(types.InlineKeyboardButton(text="𓊝 Compare Exploration", callback_data=f"comp_expl_{uids}"))
         builder.row(types.InlineKeyboardButton(text="𖨆 Compare Profile Stats", callback_data=f"comp_prof_{uids}"))
 
-        # 4. Send the photo with the menu as a caption
         await message.reply_photo(
             photo=photo,
             caption=f"⚔ <b>Comparison Menu</b>\nComparing with <b>{message.reply_to_message.from_user.first_name}</b>",
             reply_markup=builder.as_markup(),
             parse_mode="HTML"
         )
-        
-        # Delete the "Loading" message
+
         await status_msg.delete()
 
     except Exception as e:
         print(f"Error generating comparison: {e}")
         await status_msg.edit_text("❌ Failed to generate comparison image. Please ensure both showcases are public.")
-# Helper to handle "N/A" or missing stats
 def to_int(val):
     if val is None or str(val).strip().upper() == "N/A" or str(val).strip() == "":
         return 0
@@ -2503,10 +2491,9 @@ async def execute_profile_comparison(callback: types.CallbackQuery):
         me = await get_player_full_data(my_uid)
         them = await get_player_full_data(target_uid)
 
-        # Get AR and Calculate World Level
         my_ar = to_int(get_val(me, "level", "info"))
         them_ar = to_int(get_val(them, "level", "info"))
-        
+
         my_wl = calculate_world_level(my_ar)
         them_wl = calculate_world_level(them_ar)
 
@@ -2514,7 +2501,6 @@ async def execute_profile_comparison(callback: types.CallbackQuery):
         msg += f"𖨆 <code>{me['nickname']}</code> <b>VS</b> 𖨆 <code>{them['nickname']}</code>\n"
         msg += "<code>" + "═" * 25 + "</code>\n\n"
 
-        # Define stats to compare using your JSON keys
         stats_to_compare = [
             ("ᯓ Adventure Rank", my_ar, them_ar),
             ("ᯓ World Level", my_wl, them_wl),
@@ -2528,44 +2514,37 @@ async def execute_profile_comparison(callback: types.CallbackQuery):
 
         original_user_msg_id = callback.message.reply_to_message.message_id if callback.message.reply_to_message else None
 
-    # 2. Delete the bot's photo message
         await callback.message.delete()
 
-        # 3. Send the text battle as a NEW reply to that original user message
         builder = InlineKeyboardBuilder()
         builder.row(types.InlineKeyboardButton(text="Back to Menu", callback_data=f"back_comp_{my_uid}_{target_uid}"))
-        
+
         await callback.message.answer(
-            msg, 
-            reply_markup=builder.as_markup(), 
+            msg,
+            reply_markup=builder.as_markup(),
             parse_mode="HTML",
-            reply_to_message_id=original_user_msg_id  # <--- THIS keeps the thread!
+            reply_to_message_id=original_user_msg_id
         )
     except Exception as e:
         await callback.message.reply(f"❌ Profile Error: {e}")
 
 @dp.callback_query(F.data.startswith("comp_expl_"))
 async def execute_exploration_comparison(callback: types.CallbackQuery):
-    # 1. Extract UIDs from callback data
     parts = callback.data.split("_")
     my_uid, target_uid = parts[2], parts[3]
     await callback.answer("⚔ Comparing World Progress...")
 
     try:
-        # 2. Fetch data for both players
         me = await get_player_full_data(my_uid)
         them = await get_player_full_data(target_uid)
-        
-        # We need the raw lists for the region comparison
+
         me_expl = await get_exploration_data(my_uid)
         them_expl = await get_exploration_data(target_uid)
 
-        # 3. Header
         msg = f"⚔ <b>EXPLORATION BATTLE</b>\n"
         msg += f"𖨆 <code>{me['nickname']}</code> <b>VS</b> 𖨆 <code>{them['nickname']}</code>\n"
         msg += "<code>" + "═" * 25 + "</code>\n\n"
 
-        # 4. Chest Section (Using the keys from your JSON)
         msg += "<b>⌗ CHEST COUNTS</b>\n"
         chest_types = [
             ("Luxurious", "luxurious"),
@@ -2582,36 +2561,32 @@ async def execute_exploration_comparison(callback: types.CallbackQuery):
 
         msg += "\n<code>" + "─" * 25 + "</code>\n"
 
-        # 5. Regional Exploration Section
         msg += "<b>☀︎ REGIONS</b>\n"
-        
+
         them_map = {area['name']: area['percent'] for area in them_expl}
 
         for area in me_expl:
             name = area['name']
             p1 = area['percent']
             p2 = them_map.get(name, 0.0)
-            
+
             icon = "←--" if p1 > p2 else "--→" if p2 > p1 else "-𔓘-"
-            
+
             msg += f"❀ <b>{name}</b>\n"
             msg += f"<code>{p1:>5.1f}%</code> {icon} <code>{p2:>5.1f}%</code>\n\n"
 
-        # 6. Navigation
         original_user_msg_id = callback.message.reply_to_message.message_id if callback.message.reply_to_message else None
 
-    # 2. Delete the bot's photo message
         await callback.message.delete()
 
-        # 3. Send the text battle as a NEW reply to that original user message
         builder = InlineKeyboardBuilder()
         builder.row(types.InlineKeyboardButton(text="Back to Menu", callback_data=f"back_comp_{my_uid}_{target_uid}"))
-        
+
         await callback.message.answer(
-            msg, 
-            reply_markup=builder.as_markup(), 
+            msg,
+            reply_markup=builder.as_markup(),
             parse_mode="HTML",
-            reply_to_message_id=original_user_msg_id  # <--- THIS keeps the thread!
+            reply_to_message_id=original_user_msg_id
         )
     except Exception as e:
         await callback.message.reply(f"❌ Profile Error: {e}")
@@ -2619,14 +2594,11 @@ async def execute_exploration_comparison(callback: types.CallbackQuery):
 async def back_to_compare_prep(callback: types.CallbackQuery):
     parts = callback.data.split("_")
     my_uid, target_uid = parts[2], parts[3]
-    
-    # Get the original user message ID again
+
     original_user_msg_id = callback.message.reply_to_message.message_id if callback.message.reply_to_message else None
 
-    # 1. Delete the text message
     await callback.message.delete()
-    
-    # 2. Re-generate photo
+
     photo_buffer = await create_masked_showcase(my_uid, target_uid)
     photo = BufferedInputFile(photo_buffer.read(), filename="compare.png")
 
@@ -2635,13 +2607,12 @@ async def back_to_compare_prep(callback: types.CallbackQuery):
     builder.row(types.InlineKeyboardButton(text="𓊝 Compare Exploration", callback_data=f"comp_expl_{uids}"))
     builder.row(types.InlineKeyboardButton(text="𖨆 Compare Profile Stats", callback_data=f"comp_prof_{uids}"))
 
-    # 3. Answer with photo as a reply to the original user command
     await callback.message.answer_photo(
         photo=photo,
         caption="⚔️ <b>Comparison Menu</b>\nChoose what to compare:",
         reply_markup=builder.as_markup(),
         parse_mode="HTML",
-        reply_to_message_id=original_user_msg_id # <--- Keeps the thread alive
+        reply_to_message_id=original_user_msg_id
     )
     await callback.answer()
 async def clear_old_polls():
@@ -2649,19 +2620,15 @@ async def clear_old_polls():
     while True:
         await asyncio.sleep(3600)
         current_time = time.time()
-        # Create a static list of keys to avoid 'dictionary size changed' error
         to_delete = [pid for pid, d in active_polls.items() if current_time - d["start_time"] > 3600]
         for pid in to_delete:
             if pid in active_polls:
                 del active_polls[pid]
 
-# --- QUIZ TRIGGER ---
 @dp.message(F.chat.type.in_({"group", "supergroup"}))
 async def group_quiz_handler(message: types.Message, bot: Bot):
     chat_id = message.chat.id
 
-    # 2. Increment counter for this specific chat in MongoDB
-    # This replaces your local 'group_message_counts' dictionary
     res = await groups_col.find_one_and_update(
         {"chat_id": chat_id},
         {"$inc": {"message_count": 1}},
@@ -2670,23 +2637,20 @@ async def group_quiz_handler(message: types.Message, bot: Bot):
     )
     current_count = res.get("message_count", 0)
 
-    # 3. Check if we reached the threshold
     if current_count >= QUIZ_THRESHOLD:
-        # Reset counter in MongoDB immediately to prevent double-triggers
         await groups_col.update_one(
-            {"chat_id": chat_id}, 
+            {"chat_id": chat_id},
             {"$set": {"message_count": 0}}
         )
-        
+
         try:
-            # --- YOUR EXISTING QUIZ LOGIC STARTS HERE ---
             with open("quizzes.json", "r") as f:
                 quiz_list = json.load(f)
-            
+
             q = random.choice(quiz_list)
             options = random.sample(q["wrong_pool"], 3) + [q["correct"]]
             random.shuffle(options)
-            
+
             correct_id = options.index(q["correct"])
 
             poll_msg = await message.answer_poll(
@@ -2726,55 +2690,44 @@ async def group_quiz_handler(message: types.Message, bot: Bot):
                     parse_mode="HTML"
                 )
                 del active_polls[poll_id]
-            # --- END OF QUIZ LOGIC ---
 
         except Exception as e:
             print(f"Quiz Error: {e}")
 
-# --- POLL ANSWER HANDLER ---
 @dp.poll_answer()
 async def handle_poll_answer(poll_answer: types.PollAnswer):
     poll_id = poll_answer.poll_id
-    
-    # 1. Check if the poll is managed by the bot
+
     if poll_id not in active_polls:
         return
 
     data = active_polls[poll_id]
-    
-    # 2. Check if the user's answer is correct
-    # poll_answer.option_ids is a list; we check the first (and usually only) selection
+
     if poll_answer.option_ids[0] == data["correct_id"]:
         elapsed = time.time() - data["start_time"]
-        
-        # Calculate points based on your custom logic
+
         points = get_quiz_score(data["difficulty"], elapsed)
-        
+
         user_id = str(poll_answer.user.id)
         user_name = poll_answer.user.full_name
-        
-        # FIX: Ensure chat_id is a STRING to prevent overwriting or key errors in Mongo
-        chat_id = str(data["chat_id"]) 
 
-        # 3. Update the Database
-        # Using $inc with dot notation (group_quiz.ID) ensures we ADD to the specific group
-        # without affecting other groups saved in the object.
+        chat_id = str(data["chat_id"])
+
         await users_col.update_one(
             {"user_id": user_id},
             {
                 "$inc": {
-                    f"group_quiz.{chat_id}": points, # Increments score for THIS specific group
-                    "wish_count": points,            # Increments global currency
-                    "quiz_points": 1                 # Optional: Track total correct answers
+                    f"group_quiz.{chat_id}": points,
+                    "wish_count": points,
+                    "quiz_points": 1
                 },
                 "$set": {
-                    "last_known_name": user_name     # Keeps the username updated
+                    "last_known_name": user_name
                 }
             },
-            upsert=True # Creates the document if the user is new
+            upsert=True
         )
-        
-        # 4. Update the local tracking for this specific poll instance
+
         if "winners" not in data:
             data["winners"] = []
         data["winners"].append((user_name, points))
@@ -2787,39 +2740,33 @@ async def main():
         print("✅ Successfully connected to MongoDB!")
     except Exception as e:
         print(f"❌ MongoDB Connection Error: {e}")
-        return 
+        return
     bot = Bot(token=TOKEN)
     lk_timezone = timezone("Asia/Colombo")
     setup_scheduler(bot, users_col, cipher)
-    
-    # Setup the local scheduler for wishes and cooldowns
+
     scheduler = AsyncIOScheduler(timezone=lk_timezone)
-    
-    # --- JOB 1: Check individual 24h cooldowns every 15 minutes ---
+
     scheduler.add_job(
-        check_individual_dailies, 
-        "interval", 
-        minutes=15, 
+        check_individual_dailies,
+        "interval",
+        minutes=15,
         args=[bot]
     )
 
-    # --- JOB 2: Run the daily reset task at Midnight ---
     scheduler.add_job(
-        daily_wish, 
-        "cron", 
-        hour=0, 
-        minute=0, 
+        daily_wish,
+        "cron",
+        hour=0,
+        minute=0,
         args=[bot]
     )
-    
-    # 4. Start the scheduler BEFORE polling
+
     scheduler.start()
     print("⏰ All schedulers started (HoYoLAB, Interval & Midnight Reset)!")
 
-    # 5. Start background tasks (non-blocking)
     asyncio.create_task(clear_old_polls())
 
-    # 6. Start polling (This is the LAST line)
     print("🤖 Bot is now online and polling...")
     await dp.start_polling(bot)
 
@@ -2828,10 +2775,4 @@ if __name__ == "__main__":
         asyncio.run(main())
     except (KeyboardInterrupt, SystemExit):
         print("🤖 Bot stopped.")
-
-
-
-
-
-
 

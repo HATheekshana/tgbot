@@ -1,34 +1,33 @@
 import asyncio
 import genshin
 import aiohttp
-# Your Central Cookie Store
+from dotenv import load_dotenv
+import os
+
+load_dotenv()
 def get_quiz_score(difficulty, elapsed):
-    # Base points
     base = {"easy": 1, "medium": 3, "hard": 5}.get(difficulty.lower(), 1)
-    
-    # Time Bonus
+
     if elapsed < 10: bonus = 5
     elif elapsed < 20: bonus = 3
     elif elapsed < 40: bonus = 1
     else: bonus = 0
-    
+
     return base + bonus
 COOKIES = {
-    "ltuid_v2": "449108883",
-    "ltoken_v2": "v2_CAISDGM5b3FhcTNzM2d1OBokNDcwMGJhYzAtMTAxZi00YjRlLTk2YmItN2M4YjhjMjMxZDAwIPWn780GKOuk4-0HMJO3k9YBQgtiYnNfb3ZlcnNlYVhqagJTRw.9dO7aQAAAAAB.MEUCIA5OHCjpxUDGrSJ8AQVHNuK4nwpW7XdJhtZhYnXcMhiFAiEAn0azB_VtrCvO57QPc72lKVKK_lTyMHAjDM2LrvENUco"
+    "ltuid_v2": os.getenv("LTUID_V2"),
+    "ltoken_v2": os.getenv("LTOKEN_V2")
 }
+cookie_token = os.getenv("COOKIE_TOKEN_V2")
+if cookie_token:
+    COOKIES["cookie_token_v2"] = cookie_token
 client = genshin.Client(COOKIES)
 client.region = genshin.Region.OVERSEAS
-# Function to calculate World Level from AR (since API doesn't give it)
-# Helper to calculate World Level
-
 
 async def get_player_full_data(uid):
-    # This calls the genshin.py client
     raw_data = await client.get_genshin_user(uid)
     data = raw_data.dict()
-    
-    # We create a simple dictionary that your /myprofile command expects
+
     return {
         "nickname": data.get("info", {}).get("nickname", "Unknown"),
         "level": data.get("info", {}).get("level", 0),
@@ -46,7 +45,7 @@ async def get_player_full_data(uid):
 async def get_enkadata(uid):
     url = f"https://enka.network/api/uid/{uid}"
     async with aiohttp.ClientSession() as session:
-        async with session.get(url) as response:
+        async with session.get(url, timeout=aiohttp.ClientTimeout(total=5)) as response:
             if response.status == 200:
                 data = await response.json()
                 player_info = data.get("playerInfo", {})
@@ -78,23 +77,19 @@ def calculate_world_level(ar):
 async def get_exploration_data(uid):
     raw_data = await client.get_genshin_user(uid)
     data = raw_data.dict()
-    
+
     expl_list = data.get("explorations", [])
     results = []
     for area in expl_list:
         results.append({
             "name": area.get("name"),
-            # raw_explored 720 becomes 72.0
             "percent": float(area.get("raw_explored", 0)) / 10.0
         })
     return results
 
-# Universal getter simplified for your specific JSON structure
 def get_val(data, key, section="stats"):
-    # Check in the specific section (stats or info)
     if section in data and key in data[section]:
         return data[section][key]
-    # Fallback to root
     return data.get(key, 0)
 
 def to_int(val):
@@ -102,30 +97,27 @@ def to_int(val):
         return int(float(val)) if val else 0
     except:
         return 0
-async def get_abyss_data(uid: int):  
+async def get_abyss_data(uid: int):
     try:
-        # Fetch CURRENT abyss (use previous=True for the last reset)
         abyss = await client.get_genshin_spiral_abyss(uid)
-        
+
         if not abyss.floors:
             return "No Abyss data found for this cycle."
 
         msg = ""
-        # We only show Floors 11 and 12 as requested
         for floor in abyss.floors:
             if floor.floor < 11:
                 continue
-                
+
             msg += f"ꫂ❁【FLOOR {floor.floor}】\n"
-            
-            # Loop through chambers (usually 1, 2, 3)
+
             for chamber in floor.chambers:
                 stars = "✮" * chamber.stars
                 empty = "☆" * (3 - chamber.stars)
                 msg += f"⧽ Chamber {chamber.chamber} - {stars}{empty} \n"
-            
+
             msg += "╰➤─── ⋆⋅☆⋅⋆ ──────\n\n"
-            
+
         return msg if msg else "You haven't reached Floor 11 yet this cycle!"
 
     except Exception as e:
@@ -135,8 +127,7 @@ async def get_abyss_data(uid: int):
 async def format_abyss_info(abyss_data):
     season = abyss_data.season
     res = f"⸸ SPIRAL ABYSS S{season} ⸸\n"
-    
-    # --- Floor Logic ---
+
     for floor in sorted(abyss_data.floors, key=lambda x: x.floor):
         if floor.floor < 11: continue
         res += f"ꫂ❁ FLOOR {floor.floor}】\n"
@@ -145,12 +136,11 @@ async def format_abyss_info(abyss_data):
             res += f"⧽ Chamber {chamber.chamber} - {stars}\n"
         res += "╰➤─── ⋆⋅⸸⋅⋆ ──────\n\n"
 
-    # --- Combat Stats ---
     rank = abyss_data.ranks
     res += f"✎ Deepest Descent: {abyss_data.max_floor}\n"
     res += f"✎ Total Stars: {abyss_data.total_stars}\n"
     res += f"✎ Total Battles: {abyss_data.total_battles}\n"
-    
+
     def get_rank_str(possible_attrs):
         for attr in possible_attrs:
             val = getattr(rank, attr, None)
@@ -160,12 +150,11 @@ async def format_abyss_info(abyss_data):
 
     res += f"✎ Most Kills: {get_rank_str(['most_kills'])}\n"
     res += f"✎ Strongest Strike: {get_rank_str(['strongest_strike'])}\n"
-    
-    # Based on your JSON, 'take_damage' is the key, 
-    # but the library might map it to 'max_damage_taken'
+
     res += f"✎ Most Damage Taken: {get_rank_str(['take_damage', 'max_damage_taken', 'most_damage_taken'])}\n"
-    
+
     res += f"✎ Most Bursts: {get_rank_str(['most_bursts', 'most_bursts_used'])}\n"
     res += f"✎ Most Skills: {get_rank_str(['most_skills', 'most_skills_used'])}\n"
-        
+
     return res
+

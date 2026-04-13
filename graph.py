@@ -16,11 +16,9 @@ ELEMENT_COLORS = {
     "Physical": "#FFFFFF"
 }
 
-# Load targets once
 with open("targets.json", "r", encoding="utf-8") as f:
     TARGETS = json.load(f)
 
-# Exact labels from your reference, matching the angles (clockwise from 12 o'clock)
 LABELS = ['HP', 'ATK', 'DEF', 'EM', 'Crit DMG', 'Crit Rate', 'ER', 'Elem DMG']
 
 def generate_full_radar_chart(values, color="#bb86fc", element="Physical"):
@@ -103,17 +101,13 @@ def get_complete_radar_module(char_stats, char_id, final_size=(450, 450)):
     """
     cid_str = str(char_id)
     if cid_str not in TARGETS:
-        # Falls back to no-data image logic if character missing from DB
         return None
 
     targets = TARGETS[cid_str]
-    
-    # Automatic dynamic settings based on element
-    element = char_stats.get("element", "Physical") 
+
+    element = char_stats.get("element", "Physical")
     char_color = ELEMENT_COLORS.get(element, "#FFFFFF")
 
-    # Map the relative values against your manual targets database
-    
     values_list = [
         char_stats.get('hp', 0) / targets['hp'],
         char_stats.get('atk', 0) / targets['atk'],
@@ -125,8 +119,7 @@ def get_complete_radar_module(char_stats, char_id, final_size=(450, 450)):
         char_stats.get('elem_bonus', 0) / targets.get('dmg_val', 46.6),
     ]
 
-    # Generate the complete image (Web + Data + Text) in one step
     radar_img = generate_full_radar_chart(values_list, char_color, element)
-    
-    # Scale to fit your card layout
+
     return radar_img.resize(final_size, Image.Resampling.LANCZOS)
+
