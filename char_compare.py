@@ -397,34 +397,15 @@ async def compare_characters(uid, uid2, char_id):
         draw.text((v2_x + (val_w // 2), curr_y + (row_height//2)), val2, font=font, fill=(255, 255, 255), anchor="mm")
     loop = asyncio.get_event_loop()
 
-    def render_comparison():
-        """CPU-intensive: draw_build_column, star icons, and JPEG encoding"""
-        draw_build_column(background, 795, them_data, t_icons, c_icons)
-        draw_build_column(background, 945, me_data, t_icons, c_icons)
+    try:
+        me_char_obj = next((c for c in me.get('avatarInfoList', []) if str(c['avatarId']) == str(char_id)), None)
+        them_char_obj = next((c for c in them.get('avatarInfoList', []) if str(c['avatarId']) == str(char_id)), None)
+    except (StopIteration, AttributeError):
+        print("Character not found in one of the showcases!")
+        return None
 
-        if rarity == 4:
-            star4 = Image.open("asstests/icons/stars/c_stars_4.png").convert("RGBA")
-            background.paste(star4, (850, 150), star4)
-        elif rarity == 5:
-            star5 = Image.open("asstests/icons/stars/c_stars_5.png").convert("RGBA")
-            background.paste(star5, (850, 150), star5)
-
-        buffer = BytesIO()
-        final_img = Image.alpha_composite(background, ui_layer)
-        final_img.convert("RGB").save(buffer, format="JPEG", quality=90)
-        buffer.seek(0)
-        return buffer
-
-    buffer = await loop.run_in_executor(None, render_comparison)
-
+    # 2. Draw the artifacts onto the ui_layer (WAIT for this to finish)
     async with aiohttp.ClientSession() as session:
-        try:
-            me_char_obj = next((c for c in me.get('avatarInfoList', []) if str(c['avatarId']) == str(char_id)), None)
-            them_char_obj = next((c for c in them.get('avatarInfoList', []) if str(c['avatarId']) == str(char_id)), None)
-        except (StopIteration, AttributeError):
-            print("Character not found in one of the showcases!")
-            return buffer
-
         await draw_all_artifacts(
             session=session,
             background=ui_layer,
@@ -433,5 +414,28 @@ async def compare_characters(uid, uid2, char_id):
             font=font_small
         )
 
-    return buffer
+    # 3. Now define the render function that composites the finished layers
+    def render_final():
+        draw_build_column(background, 795, them_data, t_icons, c_icons)
+        draw_build_column(background, 945, me_data, t_icons, c_icons)
 
+        # Draw character stars
+        if rarity == 4:
+            star4 = Image.open("asstests/icons/stars/c_stars_4.png").convert("RGBA")
+            background.paste(star4, (850, 150), star4)
+        elif rarity == 5:
+            star5 = Image.open("asstests/icons/stars/c_stars_5.png").convert("RGBA")
+            background.paste(star5, (850, 150), star5)
+
+        # Composite the ui_layer (which now has artifacts) with the background
+        final_img = Image.alpha_composite(background, ui_layer)
+        
+        buffer = BytesIO()
+        final_img.convert("RGB").save(buffer, format="JPEG", quality=90)
+        buffer.seek(0)
+        return buffer
+
+    # 4. Run the final heavy processing
+    buffer = await loop.run_in_executor(None, render_final)
+
+    return buffer
