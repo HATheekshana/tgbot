@@ -276,7 +276,7 @@ async def compare_characters(uid, uid2, char_id):
             wp_res = wp.resize((120, 120), Image.Resampling.LANCZOS)
             background.paste(wp_res, pos, wp_res)
             w_info = stats['weapon']
-            weapon_name = get_weapon_name(w_info['hash'])
+            weapon_name = get_weapon_name(w_info)
 
             draw.text((pos[0] + 240, 245), weapon_name, font=font_xsmall, fill=(0, 0, 0), anchor="mm")
 
