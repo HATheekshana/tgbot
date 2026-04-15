@@ -611,12 +611,7 @@
     "wrong_pool": ["Abyss Order", "Treasure Hoarders", "Eremites", "Mondstadt", "Liyue", "Inazuma", "Crux Fleet"],
     "difficulty": "hard"
   },
-  {
-    "question": "What does Scaramouche seek?",
-    "correct": "Godhood",
-    "wrong_pool": ["Revenge", "His mother", "His home", "Redemption", "The Gnosis", "Death", "Power"],
-    "difficulty": "hard"
-  },
+
   {
     "question": "What does Nahida use to empower Traveler?",
     "correct": "Collected knowledge",
