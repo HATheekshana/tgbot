@@ -612,12 +612,6 @@
     "difficulty": "hard"
   },
   {
-    "question": "What does Scaramouche seek?",
-    "correct": "Godhood",
-    "wrong_pool": ["Revenge", "His mother", "His home", "Redemption", "The Gnosis", "Death", "Power"],
-    "difficulty": "hard"
-  },
-  {
     "question": "What does Nahida use to empower Traveler?",
     "correct": "Collected knowledge",
     "wrong_pool": ["The Dendro Gnosis", "A new weapon", "Elemental energy", "Divine blessing", "Irminsul fruit", "Sacred Dew", "Dream energy"],
