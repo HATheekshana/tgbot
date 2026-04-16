@@ -1129,7 +1129,7 @@ async def cmd_characters(message: types.Message):
     user_data = await users_col.find_one({"user_id": str(message.from_user.id)})
 
     if not user_data or "genshin_uid" not in user_data:
-        return await message.reply("Please /login <uid> first.")
+        return await message.reply("❓ <b>Usage:</b> /login &lt;uid&gt;")
 
     db_uid = str(user_data["genshin_uid"]).strip()
     msg = await message.reply("Fetching your showcase...")
@@ -1241,7 +1241,7 @@ async def handle_card_generation(callback: types.CallbackQuery):
 
     try:
         await callback.message.delete()
-    except TelegramBadRequest:
+    except:
         pass
 
     target = callback.message.reply_to_message or callback.message
